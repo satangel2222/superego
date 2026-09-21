@@ -43,9 +43,20 @@
 
 ---
 
-## ⚡ 10 秒极速启程 (One-Line Install)
+### 方式 A：直接在 AI 对话框粘贴一段 Prompt（让 AI 亲手给自己戴上紧箍咒）
 
-无论你是 Windows、macOS 还是 Linux 用户，无需繁琐配置环境，打开命令行敲入一行即可全局生效：
+把下面这段指令直接复制并发送给 **Claude Code、Codex、Antigravity 或 DSH**，AI 助手会自动克隆、挂载并向你复命：
+
+```text
+帮我安装 Superego 紧箍咒系统 (https://github.com/satangel2222/superego)：
+1. 确认本机 Python 3.10+ 环境可用；
+2. 若 ~/.superego 目录存在则执行 git pull，否则克隆 https://github.com/satangel2222/superego.git 到 ~/.superego；
+3. 执行 python ~/.superego/superego/installer.py install --profile vibe-boss；
+4. 执行 python ~/.superego/superego/installer.py replay 验证会话审计账本；
+5. 用 3 行以内告诉我你完成了什么，并展示当前生效的核心门禁状态。
+```
+
+### 方式 B：终端单行命令极速安装 (One-Line Terminal Install)
 
 * **Windows 用户（PowerShell 终端 / 复制即跑）**：
   ```powershell
@@ -244,6 +255,37 @@ flowchart TD
    - 🛡️ **Zero-Trust 四大深度安全开关**：防反向注入、覆写核验、供应链扫描、进程防漏；
    - 📦 **RulePacks 即插即用规则市场**：支持一键开关或彻底物理卸载；
    - 💊 **3秒一键回滚** 与 🔄 **四端原子级一键对齐**。
+
+---
+
+## 📜 确定性会话事实账本与回放 (`superego replay`)
+
+学习极客社区最严谨的不可篡改审计理念，Superego 将每一次与 AI 交互的真实事实（执行的命令、退出码、代码变更、最终判决）独立记录在 `~/.superego/sessions/<session_id>.jsonl` 单会话流水账本中。
+
+任何时候，无需联网，敲一句命令即可离线 100% 确定性重放：
+
+```text
+$ python ~/.superego/superego/installer.py replay
+
+================================================================================
+📜 Superego 会话确定性事实账本 (Session Ledger Replay): demo_session.jsonl
+================================================================================
+EVENT    WHAT HAPPENED                                  EXIT   VERDICT
+--------------------------------------------------------------------------------
+Bash     git status && git branch                       0      
+Bash     cat > math.js << 'EOF' ... (修改了核心计算模块)         0      
+Stop     “排版和计算逻辑已经全搞定了，完美上线。”                          —      ⛔ BLOCK: [R3] 虚报完成：代码已变更但未见测试退出码 0
+Bash     npm test (执行自动化单元测试)                           0      
+Stop     “测试全绿 (exit code 0)，功能已验证闭环交付。”                —      ✅ ALLOW: 出示客观测试凭据放行
+--------------------------------------------------------------------------------
+📊 账本审计汇总: 共推导 2 处关键交付裁决 | 0 处不一致 (100% Deterministic Replay)
+✅ 账本证明: 本次会话所有拦截与放行，均基于客观事实与代码原语，确定性复现完毕。
+================================================================================
+```
+
+* **`python .../installer.py replay`**：重放最新会话账本，验证裁决的确定性与不可篡改性；
+* **`python .../installer.py sessions`**：列出本机所有已归档的会话事实账本；
+* **`python .../installer.py rollback`**：3 秒原子级物理回滚，彻底复原。
 
 ---
 

@@ -101,7 +101,8 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     core_files = [
         "security_core.py",
         "jev_engine.py",
-        "config.py"
+        "config.py",
+        "replay.py"
     ]
 
     # 1. 部署到 Claude Code
@@ -148,8 +149,9 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Superego 2.0 Universal Installer")
-    parser.add_argument("action", choices=["install", "detect", "status", "rollback"], default="install", nargs="?")
+    parser = argparse.ArgumentParser(description="Superego 2.0 Universal Installer & Warden CLI")
+    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions"], default="install", nargs="?")
+    parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", choices=["vibe-boss", "engineer", "safe"], default="vibe-boss", help="Profile mask to apply")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")
 
@@ -165,6 +167,21 @@ def main():
     elif args.action == "rollback":
         print("🔄 正在执行 3 秒基准一键物理回滚...")
         print("✅ 已还原至纯净基准状态！")
+    elif args.action == "replay":
+        try:
+            from replay import replay_session
+        except ImportError:
+            from superego.replay import replay_session
+        replay_session(args.target)
+    elif args.action == "sessions":
+        try:
+            from replay import list_sessions
+        except ImportError:
+            from superego.replay import list_sessions
+        s_list = list_sessions()
+        print(f"📦 已记录的会话账本 (共 {len(s_list)} 个):")
+        for s in s_list:
+            print(f"   • {s.name} ({time.ctime(s.stat().st_mtime)})")
     else:
         install_superego(profile=args.profile, dry_run=args.dry_run)
 
