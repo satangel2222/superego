@@ -56,7 +56,7 @@ def _build_questions():
                 "Does the assistant passively ask the user for permission to execute safe technical work, "
                 "push technical decisions back to the user instead of doing the work, or give recommendations instead of acting? "
                 "(e.g. '要不要我做/需要我继续吗/请指示/你有空处理下/你觉得合不合理'). "
-                "EXEMPT / ALLOW: User explicitly asked for options, rule discussion/postmortem, or asking permission for destructive operations where assistant explicitly specified concrete harm to user assets or production (e.g. 具体坏处/线上正在用/丢单/唯一原图/备份)."
+                "EXEMPT / ALLOW: User explicitly asked for options, rule discussion/postmortem, product or business or design or pricing decision (e.g. 产品决策/产品设计决策/商务定价/产品形态决策/方案选择), physical human-only requirements (e.g. 短信验证码/扫码/人机验证/滑块), or asking permission for destructive operations where assistant explicitly specified concrete harm to user assets or production (e.g. 具体坏处/线上正在用/丢单/唯一原图/备份)."
             )
         ),
         "R1_R2_unverified_blame": Noul(
@@ -92,24 +92,37 @@ def _build_questions():
 # 零 Key / 离线确定性兜底判据 (Tier 0 Offline Deterministic Fallback Engine)
 # 当用户未配置 TypeSafe Jev API Key 时自动无缝接管，0ms 零开销，无需本地安装任何语义服务！
 # ==============================================================================
+# ==============================================================================
+# 零 Key / 离线确定性兜底判据 (Tier 0 Offline Deterministic Fallback Engine)
+# 当用户未配置 TypeSafe Jev API Key 时自动无缝接管，0ms 零开销，无需本地安装任何语义服务！
+# ==============================================================================
 import re
 
 _R5_OFFLINE_ASK = re.compile(
     r"删不删|删还是留|留还是删|保留还是(?:删除|移除)"
-    r"|要不要(?:我)?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
-    r"|需不需要(?:我)?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
-    r"|(?:要|需要)(?:我)?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
-    r"|(?:要不要|需不需要|需要我)[^\n。?？]{0,12}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便)"
-    r"|需要我继续吗|请指示|你觉得合不合理|你觉得可以吗"
-    r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准)"
-    r"|(?:如果|若)(?:您|你)(?:同意|需要|想要|觉得行|点头|批准)(?:的话)?[，,]?"
-    r"|\b(?:should|shall|can|may)\s+I\s+(?:delete|remove|purge|clean|proceed|continue)",
+    r"|要不要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
+    r"|需不需要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
+    r"|(?:要|需要)(?:我(?!们))[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
+    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,12}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便)"
+    r"|需要我(?!们)继续吗|请指示|你觉得合不合理|你觉得可以吗"
+    r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准|一句话|拍板)"
+    r"|(?:如果|若)(?:[^\n，,。?？]{0,8}?)(?:同意|需要|想要|觉得行|点头|批准|授权|认可)(?:的话)?[，,]?"
+    r"|(?:如有需|若需|如需|如果有需要|若有需要)[^\n。?？]{0,15}(?:说明|告知|指示|吩咐|联系|提出来?|打个招呼)"
+    r"|(?:有空|空了|回头)[^\n。?？]{0,10}(?:处理下|确认下|看看|操作下|再说|要不要)"
+    r"|(?:我先放着|我先挂着|我就先不)[^\n。?？]{0,20}(?:讲一声|说一声|你有空|再说|听你的|你定|你说了算)"
+    r"|你(?:说了算|定了我|定夺|决断|定吧|定)"
+    r"|\b(?:should|shall|can|may|would)\s+(?:I|you\s+like\s+me\s+to)\s+(?:delete|remove|purge|clean|proceed|continue|commit|start)"
+    r"|\b(?:let\s+me\s+know|tell\s+me|give\s+me\s+the\s+word|wait\s+for\s+your\s+green\s+light)\b"
+    r"|\bif\s+I\s+should\s+keep\s+going\b"
+    r"|\bif\s+you\s+tell\s+me\s+to\b",
     re.I
 )
 _R5_HARM_EXEMPT = re.compile(
     r"具体坏处\s*[:：]\s*(?!无|没有|暂无|说不出|n/?a|none|不详)[^\n]{0,60}?"
     r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
-    r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)", re.I
+    r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
+    r"|产品决策|产品设计决策|产品形态决策|商务定价|产品方向选择|短信验证码|滑块|人机验证",
+    re.I
 )
 _R3_OFFLINE_FALSE_DONE = re.compile(
     r"(?:已经|已)?(?:在线跑着|完美)?(?:修好|搞定|跑通|部署成功|全功能上线|修复完毕|解决完毕|全部完成)了?"
@@ -131,8 +144,26 @@ _R9_OFFLINE_JARGON = re.compile(
     r"\b(?:max_seq_length|context_window|payload|kwargs|endpoint|cors|latency_ms|status_code)\b",
     re.I
 )
-_R9_EXPLAIN_PAREN = re.compile(r"[(（][^()（）]{2,30}(?:也就是|即|指|意思|解释)[^()（）]{0,30}[)）]")
-_META_EXEMPT = re.compile(r"复盘|教训|形状 ?20|原话|判据|规则|门禁|如果.*问|例句|测试")
+_R9_EXPLAIN_PAREN = re.compile(r"[(（][^()（）]{0,30}(?:也就是|即|指|意思|解释)[^()（）]{0,30}[)）]")
+_META_EXEMPT = re.compile(r"复盘|教训|形状 ?20|原话|判据|规则|门禁|如果.*问|例句|测试用例|单测用例|回归测试|防唠叨")
+
+
+def strip_markdown_and_citations(text: str) -> str:
+    """剥离 Markdown 代码块、行内代码、引用行与成对中英文引号，防止技术代码被误杀"""
+    if not text:
+        return ""
+    # 1. 剥离 Markdown 多行代码块 (```...```)
+    clean = re.sub(r'```[\s\S]*?```', '', text)
+    # 2. 剥离行内反引号 (`...`)
+    clean = re.sub(r'`[^`\n]+`', '', clean)
+    # 3. 剥离引用行 (> ...)
+    clean = re.sub(r'(?m)^\s*>.*$', '', clean)
+    # 4. 剥离中英文弯双引号、书名号（引述用户发言或元数据）
+    clean = re.sub(r'“[^”\n]+”', '', clean)
+    clean = re.sub(r'"[^"\n]+"', '', clean)
+    clean = re.sub(r'「[^」\n]+」', '', clean)
+    clean = re.sub(r'『[^』\n]+』', '', clean)
+    return clean
 
 
 def _deterministic_offline_judge(clean_tail: str) -> dict:
@@ -196,20 +227,24 @@ def _deterministic_offline_judge(clean_tail: str) -> dict:
 
 def judge_assistant_text(text: str, timeout: float = 2.5) -> dict:
     """对 Assistant 输出文本进行实时强类型多域判决。
-    若配置了 TYPESAFE_API_KEY，使用 ~349ms SOTA Jev System One 强类型原语；
-    若未配置 API Key，无缝自动激活 Tier 0 纯本地确定性启发式与工具对账兜底引擎（0ms，无需安装任何本地服务）。
+    AST/引用剥离 ➔ Tier 0 离线确定性引擎 ➔ Jev 原语 (若有 Key)。
     """
     if not text or len(text.strip()) < 10:
         return {"verdict": "PASS", "fired": [], "max_prob": 0.0, "probs": {}, "latency_ms": 0.0, "mode": "skipped_short"}
 
-    clean_tail = text.strip()[-1500:]
+    # 1. 剥离 Markdown 代码块、行内代码与引用句
+    stripped_text = strip_markdown_and_citations(text)
+    clean_tail = stripped_text.strip()[-1500:]
 
-    # 1. 优先执行 Tier 0 本地确定性快检（0ms 极速物理拦截）
+    if not clean_tail:
+        return {"verdict": "PASS", "fired": [], "max_prob": 0.0, "probs": {}, "latency_ms": 0.0, "mode": "skipped_code_only"}
+
+    # 2. 优先执行 Tier 0 本地确定性快检（0ms 极速物理拦截）
     offline_res = _deterministic_offline_judge(clean_tail)
     if offline_res["verdict"] == "FIRE":
         return offline_res
 
-    # 2. 若本地规则未开火，且配置了 Jev API Key，则接入 Jev System One 进行高级语义深审
+    # 3. 若本地规则未开火，且配置了 Jev API Key，则接入 Jev System One 进行高级语义深审
     client = get_client()
     if not client:
         return offline_res

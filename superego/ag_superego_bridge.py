@@ -457,23 +457,223 @@ def load_antigravity_turn(transcript_path):
     last_text = turn_texts[-1] if turn_texts else ""
     return last_text, assistant_tool_calls, "\n".join(assistant_blob_lines)
 
-def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
-    """Checks if visual-proof-gate should fire.
-    Requires that if assistant makes UI / window / visual claims, assistant MUST have
-    actually viewed a screenshot image (view_file on an image file) in the turn."""
+def get_default_desktop_windows():
+    """Enumerates visible window titles on physical user desktop WinSta0\\default."""
+    if os.name != "nt":
+        return []
+    try:
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+        hdesk = user32.OpenDesktopW("default", 0, False, 0x01FF)
+        if not hdesk:
+            return []
+        titles = []
+        def callback(hwnd, extra):
+            if user32.IsWindowVisible(hwnd):
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length > 0:
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buff, length + 1)
+                    titles.append(buff.value)
+            return True
+        EnumDesktopWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+        user32.EnumDesktopWindows(hdesk, EnumDesktopWindowsProc(callback), 0)
+        user32.CloseDesktop(hdesk)
+        return titles
+    except Exception:
+        return []
+
+DESKTOP_POPUP_CLAIM = re.compile(
+    r"(?:已(?:在(?:浏览器|桌面|前台|视窗|系统)?(?:中|里)?)?(?:为您|为你|帮您|帮你)?(?:弹出|弹出了|打开了|打开|直接打开|拉起|唤起|启动了|显示在)|"
+    r"在你的桌面上直接弹出|弹出了浏览器|为你打开了|帮您打开了|切换到刚弹出来的|已调用系统默认浏览器|已在系统默认浏览器中打开|"
+    r"在浏览器中(?:为你|为您)?打开).*?(?:浏览器|控制台|窗口|视窗|页面|localhost|http|https)?",
+    re.I
+)
+
+NAG_WORDS = re.compile(
+    r"(?:要不要|需不需要|需要|该不该|是否(?:要|需要)|用不用|可不可以)\s*我(?!们.{0,6}(?:团队|一起|共同|分工))"
+    r"|要我(?!们.{0,6}(?:团队|一起|共同|分工))"
+    r"|你(?:说|定|给)\s*(?:个)?\s*(?:方向|哪个|要哪)?\s*[,，]?\s*我\s*(?:就|再|来|马上|立刻)\s*"
+    r"|你说哪个我就"
+    r"|(?:要|需要|想要)我继续(?:吗|嘛|么)?"
+    r"|你(?:定|说了算|决定(?:吧|好)?)(?:[，。！!\s]|$)"
+    r"|(?:要不要|是否|继续还是|做还是)[^，。？！?!\n]{0,10}?(?:你(?:定|说|决定)|由你)"
+    r"|你说(?:做|接|继续|干|改|弄)[^，。？！?!\n]{0,4}?我就"
+    r"|等(?:你|您)(?:一句话|点头|发话|拍板|确认|决定|定夺|说一?声|回复|同意|批准|开口)"
+    r"|(?:你|您)(?:说|点头|发话|确认|批准|同意)[^，。？！?!\n]{0,6}?我(?:就|再|马上|立刻)"
+    r"|(?:(?:如果|若|倘若|假如|要是|一旦|如)(?:你|您)?\s*(?:有需要|需要|想要?|要|希望|打算|愿意|觉得(?:需要|合适|行|可以|有必要)|认为(?:需要|有必要)|允许|同意|许可|吩咐|指示|交代|开口|点头|认可|批准|授权|发话|发指令|说|招呼|一声令下|一句话)(?:的话|一声|一句|一下|下来)?|"
+    r"只要(?:你|您)?\s*(?:有需要|需要|想要?|要|希望|打算|愿意|允许|同意|许可|吩咐|指示|交代|开口|点头|认可|批准|授权|发话|发指令|说|招呼|一声令下|一句话)(?:的话|一声|一句|一下|下来)?|"
+    r"(?:你|您)\s*(?:一声令下|一句话|吩咐一声|发话|点头|同意|批准|授权|认可)|"
+    r"(?:如有需要|若有需要|有需要的话|需要的话|想要的话|如果要的话|若要的话|若需|如有需|如需))"
+    r"[^。？！?!\n]{0,15}?"
+    r"(?:我|小弟|助手|这边)?\s*(?:就|再|来|马上|立刻|立即|即刻|现在|随时|随时可以|随时能|也可以|这就|便)?\s*(?:可以|能|去|帮|为您?|为你?|随时|把|替|给|协助|接手)?\s*"
+    r"(?:[^。？！?!\n]{0,10}?)"
+    r"(?:改|修|做|干|搞|弄|办|处理|建|加|删除?|去掉|继续|优化|扫|查|拉|跑|写|实现|接线?|接上|重建|清理?|补|换|统一|迁移|部署?|生成|下载?|抓|截断|调整|替换|移除|精简|压缩|重写|拆分|排查|定位|升级|重构|测试?|验证|动手|开工|去办|效劳|"
+    r"合并|提交|推送|拉取|发布|打包|构建|编译|运行|执行|接入|对接|集成|配置|适配|调试|整理|格式化|搭|搭建|装|安装|更新)"
+    r"|(?:我|小弟|助手|这边)\s*(?:就|再|来|马上|立刻|立即|即刻|现在|随时|随时可以|随时能|也可以|这就|便|能|可以)?\s*(?:可以|能|去|帮|为您?|为你?|随时|把|替|给|协助|接手)?\s*[^。？！?!\n]{0,15}?(?:改|修|做|干|搞|弄|办|处理|建|加|删除?|去掉|继续|优化|扫|查|拉|跑|写|实现|接线?|接上|重建|清理?|补|换|统一|迁移|部署?|生成|下载?|抓|截断|调整|替换|移除|精简|压缩|重写|拆分|排查|定位|升级|重构|测试?|验证|动手|开工|去办|效劳|合并|提交|推送|拉取|发布|打包|构建|编译|运行|执行|接入|对接|集成|配置|适配|调试|整理|格式化|搭|搭建|装|安装|更新)[^。？！?!\n]{0,15}?(?:[，,]\s*)?(?:(?:如果|若|倘若|假如|要是|一旦|如|只要)\s*(?:你|您)?\s*(?:有需要|需要|想要?|要|希望|打算|愿意|觉得(?:需要|合适|行|可以|有必要)|允许|同意|许可|吩咐|指示|交代|开口|点头|认可|批准|授权|发话|说|招呼|一声令下|一句话|想)(?:的话|一声|一句|一下|下来)?|(?:只要|等)\s*(?:你|您)\s*(?:一声令下|一句话|吩咐一声|发话|点头|同意|批准|授权|认可|开口|说一声|吩咐|批准)|(?:如有需要|若有需要|有需要的话|需要的话|想要的话|如果要的话|若要的话|若需|如有需|如需))"
+    r"|(?:您|你)?\s*看\s*(?:需不需要|要不要|该不该|是否需要|用不用|是否)\s*[^，。？！?!\n]{0,15}?(?:改|修|做|干|搞|弄|办|处理|建|加|删除?|去掉|继续|优化|扫|查|拉|跑|写|实现|接线?|接上|重建|清理?|补|换|统一|迁移|部署?|生成|下载?|抓|截断|调整|替换|移除|精简|压缩|重写|拆分|排查|定位|升级|重构|测试?|验证|动手|开工|去办|效劳|合并|提交|推送|拉取|发布|打包|构建|编译|运行|执行|接入|对接|集成|配置|适配|调试|整理|格式化|搭|搭建|装|安装|更新)"
+    r"|(?:听候差遣|听候吩咐|听候指令|听候安排)[^。？！?!\n]{0,15}?(?:由(?:你|您)|看(?:你|您)|等(?:你|您))?"
+    r"|(?:由|看)(?:你|您)\s*(?:定夺|决断|安排|裁夺)"
+    r"|(?:随时|随时可以|随时能够|随时准备|随时听候)\s*(?:为您?|为你?|为您效劳|吩咐|排查|开工|动手|处理|开始|修复|修改|改|做|干|搞|差遣|指令)"
+    r"|(?:有需要|如有需要|需要的话|若有需要)[^。？！?!\n]{0,15}?(?:随时(?:叫我|找我|吩咐|联系|告知|通知|跟我说|对我说)|叫我一声|通知我)"
+    r"|随时(?:叫我|找我|吩咐我|听候吩咐|听候差遣|听候指令)"
+    r"|should i|shall i|do you want me to|want me to|would you like me to|let me know if you(?:'d| would) like me to"
+    r"|if you (?:need|want|prefer|would like|wish|require)[^.?!]{0,30}?(?:i can|i will|i\'ll|i am ready to|let me know)"
+    r"|let me know if you (?:need|want|would like|wish)"
+    r"|just let me know and i (?:can|will|\'ll)"
+    r"|ready whenever you are"
+    r"|i\s*(?:can|will|\'ll|could)\s*[^.?!]{0,25}?(?:if you (?:would like|want|need|prefer|wish)|whenever you (?:want|wish|say|are ready))"
+    r"|i\s*(?:am|\'m)\s*ready to\s*[^.?!]{0,25}?(?:whenever you|if you)",
+    re.I
+)
+
+NAG_EXEMPT = re.compile(
+    r"删库|drop\s+table|force\s*push|覆盖.{0,6}(?:他人|别人)|发布到|发出去|发给(?!我)|上线到生产|部署到生产|"
+    r"定价|报价|多少钱|每月.{0,4}(?:收费|价钱)|成本预算|产品(?:决策|设计|形态|方向|体验)|属于产品|页面(?:长|要).{0,4}(?:什么|哪|A还是B|布局)|"
+    r"哪个平台|部署(?:到哪|目标)|不可逆|无法(?:撤销|revert|回退)|"
+    r"(?:滑块|人机)验证|过.{0,3}(?:滑块|验证码)|重新登录|重登|扫码|短信验证码|你本人|只有你能",
+    re.I
+)
+
+_CACHED_NO_NAG_MOD = None
+
+def _get_no_nag_mod():
+    global _CACHED_NO_NAG_MOD
+    if _CACHED_NO_NAG_MOD is not None:
+        return _CACHED_NO_NAG_MOD
+    try:
+        candidate_paths = [
+            CLAUDE_DIR / "hooks" / "no-nagging-guard.py",
+            SCRIPTS_DIR / "no-nagging-guard.py",
+            Path.home() / ".superego" / "superego" / "no-nagging-guard.py",
+            Path.home() / ".codex" / "hooks" / "no-nagging-guard.py",
+        ]
+        no_nag_path = next((p for p in candidate_paths if p.exists()), None)
+        if no_nag_path:
+            hooks_dir = str(no_nag_path.parent)
+            if hooks_dir not in sys.path:
+                sys.path.insert(0, hooks_dir)
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("no_nagging_guard", str(no_nag_path))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            _CACHED_NO_NAG_MOD = mod
+            return _CACHED_NO_NAG_MOD
+    except Exception:
+        pass
+    return None
+
+def check_no_nagging_violation(text, user_prompt=""):
+    """Unified Antigravity implementation of no-nagging-guard via 4-stage funnel."""
     if not text:
         return None
 
-    # Proximity check: Health / delivery assertion within 80 chars of a screenful target
-    has_visual_claim = False
-    for m in HEALTH_ASSERTION.finditer(text):
-        start = max(0, m.start() - 60)
-        end = min(len(text), m.end() + 60)
-        window = text[start:end]
-        if SCREENFUL_TARGET.search(window):
-            if not QUOTING_HISTORIC.search(window):
-                has_visual_claim = True
+    tail = text[-1200:]
+    # 1. 快速前置过滤：若无嫌疑词，0.01ms 光速放行（保证高频压测平均 0.05ms / p99 < 1ms）
+    if not NAG_WORDS.search(tail):
+        return None
+
+    # 2. 业务白名单快速短路 (产品决策 / 真不可逆操作 / 人机滑块)
+    if NAG_EXEMPT.search(tail):
+        return None
+
+    # 3. 语法结构脱敏：剥离代码块后检测，若仅存在于代码块中直接放行
+    clean_tail = re.sub(r"```[\s\S]*?```", "", tail)
+    clean_tail = re.sub(r"`[^`\n]+`", "", clean_tail)
+    m = NAG_WORDS.search(clean_tail)
+    if not m:
+        return None
+
+    # 4. 调用单源母库 no-nagging-guard.py 进行 AST 引述检测与语义降级
+    try:
+        mod = _get_no_nag_mod()
+        if mod and hasattr(mod, "check_text"):
+            res = mod.check_text(text, user_prompt)
+            if res:
+                return res
+            # 防范将推诿伪装在引用符 `>` 中的变体（strip_doc 会剥离 > 行，需补漏）
+            last_line = clean_tail.strip().split("\n")[-1].strip()
+            if m.group(0) in last_line and not any(k in last_line for k in ("# 教训", "规则", "案例")):
+                return (
+                    f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
+                    "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
+                    "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
+                    "现在【别问废话，直接做完再汇报】！"
+                )
+            return None
+    except Exception:
+        pass
+
+    # 5. 离线/模块异常时的确定性兜底
+    window = clean_tail[max(0, m.start() - 30): min(len(clean_tail), m.end() + 30)]
+    if not QUOTING_HISTORIC.search(window):
+        return (
+            f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
+            "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
+            "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
+            "现在【别问废话，直接做完再汇报】！"
+        )
+
+    return None
+
+def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
+    """Checks if visual-proof-gate should fire.
+    Requires that if assistant makes UI / window / visual claims, assistant MUST have
+    actually viewed a screenshot image (view_file on an image file) in the turn.
+    Also strictly verifies desktop popup assertions against physical WinSta0\\default desktop windows."""
+    if not text:
+        return None
+
+    # 1. 桌面弹窗真实性检查 (Desktop Window Reality Check)
+    m_desk = DESKTOP_POPUP_CLAIM.search(text)
+    if m_desk and not QUOTING_HISTORIC.search(text):
+        claim_snippet = m_desk.group(0)
+        desk_wins = get_default_desktop_windows()
+        has_matched_window = False
+        ports = re.findall(r':(\d{4,5})\b', text)
+        if ports:
+            for p in ports:
+                if any(p in w.lower() for w in desk_wins):
+                    has_matched_window = True
+                    break
+        else:
+            target_keys = ["all for one", "dola", "runninghub", "gallery"]
+            for k in target_keys:
+                if k in text.lower():
+                    if any(k in w.lower() for w in desk_wins):
+                        has_matched_window = True
+                        break
+        has_real_screen_shot = False
+        for tc in assistant_tool_calls:
+            args = str(tc.get("args", {}) or tc.get("arguments", {}))
+            if any(kw in args.lower() for kw in ("real_screen", "desktop_shot", "fullscreen", "screen_bounds")):
+                has_real_screen_shot = True
                 break
+        if "real_screen" in assistant_blob.lower():
+            has_real_screen_shot = True
+
+        if not has_matched_window and not has_real_screen_shot:
+            return (
+                f"[Superego 拦截 - visual-proof-gate / desktop-window-phantom] 🚨 触发硬红线拦截：\n"
+                f"检测到在回复中声称「{claim_snippet}」（桌面弹出/已在浏览器中打开），\n"
+                f"但当前物理主桌面 (WinSta0\\default) 真实窗口枚举中查无对应可见视窗！\n"
+                f"铁律规定：严禁将后台无头沙盒执行 (如 headless Playwright / background cmd) 脑补为前台真机弹窗！\n"
+                f"当前物理桌面可见视窗清单：{[w[:30] for w in desk_wins[:8]]}\n"
+                f"必须出示真实物理桌面可见视窗凭据方可放行！"
+            )
+
+    # Proximity check: Health / delivery assertion within 80 chars of a screenful target
+    has_visual_claim = bool(m_desk and not QUOTING_HISTORIC.search(text))
+    if not has_visual_claim:
+        for m in HEALTH_ASSERTION.finditer(text):
+            start = max(0, m.start() - 60)
+            end = min(len(text), m.end() + 60)
+            window = text[start:end]
+            if SCREENFUL_TARGET.search(window):
+                if not QUOTING_HISTORIC.search(window):
+                    has_visual_claim = True
+                    break
 
     # Also check frontend code modification + delivered assertion
     has_frontend_claim = False
@@ -501,7 +701,7 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
 
     # Verify true visual evidence:
     # Did the assistant invoke view_file on an actual image file (.png, .jpg, .jpeg, .webp)?
-    has_viewed_image = False
+    viewed_images = []
     for tc in assistant_tool_calls:
         fn = tc.get("function", {}) if "function" in tc else tc
         name = fn.get("name", "")
@@ -515,24 +715,32 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
             if name == "view_file":
                 path = args.get("AbsolutePath", "") or args.get("path", "")
                 if path.lower().endswith(IMAGE_EXTENSIONS):
-                    has_viewed_image = True
-                    break
+                    viewed_images.append(path)
             if name in ("desktop_window_shot", "captureScreenshot", "take_screenshot"):
-                has_viewed_image = True
-                break
+                viewed_images.append(name)
 
-    # Also check assistant_blob for view_file on image files in tool call logs
-    if not has_viewed_image:
-        if re.search(r'view_file.*?\.(?:png|jpg|jpeg|webp)\b', assistant_blob, re.I):
-            has_viewed_image = True
+    if not viewed_images:
+        for m in re.finditer(r'view_file.*?"AbsolutePath":\s*"([^"]+\.(?:png|jpg|jpeg|webp))"', assistant_blob, re.I):
+            viewed_images.append(m.group(1))
 
-    if not has_viewed_image:
+    if not viewed_images:
         return (
             "[Superego 拦截 - visual-proof-gate] 检测到对 UI/视窗/看板/渲染状态作出了【升级/就绪/完成/效果呈现】的断言，"
             "但本轮交互中未曾使用 view_file 查验任何实际画面截图证据（.png/.jpg/screenshot）。"
             "全局铁律规定「空壳=没做，宣称UI健康必须先看画面」。"
             "请先进行实际画面/截图取证，使用 view_file 亲眼验证视觉效果无乱码、无错位后再交付！"
         )
+
+    # 检查是否以纯无头离线爬虫截图冒充宿主桌面交付
+    if m_desk and not QUOTING_HISTORIC.search(text):
+        has_real_grounding = any(any(k in img.lower() for k in ("real_screen", "desktop", "fullscreen", "screen_bounds")) for img in viewed_images)
+        if not has_real_grounding:
+            return (
+                "[Superego 拦截 - visual-proof-gate / headless-mock-fraud] 🚨 触发硬红线拦截：\n"
+                "检测到在声称宿主桌面打开/弹出视窗时，仅查验了后台无头沙盒爬虫生成的局部图片，\n"
+                "而非通过系统 GDI 或窗口捕获的真实物理桌面 (WinSta0\\default) 画面！\n"
+                "严禁用无头浏览器（headless Playwright）自导自演假截图冒充桌面真实弹窗交付！"
+            )
 
     return None
 
@@ -789,6 +997,8 @@ def extract_antigravity_search_channels(tool_calls, blob):
             channels.add("web")
         elif name in ("grep_search", "find_by_name", "codegraph_explore"):
             channels.add("local_code")
+        elif name == "call_mcp_tool" and "codegraph" in args.lower():
+            channels.add("local_code")
         elif "gemini_search_docs" in name or "gemini_get_doc" in name:
             channels.add("official_docs")
         elif name == "run_command":
@@ -799,13 +1009,13 @@ def extract_antigravity_search_channels(tool_calls, blob):
                 channels.add("community_forum")
             if any(k in cmd for k in ("duckduckgo", "startpage", "searxng", "google", "bing", "easy_anysearch", "last30days", "curl", "requests", "urllib")):
                 channels.add("web")
-            if any(k in cmd for k in ("grep", "rg ", "find ", "select-string", "dir ")):
+            if any(k in cmd for k in ("grep", "rg ", "find ", "select-string", "dir ", "codegraph")):
                 channels.add("local_code")
 
     blob_lower = blob.lower()
     if "search_web" in blob_lower or "read_url_content" in blob_lower:
         channels.add("web")
-    if "grep_search" in blob_lower or "find_by_name" in blob_lower:
+    if "grep_search" in blob_lower or "find_by_name" in blob_lower or "codegraph" in blob_lower:
         channels.add("local_code")
     if any(k in blob_lower for k in ("v2ex", "zhihu", "reddit", "ycombinator", "juejin")):
         channels.add("community_forum")
@@ -1281,7 +1491,13 @@ def handle_stop(payload):
                     pass
 
     text, tool_calls, blob = load_antigravity_turn(transcript_path)
+    if payload.get("text"):
+        text = payload.get("text")
+    if payload.get("tool_calls"):
+        tool_calls = payload.get("tool_calls")
     user_prompt = get_last_user_prompt(transcript_path)
+    if payload.get("user_prompt"):
+        user_prompt = payload.get("user_prompt")
 
     # 0. Supreme Directive #1: honest-scope-assertion-gate (Zero Tolerance for Lying / Bluffing)
     # This is the supreme red line: NEVER bypassed by any toggle, NEVER fused to silent pass!
@@ -1312,6 +1528,8 @@ def handle_stop(payload):
 
     if not violation:
         violation = check_visual_proof_violation(text, tool_calls, blob)
+    if not violation and not check_is_off("no-nagging-guard", sid=conv_id):
+        violation = check_no_nagging_violation(text, user_prompt)
     if not violation and not check_is_off("model-authenticity-gate", sid=conv_id):
         violation = check_model_authenticity_violation(text, tool_calls, blob, user_prompt)
     if not violation and not check_is_off("r5-commitment-deferral-gate", sid=conv_id):
@@ -1358,7 +1576,11 @@ def handle_stop(payload):
         # If it's a lie, fake test, fake model, nagging deferral, or unauthorized card, it MUST block!
         is_hard_redline = any(k in violation for k in (
             "honest-scope-assertion-gate",
+            "no-nagging-guard",
             "no-nagging-gate",
+            "visual-proof-gate",
+            "desktop-window-phantom",
+            "headless-mock-fraud",
             "model-authenticity-gate",
             "dsh-provider-authenticity-gate",
             "ghost-browser-gate",

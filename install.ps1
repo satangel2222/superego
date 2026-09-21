@@ -74,6 +74,8 @@ $binDir = Join-Path $superegoHome "bin"
 if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
 $cmdScript = "@echo off`r`n$pythonCmd `"%USERPROFILE%\.superego\superego\__main__.py`" %*"
 Set-Content -Path (Join-Path $binDir "superego.cmd") -Value $cmdScript -Encoding Ascii
+$psScript = "& python `"`$env:USERPROFILE\.superego\superego\__main__.py`" `$args"
+Set-Content -Path (Join-Path $binDir "superego.ps1") -Value $psScript -Encoding Utf8
 try {
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($userPath -notlike "*$binDir*") {
@@ -85,6 +87,9 @@ try {
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host " 🎉 恭喜！Superego 2.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
+Write-Host " • 切换画像: 终端运行 superego profile list / superego profile use engineer" -ForegroundColor White
+Write-Host " • 自由外审: 终端运行 superego critic show / superego critic set (支持 DeepSeek/Ollama/Jev)" -ForegroundColor White
+Write-Host " • 规则市场: 终端运行 superego rulepack list / superego rulepack test" -ForegroundColor White
 Write-Host " • 实时大盘: 终端运行 superego dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)" -ForegroundColor White
 Write-Host " • 如需一键回滚: 随时运行 superego rollback 即可 3 秒彻底复原" -ForegroundColor White
 Write-Host "========================================================================" -ForegroundColor Green

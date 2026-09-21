@@ -263,8 +263,8 @@ Superego 采用 **Jev Noul 强类型决策原语**：
 
 ## 🖥️ 现代化 Web 一体化大盘 (Dashboard)
 
-不用再面对黑乎乎、动辄乱码或假死的旧式终端！打开浏览器直接访问本地控制大盘：  
-👉 **`http://127.0.0.1:17911/dashboard`**
+不适用黑乎乎、动辄乱码或假死的旧式终端！打开浏览器直接访问本地控制大盘：  
+👉 **`http://127.0.0.1:17925/dashboard`**
 
 ```text
  ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -364,7 +364,87 @@ Superego 不只是死板的一堆脚本，而是一个**开放、解耦、支持
 
 ---
 
-## ❓ 常见疑问解答 (FAQ：零门槛开箱即用)
+## 🔀 开放生态：冷热加载分离与用户自主权 (Cold/Hot Layer & User Sovereignty)
+
+Superego 2.0 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始人的个人偏好强加于人：
+
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ 🧊 冷层硬安全 (Tier 1 Physical Hard Security · security_core.py)         │
+ │ 0ms 物理原生阻断：反向提示词注入、破坏性覆写清空、远程管道木马执行 (永不妥协) │
+ ├────────────────────────────────────────────────────────────────────────┤
+ │ ♨️ 热层行为对齐 (Tier 2 Hot-Pluggable Rules & Profiles · critic_engine)  │
+ │ 规则包 (RulePacks) 与用户画像 (Profiles) 完全解耦、动态热插拔、支持任意合并  │
+ └────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. 彻底去个人法则化：任何人都能打造专属版本的 Superego
+如果你不需要 Frank 的老板规则（如 `@frank/vibe-boss` 的严苛规矩），你可以一秒卸载或切换，甚至搭建属于你自己的企业审查体系：
+
+* **查看画像列表**：
+  ```bash
+  superego profile list
+  ```
+* **一键切换画像**（内置旗舰老板 `vibe-boss`、架构师工程师 `engineer`、防误触稳健 `safe`）：
+  ```bash
+  superego profile use engineer
+  ```
+* **打造你自己的专属画像**：
+  ```bash
+  superego profile init my-company
+  # 编辑 ~/.superego/profiles/my-company.json 自由组合 RulePacks
+  superego profile use my-company
+  ```
+* **画像任意融合 (Profile Merge)**：
+  ```bash
+  superego profile merge vibe-boss engineer -o balanced
+  # 自动合并规则包与开关，生成兼具老板执行力与架构师严谨度的 balanced 画像
+  ```
+
+---
+
+## 🌐 通用外审路由器 (Universal Critic Router · 类似 CC-Switch)
+
+外审是行为治理的灵魂。Superego **绝不绑定单一商业服务**，内置了工业级通用多模型外审路由器，兼容所有标准接口：
+
+* **支持商业大模型**：DeepSeek-V3, Qwen-Plus, Claude 3.5 Haiku, GPT-4o-mini 等；
+* **支持私有本地模型**：本地 Ollama (`http://localhost:11434/v1`)、vLLM、LMStudio，纯离线零外泄；
+* **支持强类型原语**：TypeSafe Jev System One (~349ms 结构化极速审判)；
+* **支持纯离线确定性引擎**：Tier 0 纯本地启发式零 Key 兜底（默认自动平滑降级，永不挂起工作流）。
+
+### 命令行配置（像 CC-Switch 一样简单）：
+
+```bash
+# 1. 查看当前外审路由器状态
+superego critic show
+
+# 2. 接入 DeepSeek (高性价比推荐)
+superego critic set --provider openai_compatible --base-url https://api.deepseek.com/v1 --model deepseek-chat --api-key sk-xxxx
+
+# 3. 接入本地 Ollama (完全免费离线，无隐私风险)
+superego critic set --provider openai_compatible --base-url http://localhost:11434/v1 --model llama3
+
+# 4. 接入 TypeSafe Jev (349ms 结构化强类型原语)
+superego critic set --provider jev --api-key sk-typesafe-xxxx
+
+# 5. 切换为纯本地确定性启发式 (零 Key 离线极速)
+superego critic set --provider local_heuristic
+
+# 6. 现场测试外审击发效果
+superego critic test "剩下的三个文件我先不改了，等您指示了我再接着做。"
+```
+
+---
+
+## 📦 规则包开发者指南 (RulePack CLI)
+
+* **列出所有已安装的规则包**：`superego rulepack list`
+* **对当前规则包跑回归测试**：`superego rulepack test`
+* **为新业务创建规则包模板**：`superego rulepack init @myteam/security-clean`
+* **在当前画像中启用规则包**：`superego rulepack enable @myteam/security-clean`
+* **在当前画像中停用规则包**：`superego rulepack disable @frank/vibe-boss`
+
+---
 
 ### Q1: 我不买任何 API Key，也没填 Jev API，真的能防住 AI 偷懒吗？
 **答：100% 物理硬核生效！**  

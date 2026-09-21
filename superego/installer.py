@@ -168,6 +168,104 @@ def unregister_claude_hooks(claude_home: Path) -> bool:
         return False
 
 
+def register_codex_hooks(codex_home: Path) -> bool:
+    """安全将 hook_entry.py 挂载进 ~/.codex/hooks.json，保持幂等并保留已有配置"""
+    hooks_file = codex_home / "hooks.json"
+    hooks_data = {}
+    if hooks_file.exists():
+        try:
+            with open(hooks_file, "r", encoding="utf-8") as f:
+                hooks_data = json.load(f)
+        except Exception:
+            hooks_data = {}
+
+    hooks_dict = hooks_data.setdefault("hooks", {})
+    pre_list = hooks_dict.setdefault("PreToolUse", [])
+    stop_list = hooks_dict.setdefault("Stop", [])
+
+    py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
+    hook_cmd_pre = (
+        f'python "%USERPROFILE%\\.codex\\hooks\\hook_entry.py" pre'
+        if SYSTEM == "Windows"
+        else f'{py_cmd} "$HOME/.codex/hooks/hook_entry.py" pre'
+    )
+    hook_cmd_stop = (
+        f'python "%USERPROFILE%\\.codex\\hooks\\hook_entry.py" stop'
+        if SYSTEM == "Windows"
+        else f'{py_cmd} "$HOME/.codex/hooks/hook_entry.py" stop'
+    )
+
+    # 1. 挂载 PreToolUse
+    has_pre = False
+    for entry in pre_list:
+        for h in entry.get("hooks", []):
+            if "hook_entry.py" in h.get("command", ""):
+                has_pre = True
+                break
+    if not has_pre:
+        pre_list.append({
+            "matcher": "Bash|PowerShell|Write|Edit",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": hook_cmd_pre,
+                    "timeout": 10
+                }
+            ]
+        })
+
+    # 2. 挂载 Stop
+    has_stop = False
+    for entry in stop_list:
+        for h in entry.get("hooks", []):
+            if "hook_entry.py" in h.get("command", ""):
+                has_stop = True
+                break
+    if not has_stop:
+        stop_list.append({
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": hook_cmd_stop,
+                    "timeout": 15
+                }
+            ]
+        })
+
+    try:
+        with open(hooks_file, "w", encoding="utf-8") as f:
+            json.dump(hooks_data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        sys.stderr.write(f"   [!] 写入 Codex hooks.json 失败: {e}\n")
+        return False
+
+
+def unregister_codex_hooks(codex_home: Path) -> bool:
+    """从 ~/.codex/hooks.json 安全移除 hook_entry.py 挂载"""
+    hooks_file = codex_home / "hooks.json"
+    if not hooks_file.exists():
+        return True
+    try:
+        with open(hooks_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        hooks_dict = data.get("hooks", {})
+        for hook_type in ["PreToolUse", "Stop"]:
+            if hook_type in hooks_dict:
+                new_list = []
+                for entry in hooks_dict[hook_type]:
+                    filtered = [h for h in entry.get("hooks", []) if "hook_entry.py" not in h.get("command", "")]
+                    if filtered:
+                        entry["hooks"] = filtered
+                        new_list.append(entry)
+                hooks_dict[hook_type] = new_list
+        with open(hooks_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False
+
+
 def rollback_superego() -> bool:
     """执行 3 秒一键物理回滚：注销四端门禁与插件挂载"""
     print("🔄 正在执行 3 秒基准一键物理回滚...")
@@ -176,6 +274,12 @@ def rollback_superego() -> bool:
     if claude_home.exists():
         unregister_claude_hooks(claude_home)
         print("   [✓] Claude Code settings.json 门禁已注销")
+
+    # 2. 注销 OpenAI Codex
+    codex_home = HOME / ".codex"
+    if codex_home.exists():
+        unregister_codex_hooks(codex_home)
+        print("   [✓] OpenAI Codex hooks.json 门禁已注销")
 
     # 2. 注销 Antigravity 全局插件
     ag_config = HOME / ".gemini" / "config" / "config.json"
@@ -227,11 +331,21 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     # 核心引擎源码列表
     core_files = [
         "security_core.py",
+        "critic_engine.py",
         "jev_engine.py",
         "config.py",
         "replay.py",
-        "hook_entry.py"
+        "hook_entry.py",
+        "no-nagging-guard.py"
     ]
+
+    # 同步规则包到 ~/.superego/rulepacks
+    rulepacks_src = HERE / "rulepacks"
+    if rulepacks_src.exists():
+        custom_rp = HOME / ".superego" / "rulepacks"
+        custom_rp.mkdir(parents=True, exist_ok=True)
+        for rp in rulepacks_src.glob("*.rulepack.json"):
+            shutil.copy2(rp, custom_rp / rp.name)
 
     # 1. 部署到 Claude Code
     if "claude" in detected:
@@ -241,6 +355,11 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, c_hooks / cf)
+        if rulepacks_src.exists():
+            rp_dest = c_hooks / "rulepacks"
+            rp_dest.mkdir(parents=True, exist_ok=True)
+            for rp in rulepacks_src.glob("*.rulepack.json"):
+                shutil.copy2(rp, rp_dest / rp.name)
         register_claude_hooks(detected["claude"]["home"])
         print("   [✓] Claude Code 核心门禁与 settings.json 挂载就绪")
 
@@ -252,7 +371,13 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, x_hooks / cf)
-        print("   [✓] OpenAI Codex 核心安全引擎镜像同步完成")
+        if rulepacks_src.exists():
+            rp_dest = x_hooks / "rulepacks"
+            rp_dest.mkdir(parents=True, exist_ok=True)
+            for rp in rulepacks_src.glob("*.rulepack.json"):
+                shutil.copy2(rp, rp_dest / rp.name)
+        register_codex_hooks(detected["codex"]["home"])
+        print("   [✓] OpenAI Codex 核心安全引擎镜像与 hooks.json 挂载就绪")
 
     # 3. 关联 Antigravity
     if "antigravity" in detected:
@@ -264,6 +389,11 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, ag_scripts / cf)
+        if rulepacks_src.exists():
+            rp_dest = ag_scripts / "rulepacks"
+            rp_dest.mkdir(parents=True, exist_ok=True)
+            for rp in rulepacks_src.glob("*.rulepack.json"):
+                shutil.copy2(rp, rp_dest / rp.name)
 
         # 部署全局插件: ~/.gemini/config/plugins/superego-plugin/
         ag_plugin_dir = ag_home / "config" / "plugins" / "superego-plugin"
@@ -339,11 +469,265 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     return True
 
 
+def handle_profile_cli(args: list):
+    try:
+        from config import list_profiles, get_active_profile, set_active_profile, save_custom_profile, merge_profiles
+    except ImportError:
+        from superego.config import list_profiles, get_active_profile, set_active_profile, save_custom_profile, merge_profiles
+
+    sub = args[0] if args else "list"
+    if sub == "list":
+        profiles = list_profiles()
+        active_id = get_active_profile().get("id")
+        print("=" * 65)
+        print("🎭 Superego 2.0 用户治理画像列表 (Active Profiles):")
+        print("=" * 65)
+        for pid, p in profiles.items():
+            is_active = (pid == active_id)
+            flag = "★ [ACTIVE]" if is_active else "  [      ]"
+            print(f"{flag} {pid:<15} {p.get('name')}")
+            print(f"       激活规则包: {p.get('rulepacks')}")
+            print(f"       允许代码黑话: {'是' if p.get('allowed_jargon') else '否'} | 来源: {p.get('_source', 'builtin')}")
+            print(f"       说明: {p.get('description')}\n")
+    elif sub == "use":
+        if len(args) < 2:
+            print("❌ 用法: python -m superego profile use <profile_id>")
+            sys.exit(1)
+        pid = args[1]
+        try:
+            set_active_profile(pid)
+            print(f"✅ 成功切换当前激活画像为: {pid}")
+        except Exception as e:
+            print(f"❌ 切换失败: {e}")
+            sys.exit(1)
+    elif sub == "init":
+        if len(args) < 2:
+            print("❌ 用法: python -m superego profile init <profile_id>")
+            sys.exit(1)
+        pid = args[1]
+        template = {
+            "id": pid,
+            "name": f"自定义画像: {pid}",
+            "description": "由用户自主配置的行为治理与安全审查画像",
+            "persona_title": "自定义 AI 协作者",
+            "rulepacks": [
+                "@security/core-safe"
+            ],
+            "allowed_jargon": True,
+            "destructive_confirm_only_real_harm": False,
+            "rules_override": {
+                "R5_strict_no_asking": False,
+                "R8_free_open_source_first": True
+            }
+        }
+        if save_custom_profile(template):
+            print(f"✅ 自定义画像模板已生成: ~/.superego/profiles/{pid}.json")
+            print(f"   您可以按需配置生效的 RulePacks，然后运行: python -m superego profile use {pid}")
+    elif sub == "merge":
+        if len(args) < 4 or "-o" not in args:
+            print("❌ 用法: python -m superego profile merge <profile1> <profile2> -o <target_profile_id>")
+            sys.exit(1)
+        p1 = args[1]
+        p2 = args[2]
+        out_idx = args.index("-o")
+        new_id = args[out_idx + 1]
+        try:
+            merged = merge_profiles(p1, p2, new_id)
+            print(f"🎉 成功合并画像 [{p1}] 与 [{p2}] -> 生成新画像: {new_id} ({merged.get('name')})")
+            print(f"   生效规则包: {merged.get('rulepacks')}")
+            print(f"   启用新画像: python -m superego profile use {new_id}")
+        except Exception as e:
+            print(f"❌ 合并失败: {e}")
+            sys.exit(1)
+    else:
+        print("❌ 未知 profile 指令。支持: list, use, init, merge")
+        sys.exit(1)
+
+
+def handle_rulepack_cli(args: list):
+    try:
+        from config import list_rulepacks, get_active_profile, load_config, save_config, CUSTOM_RULEPACKS_DIR
+        from rulepack_runner import validate_rulepack_file, test_all_rulepacks
+    except ImportError:
+        from superego.config import list_rulepacks, get_active_profile, load_config, save_config, CUSTOM_RULEPACKS_DIR
+        from superego.rulepack_runner import validate_rulepack_file, test_all_rulepacks
+
+    sub = args[0] if args else "list"
+    if sub == "list":
+        packs = list_rulepacks()
+        active_packs = get_active_profile().get("rulepacks", [])
+        print("=" * 75)
+        print("📦 Superego 2.0 规则包生态列表 (Available RulePacks):")
+        print("=" * 75)
+        for pk_id, pk in packs.items():
+            is_enabled = pk_id in active_packs
+            flag = "★ [ENABLED]" if is_enabled else "  [       ]"
+            source = pk.get("_source", "builtin")
+            print(f"{flag} {pk_id:<24} {pk.get('name')} (v{pk.get('version')}) [{source}]")
+            print(f"       包含规则: {len(pk.get('rules', []))} 条 | 类别: {pk.get('category')} | Tier: {pk.get('tier')}")
+            print(f"       说明: {pk.get('description')}\n")
+    elif sub == "test":
+        if len(args) > 1:
+            target = args[1]
+            all_packs = list_rulepacks()
+            if target in all_packs:
+                filepath = Path(all_packs[target]["_path"])
+            else:
+                filepath = Path(target)
+            res = validate_rulepack_file(filepath)
+            sys.exit(0 if res.get("ok") else 1)
+        else:
+            success = test_all_rulepacks()
+            sys.exit(0 if success else 1)
+    elif sub == "init":
+        if len(args) < 2:
+            print("❌ 用法: python -m superego rulepack init <rulepack_id>")
+            sys.exit(1)
+        pk_id = args[1]
+        clean_name = pk_id.replace("@", "").replace("/", "_")
+        CUSTOM_RULEPACKS_DIR.mkdir(parents=True, exist_ok=True)
+        target_path = CUSTOM_RULEPACKS_DIR / f"{clean_name}.rulepack.json"
+        template = {
+            "$schema": "https://superego.ai/schema/rulepack-v1.json",
+            "id": pk_id,
+            "name": f"自定义规则包: {pk_id}",
+            "version": "1.0.0",
+            "author": "Custom",
+            "license": "MIT",
+            "category": "behavioral",
+            "description": "自定义行为审查规则包",
+            "tier": 2,
+            "max_fp_rate": 0.005,
+            "rules": [
+                {
+                    "id": "CUSTOM-01",
+                    "text": "自定义红线规则描述: 严禁...",
+                    "timing": "Stop",
+                    "severity": "BLOCK"
+                }
+            ],
+            "golden_cases": [
+                {
+                    "text": "触发红线的违规样例句子",
+                    "expected": "FIRE",
+                    "rule": "CUSTOM-01",
+                    "rationale": "测试触发原因"
+                },
+                {
+                    "text": "完全合规且带有客观测试证据的放行句子 exit code 0",
+                    "expected": "PASS",
+                    "rule": "CUSTOM-01",
+                    "rationale": "测试放行原因"
+                }
+            ]
+        }
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(template, f, ensure_ascii=False, indent=2)
+        print(f"✅ 自定义规则包模板已生成: {target_path}")
+        print(f"   您可以按 rulepack_spec.md 规范补充规则与样本，并运行:")
+        print(f"   python -m superego rulepack test {pk_id}")
+    elif sub == "enable":
+        if len(args) < 2:
+            print("❌ 用法: python -m superego rulepack enable <rulepack_id>")
+            sys.exit(1)
+        pk_id = args[1]
+        cfg = load_config()
+        active_prof = get_active_profile()
+        rp_list = active_prof.setdefault("rulepacks", [])
+        if pk_id not in rp_list:
+            rp_list.append(pk_id)
+            save_config(cfg)
+            print(f"✅ 已在当前画像【{active_prof.get('name')}】中激活规则包: {pk_id}")
+        else:
+            print(f"ℹ️ 规则包已在当前画像中处于启用状态: {pk_id}")
+    elif sub == "disable":
+        if len(args) < 2:
+            print("❌ 用法: python -m superego rulepack disable <rulepack_id>")
+            sys.exit(1)
+        pk_id = args[1]
+        cfg = load_config()
+        active_prof = get_active_profile()
+        rp_list = active_prof.get("rulepacks", [])
+        if pk_id in rp_list:
+            rp_list.remove(pk_id)
+            save_config(cfg)
+            print(f"✅ 已在当前画像【{active_prof.get('name')}】中停用规则包: {pk_id}")
+        else:
+            print(f"ℹ️ 规则包当前并未在画像中启用: {pk_id}")
+    else:
+        print("❌ 未知 rulepack 指令。支持: list, test, init, enable, disable")
+        sys.exit(1)
+
+
+def handle_critic_cli(args: list):
+    try:
+        from config import get_critic_config, set_critic_config
+        from critic_engine import audit_assistant_turn
+    except ImportError:
+        from superego.config import get_critic_config, set_critic_config
+        from superego.critic_engine import audit_assistant_turn
+
+    sub = args[0] if args else "show"
+    if sub == "show":
+        cfg = get_critic_config()
+        api_key = cfg.get("api_key", "")
+        masked_key = (api_key[:4] + "****" + api_key[-3:]) if len(api_key) > 7 else ("(not set)" if not api_key else "****")
+        print("=" * 65)
+        print("🔬 Superego 2.0 外审路由器状态 (Universal Critic Engine):")
+        print("=" * 65)
+        print(f"  • 外审选型 (Provider):  {cfg.get('provider')}")
+        print(f"  • 服务端点 (Base URL):  {cfg.get('base_url')}")
+        print(f"  • 审判模型 (Model):     {cfg.get('model')}")
+        print(f"  • 超时熔断 (Timeout):   {cfg.get('timeout')}s")
+        print(f"  • 鉴权密钥 (API Key):   {masked_key}")
+        print("-" * 65)
+        print("提示: 可使用 'python -m superego critic set ...' 接入 DeepSeek, Qwen, Ollama, GPT 或 Jev")
+    elif sub == "set":
+        set_parser = argparse.ArgumentParser(prog="superego critic set")
+        set_parser.add_argument("--provider", choices=["openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
+        set_parser.add_argument("--base-url", dest="base_url", help="API Base URL (如 https://api.deepseek.com/v1 或 http://localhost:11434/v1)")
+        set_parser.add_argument("--model", help="外审大模型名称 (如 deepseek-chat, qwen-plus, llama3)")
+        set_parser.add_argument("--api-key", dest="api_key", help="API Key，支持直接填入或 env:VAR_NAME")
+        set_parser.add_argument("--timeout", type=float, help="审判超时秒数 (默认 3.5)")
+        parsed = set_parser.parse_args(args[1:])
+        set_critic_config(
+            provider=parsed.provider,
+            base_url=parsed.base_url,
+            model=parsed.model,
+            api_key=parsed.api_key,
+            timeout=parsed.timeout
+        )
+        print("✅ 外审路由器配置已成功更新！当前配置:")
+        cfg = get_critic_config()
+        print(json.dumps(cfg, indent=2, ensure_ascii=False))
+    elif sub == "test":
+        text = " ".join(args[1:]) if len(args) > 1 else "剩下的五个功能我先不做了，等您指示了我再改。"
+        print(f"🔍 正在对外审路由器进行现场击发测试...")
+        print(f"   输入文本: \"{text}\"")
+        res = audit_assistant_turn(text)
+        print("\n📊 审判结果:")
+        print(json.dumps(res, indent=2, ensure_ascii=False))
+    else:
+        print("❌ 未知 critic 指令。支持: show, set, test")
+        sys.exit(1)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Superego 2.0 Universal Installer & Warden CLI")
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "profile":
+            handle_profile_cli(sys.argv[2:])
+            return
+        elif sys.argv[1] == "rulepack":
+            handle_rulepack_cli(sys.argv[2:])
+            return
+        elif sys.argv[1] == "critic":
+            handle_critic_cli(sys.argv[2:])
+            return
+
+    parser = argparse.ArgumentParser(description="Superego 2.0 Universal Meta-Harness & Installer CLI")
     parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
-    parser.add_argument("--profile", choices=["vibe-boss", "engineer", "safe"], default="vibe-boss", help="Profile mask to apply")
+    parser.add_argument("--profile", default="vibe-boss", help="Profile mask to apply")
     parser.add_argument("--port", type=int, default=17925, help="Port to bind dashboard server (default: 17925)")
     parser.add_argument("--heal", action="store_true", help="Auto-heal offline daemons in doctor mode")
     parser.add_argument("--json", action="store_true", help="Output doctor diagnostics as raw JSON")
@@ -355,9 +739,20 @@ def main():
         d = detect_installed_platforms()
         print(json.dumps({k: str(v["home"]) for k, v in d.items()}, indent=2))
     elif args.action == "status":
-        from config import load_config
+        from config import load_config, get_active_profile, resolve_profile_rules, get_critic_config
         cfg = load_config()
-        print(json.dumps(cfg, indent=2, ensure_ascii=False))
+        prof = get_active_profile()
+        rules = resolve_profile_rules()
+        critic = get_critic_config()
+        print("=" * 65)
+        print(f"👑 Superego 2.0 运行状态报告 (Meta-Harness Status):")
+        print("=" * 65)
+        print(f"  • 当前激活画像:  {prof.get('name')} ({prof.get('id')})")
+        print(f"  • 挂载规则包:    {prof.get('rulepacks')}")
+        print(f"  • 生效规则总数:  {len(rules)} 条")
+        print(f"  • 外审选型:      {critic.get('provider')} ({critic.get('model')})")
+        print(f"  • 物理安全内核:  全部开启 (Anti-Injection / Overwrite Guard / AST Scan)")
+        print("-" * 65)
     elif args.action == "rollback":
         rollback_superego()
     elif args.action == "doctor":

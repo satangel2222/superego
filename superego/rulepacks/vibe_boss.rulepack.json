@@ -27,6 +27,18 @@
       "text": "付费优先: 推『充值/付费/花钱买』方案，却没先搜免费或开源替代方案。",
       "timing": "Stop",
       "severity": "BLOCK"
+    },
+    {
+      "id": "R3",
+      "text": "虚报完成: 宣称任务搞定、全功能完美上线或部署成功，但未提供真实终端测试退出码（exit code 0）或客观验证凭据。",
+      "timing": "Stop",
+      "severity": "BLOCK"
+    },
+    {
+      "id": "R1",
+      "text": "未查证断言: 未排查真实日志或网络抓包即妄断'第三方服务抽风/系统底层不支持'。",
+      "timing": "Stop",
+      "severity": "BLOCK"
     }
   ],
   "golden_cases": [

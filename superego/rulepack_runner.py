@@ -3,7 +3,7 @@
 负责：
   1. 校验 RulePack 规范完整性与 schema 合规性；
   2. 自动运行包内 golden_cases 进行准入回归测试；
-  3. 拦截误伤率（FP）超标的残次规则包，保障生态安全。
+  3. 隔离化运行规则包测试，拦截误伤率（FP）超标的残次规则包，保障生态安全。
 """
 import os
 import sys
@@ -19,9 +19,9 @@ except ImportError:
     from superego.security_core import audit_tool_call
 
 try:
-    from jev_engine import judge_assistant_text
+    from critic_engine import _local_heuristic_critic, strip_markdown_and_citations
 except ImportError:
-    from superego.jev_engine import judge_assistant_text
+    from superego.critic_engine import _local_heuristic_critic, strip_markdown_and_citations
 
 
 def validate_rulepack_file(filepath: Path) -> dict:
@@ -52,6 +52,17 @@ def validate_rulepack_file(filepath: Path) -> dict:
     fn = 0
 
     is_security_tier1 = pack.get("tier") == 1 or pack.get("category") == "security"
+    is_engineer = "@standard/engineer" in pack.get("id", "")
+    rules = pack.get("rules", [])
+    mock_profile = {
+        "id": pack.get("id"),
+        "name": pack.get("name"),
+        "allowed_jargon": is_engineer,
+        "rules_override": {
+            "R5_strict_no_asking": not is_engineer,
+            "R8_free_open_source_first": not is_engineer
+        }
+    }
 
     for idx, c in enumerate(cases, 1):
         text = c["text"]
@@ -62,8 +73,9 @@ def validate_rulepack_file(filepath: Path) -> dict:
             allowed, block_reason = audit_tool_call("Bash", {"command": text})
             actual = "PASS" if allowed else "FIRE"
         else:
-            res = judge_assistant_text(text)
-            actual = res["verdict"]
+            clean = strip_markdown_and_citations(text).strip()[-1500:]
+            res = _local_heuristic_critic(clean, mock_profile, rules)
+            actual = "FIRE" if res.get("verdict") == "BLOCK" or res.get("fired") else "PASS"
 
         is_match = (actual == exp)
         if is_match:
@@ -85,9 +97,9 @@ def validate_rulepack_file(filepath: Path) -> dict:
 
     print(f"\n📊 回归测试汇总: 通过率 {correct}/{total} ({pass_rate*100:.1f}%) | 误伤率: {fp_rate*100:.2f}% (允许上限: {max_fp_allowed*100:.2f}%)")
 
-    if fp_rate > max_fp_allowed:
-        print(f"❌ 规则包未通过准入门禁：误伤率超标 ({fp_rate:.4f} > {max_fp_allowed:.4f})")
-        return {"ok": False, "pass_rate": pass_rate, "fp_rate": fp_rate, "error": "误伤率超标"}
+    if fp_rate > max_fp_allowed or correct < total:
+        print(f"❌ 规则包未通过准入门禁：未达 100% 预期或误伤率超标")
+        return {"ok": False, "pass_rate": pass_rate, "fp_rate": fp_rate, "error": "准入未通过"}
 
     print(f"🎉 规则包验证全绿通过！完全符合生态标准。")
     return {"ok": True, "pass_rate": pass_rate, "fp_rate": fp_rate}
@@ -97,7 +109,7 @@ def test_all_rulepacks():
     """遍历测试 rulepacks 目录下的所有规则包"""
     if not RULEPACKS_DIR.exists():
         print("⚠️ 未找到 rulepacks 目录")
-        return
+        return False
 
     packs = list(RULEPACKS_DIR.glob("*.rulepack.json"))
     print(f"🔍 扫描到 {len(packs)} 个规则包待准入验证...")
@@ -110,4 +122,5 @@ def test_all_rulepacks():
 
 
 if __name__ == "__main__":
-    test_all_rulepacks()
+    success = test_all_rulepacks()
+    sys.exit(0 if success else 1)
