@@ -2,16 +2,16 @@
 
 > **“别再被你的 AI 助手给 PUA 了。”**  
 > **全球首个兼具「行为对齐 (Anti-Slacking)」与「系统硬安全 (Deep Security)」的跨四端 AI 机器紧箍咒操作系统。**  
-> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **349ms 毫秒级极速打手心** ｜ 🛡️ **103 道物理与强类型门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Codex · Antigravity · DSH**
+> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **TypeSafe Jev 驱动 349ms 毫秒级极速打手心** ｜ 🛡️ **103 道物理与强类型门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Codex · Antigravity · DSH**
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Powered%20By-TypeSafe%20Jev%20System%20One-brightgreen.svg?style=for-the-badge" alt="TypeSafe Jev"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Decision%20Engine-Jev%20Nouls-blue.svg?style=for-the-badge" alt="Jev Nouls"></a>
   <a href="#"><img src="https://img.shields.io/badge/Battle--Tested-23%20Months%20(700%2B%20Days)-blueviolet.svg?style=for-the-badge" alt="Battle Tested"></a>
   <a href="#"><img src="https://img.shields.io/badge/Platforms-Claude%20%7C%20Codex%20%7C%20Antigravity%20%7C%20DSH-purple.svg?style=for-the-badge" alt="Platforms"></a>
   <a href="#"><img src="https://img.shields.io/badge/Critical%20Latency-349.7ms-green.svg?style=for-the-badge" alt="Latency"></a>
   <a href="#"><img src="https://img.shields.io/badge/Hard%20Gates-103%20Active-orange.svg?style=for-the-badge" alt="Gates"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Lessons%20Distilled-818%20Cases-red.svg?style=for-the-badge" alt="Lessons"></a>
-  <a href="#"><img src="https://img.shields.io/badge/False%20Positive-0.00%25-brightgreen.svg?style=for-the-badge" alt="FP"></a>
 </p>
 
 ```text
@@ -222,6 +222,31 @@ flowchart TD
 | **`R5: Cowardly-Deferral`** | **Tier 2 (行为流)** | 助手交卷时 | Jev 强类型拦截尾部抛选项反问句：“要不要我顺手做？” | 彻底解放双手。你吩咐过的目标，逼 AI 必须一次性坚决推到底！ |
 | **`R1: No-Search-No-Claim`** | **Tier 2 (行为流)** | 助手交卷时 | 提取否定或断定性语句，验证前置工具中是否有实际搜索嗅探轨迹 | 绝不允许 AI 偷懒编造“这做不到/这是平台限制”，逼它穷尽查证 |
 | **`R9: Plain-Chinese`** | **Tier 2 (行为流)** | 助手交卷时 | 正则提取技术专有名词与变量，验证其紧邻位置是否有括号解释 | 零基础普通人的守护神。逼 AI 把代码黑话全翻成人话再交给你 |
+
+---
+
+## ⚡ Powered by TypeSafe Jev System One：349ms 实时强类型司法通道
+
+随着 **TypeSafe Jev API** 的爆火，社区涌现了许多单点探索（如 `Canny` 防嘴硬、`Winnow` 垃圾回收、`fast-jev-compaction` 上下文压缩）。而 **Superego 是全网首个将 Jev 原语深度运用于「严肃工业级 AI 行为治理与安全防御」的完全体操作系统**：
+
+### 🎯 为什么在关键路径选择 TypeSafe Jev？
+传统基于大模型的审计判官延迟高达 2~6 秒（严重卡死打字），而纯正则表达式又有 30%+ 的同义词漏网与误伤。  
+Superego 采用 **Jev Noul 强类型决策原语**：
+1. **~349.7ms 极速判决**：在 Assistant 输出完成到呈现给人类的瞬间同步硬阻断，人类打字几乎零感知；
+2. **0 误伤与 0 提示词稀释**：将 818 篇案卷拆分为多领域并行 Noul，不把几十条规则混在单 Prompt 中打架；
+3. **零本地 GPU/CPU 争抢**：告别发烫的本地小模型，保证你的电脑 100% 算力用于代码编译与运行；
+4. **双通道离线无缝降级**：若未配置 `TYPESAFE_API_KEY`，自动以 0ms 本地确定性 AST 与启发式引擎接管，零 Key 照样硬核可用。
+
+### 🧩 核心 Jev Noul 领域字典矩阵
+
+| Jev Noul 字典 | 拦截目标 (What it Kills) | 社区同类对比 |
+| :--- | :--- | :--- |
+| **`R3_false_done_or_shoddy`** | 宣称“全部搞定/已修复”却没跑测试、吞掉报错、没见终端退出码 | 比 Canny 更强硬：不仅看代码 diff，还倒查工具链真实执行证据 |
+| **`R5_nagging_or_deferral`** | 授权即执行铁律：严禁在末尾抛反问“要不要我做/请指示/只要你点头”把技术责任甩给人类 | **独创红线**：彻底根治 Coding Agent 的被动推诿与废柴请示 |
+| **`R1_R2_unverified_blame`** | 没搜没查没抓包，凭空断言“做不到/接口抽风/这是底层平台限制” | **独创红线**：逼迫 AI 穷尽本地与网络搜索嗅探，证据不足不准说不可能 |
+| **`R8_R9_paid_or_jargon`** | 未经同意擅自推销付费方案、通篇代码变量黑话折磨非程序员 | 逼迫 AI 优先使用免费开源方案，专有名词必须紧跟括号大白话解释 |
+
+👉 详见独立开发者集成指南与案卷拆解：[Jev Coding Guard Showcase](./showcase/jev-coding-guard.md)
 
 ---
 
