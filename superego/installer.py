@@ -213,10 +213,12 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Superego 2.0 Universal Installer & Warden CLI")
-    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard"], default="install", nargs="?")
+    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", choices=["vibe-boss", "engineer", "safe"], default="vibe-boss", help="Profile mask to apply")
     parser.add_argument("--port", type=int, default=17925, help="Port to bind dashboard server (default: 17925)")
+    parser.add_argument("--heal", action="store_true", help="Auto-heal offline daemons in doctor mode")
+    parser.add_argument("--json", action="store_true", help="Output doctor diagnostics as raw JSON")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")
 
     args = parser.parse_args()
@@ -231,6 +233,17 @@ def main():
     elif args.action == "rollback":
         print("🔄 正在执行 3 秒基准一键物理回滚...")
         print("✅ 已还原至纯净基准状态！")
+    elif args.action == "doctor":
+        try:
+            from doctor import print_cli_report, auto_heal, run_doctor
+        except ImportError:
+            from superego.doctor import print_cli_report, auto_heal, run_doctor
+        if args.heal:
+            print(json.dumps(auto_heal(), ensure_ascii=False, indent=2))
+        elif args.json:
+            print(json.dumps(run_doctor(cached=False), ensure_ascii=False, indent=2))
+        else:
+            print_cli_report()
     elif args.action == "dashboard":
         try:
             from dashboard import run_dashboard

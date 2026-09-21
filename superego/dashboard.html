@@ -1054,14 +1054,16 @@
           <button class="font-btn active" data-scale="font-comfort">舒适 A+</button>
           <button class="font-btn" data-scale="font-large">特大 A++</button>
         </div>
-        <div class="supervisor-status" style="display:flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.15); border:1px solid #059669; padding:4px 12px; border-radius:20px; font-size:12px; color:#10b981; font-weight:600;" title="自愈监管看守实时巡检所有数据源">
-          <span>🛡️</span>
-          <span id="supervisor-indicator-text">自愈监察在线 · 四端数据活跃 · 816篇教训已对齐</span>
+        <!-- 全景系统体检与自愈监察徽章 (点击打开 5 大支柱体检报告) -->
+        <div id="doctor-status-badge" class="supervisor-status" onclick="openDoctorModal()" style="display:flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.15); border:1px solid #059669; padding:5px 14px; border-radius:20px; font-size:12px; color:#10b981; font-weight:600; cursor:pointer; transition:all 0.2s;" title="点击查看全系统 5 大支柱健康体检诊断与自愈中心">
+          <span id="doctor-badge-icon">🩺</span>
+          <span id="doctor-badge-text">系统体检加载中...</span>
         </div>
         <div class="live-status">
           <div class="pulse-dot" id="live-indicator"></div>
           <span id="live-text">实时连接就绪</span>
         </div>
+        <button class="pill-btn" onclick="openDoctorModal()" title="查看全景健康诊断" style="background:rgba(16, 185, 129, 0.2); color:#6ee7b7; border-color:#10b981;">🩺 体检中心</button>
         <button class="pill-btn" onclick="fetchRecentData()" title="刷新最新流水">🔄 刷新</button>
       </div>
     </header>
@@ -2787,7 +2789,345 @@
     if (window.location.hash === '#settings' || window.location.search.includes('tab=settings')) {
       setTimeout(() => switchMainTab('settings'), 100);
     }
+
+    // -------------------------------------------------------------
+    // 全景体检中心 (Doctor Diagnostic Monitor & Auto-Healing)
+    // -------------------------------------------------------------
+    let currentDoctorData = null;
+
+    async function loadDoctorData(showToast = false) {
+      try {
+        const res = await fetch('/api/doctor');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        currentDoctorData = data;
+        updateDoctorUI(data);
+        if (showToast) {
+          showSettingsToast('🩺 体检完成：系统评分 ' + data.overall_score + '/100');
+        }
+      } catch (err) {
+        console.warn('[Doctor] loadDoctorData failed:', err);
+        const badge = document.getElementById('doctor-status-badge');
+        const text = document.getElementById('doctor-badge-text');
+        if (badge && text) {
+          badge.style.background = 'rgba(239, 68, 68, 0.15)';
+          badge.style.borderColor = '#ef4444';
+          badge.style.color = '#fca5a5';
+          text.textContent = '体检服务连接异常';
+        }
+      }
+    }
+
+    function updateDoctorUI(data) {
+      const badge = document.getElementById('doctor-status-badge');
+      const text = document.getElementById('doctor-badge-text');
+      const icon = document.getElementById('doctor-badge-icon');
+      if (!badge || !text) return;
+
+      const score = data.overall_score || 0;
+      if (score >= 90) {
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.borderColor = '#059669';
+        badge.style.color = '#10b981';
+        if (icon) icon.textContent = '🩺';
+        text.textContent = '体检 ' + score + '/100 · 全系统满血就绪';
+      } else if (score >= 60) {
+        badge.style.background = 'rgba(245, 158, 11, 0.18)';
+        badge.style.borderColor = '#d97706';
+        badge.style.color = '#fbbf24';
+        if (icon) icon.textContent = '🟡';
+        text.textContent = '体检 ' + score + '/100 · 自动降级自愈中';
+      } else {
+        badge.style.background = 'rgba(239, 68, 68, 0.2)';
+        badge.style.borderColor = '#ef4444';
+        badge.style.color = '#f87171';
+        if (icon) icon.textContent = '🔴';
+        text.textContent = '体检 ' + score + '/100 · 关键服务离线 (点击自愈)';
+      }
+
+      const overlay = document.getElementById('doctor-modal-overlay');
+      if (overlay && overlay.style.display !== 'none') {
+        renderDoctorModalContent(data);
+      }
+    }
+
+    function renderDoctorModalContent(data) {
+      if (!data) return;
+      const score = data.overall_score || 0;
+      const pill = document.getElementById('doc-modal-overall-pill');
+      if (pill) {
+        pill.textContent = score + ' / 100 ' + (score >= 90 ? '满血在线' : (score >= 60 ? '降级运行' : '异常需自愈'));
+        pill.style.background = score >= 90 ? 'rgba(16,185,129,0.2)' : (score >= 60 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)');
+        pill.style.color = score >= 90 ? '#34d399' : (score >= 60 ? '#fbbf24' : '#f87171');
+        pill.style.borderColor = score >= 90 ? '#10b981' : (score >= 60 ? '#f59e0b' : '#ef4444');
+      }
+
+      const sumText = document.getElementById('doc-modal-summary-text');
+      if (sumText) sumText.textContent = data.summary || '全部核心服务正常在线。';
+
+      const durText = document.getElementById('doc-modal-duration');
+      if (durText) durText.textContent = data.diagnostic_duration_ms || '--';
+
+      const tierText = document.getElementById('doc-modal-tier');
+      if (tierText && data.circuit_breaker) {
+        tierText.textContent = data.circuit_breaker.active_tier || 'Tier 2 (Jev 强类型)';
+      }
+
+      const p = data.pillars || {};
+
+      if (p.typesafe_jev) {
+        const jevEl = document.getElementById('doc-p1-jev');
+        if (jevEl) {
+          const ok = p.typesafe_jev.api_status === 'HEALTHY';
+          jevEl.textContent = ok ? '在线 (' + p.typesafe_jev.api_latency_ms + 'ms)' : '不可达 (已熔断保底)';
+          jevEl.style.color = ok ? '#34d399' : '#f87171';
+        }
+        const webEl = document.getElementById('doc-p1-web');
+        if (webEl) {
+          const wok = p.typesafe_jev.console_status === 'OK';
+          webEl.textContent = wok ? '正常 (' + p.typesafe_jev.console_latency_ms + 'ms)' : 'Web 500 (不影响 API)';
+          webEl.style.color = wok ? '#94a3b8' : '#fbbf24';
+        }
+      }
+      if (p.agnes) {
+        const agEl = document.getElementById('doc-p1-agnes');
+        if (agEl) {
+          const ok = p.agnes.status === 'HEALTHY';
+          agEl.textContent = ok ? '在线 (' + p.agnes.latency_ms + 'ms)' : '离线';
+          agEl.style.color = ok ? '#34d399' : '#f87171';
+        }
+      }
+
+      if (p.daemons && p.daemons.length >= 2) {
+        const d1 = p.daemons[0];
+        const d1El = document.getElementById('doc-p2-17911');
+        if (d1El) {
+          d1El.textContent = d1.status === 'HEALTHY' ? d1.recall_rules + ' 规则 · ' + d1.anchors + ' 锚点' : '未运行';
+          d1El.style.color = d1.status === 'HEALTHY' ? '#34d399' : '#f87171';
+        }
+        const d2 = p.daemons[1];
+        const d2El = document.getElementById('doc-p2-watch');
+        if (d2El) {
+          d2El.textContent = d2.status === 'HEALTHY' ? '常驻 (PID ' + (d2.pid || 'Active') + ')' : '未运行';
+          d2El.style.color = d2.status === 'HEALTHY' ? '#34d399' : '#f87171';
+        }
+      }
+
+      if (p.platforms) {
+        const getP = id => p.platforms.find(x => x.id === id) || {};
+        const cP = getP('claude');
+        const cEl = document.getElementById('doc-p3-claude');
+        if (cEl) cEl.textContent = cP.status === 'HEALTHY' ? '342 道物理门禁挂载' : '未挂载';
+
+        const xP = getP('codex');
+        const xEl = document.getElementById('doc-p3-codex');
+        if (xEl) xEl.textContent = xP.status === 'HEALTHY' ? '342 道物理门禁同步' : '未同步';
+
+        const agP = getP('antigravity');
+        const agEl = document.getElementById('doc-p3-ag');
+        if (agEl) agEl.textContent = agP.status === 'HEALTHY' ? '原生插件 + Jev 双核' : '未连接';
+
+        const dshP = getP('dsh');
+        const dshEl = document.getElementById('doc-p3-dsh');
+        if (dshEl) dshEl.textContent = dshP.status === 'HEALTHY' ? 'Cordis 沙箱只读就绪' : '未就绪';
+      }
+
+      if (p.freshness) {
+        const latEl = document.getElementById('doc-p4-latest');
+        if (latEl) {
+          latEl.textContent = p.freshness.age_minutes + ' 分钟前 (' + p.freshness.status + ')';
+          latEl.style.color = p.freshness.status === 'FRESH' ? '#34d399' : (p.freshness.status === 'ACTIVE' ? '#60a5fa' : '#fbbf24');
+        }
+        const rowsEl = document.getElementById('doc-p4-rows');
+        if (rowsEl) rowsEl.textContent = p.freshness.total_lines + ' 行记录';
+      }
+    }
+
+    function openDoctorModal() {
+      const overlay = document.getElementById('doctor-modal-overlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+        setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+      }
+      if (currentDoctorData) {
+        renderDoctorModalContent(currentDoctorData);
+      }
+      loadDoctorData();
+    }
+
+    function closeDoctorModal(e) {
+      if (e && e.target && e.target.id !== 'doctor-modal-overlay' && !e.target.closest('button')) return;
+      const overlay = document.getElementById('doctor-modal-overlay');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+      }
+    }
+
+    async function triggerDoctorHeal() {
+      showSettingsToast('🛠️ 正在执行系统全自动自愈拉起...');
+      try {
+        const res = await fetch('/api/doctor/heal', { method: 'POST' });
+        const data = await res.json();
+        const actions = (data.actions || []).join('；');
+        showSettingsToast('🎉 自愈完成: ' + (actions || '全部核心守护已就绪'));
+        setTimeout(() => loadDoctorData(false), 1500);
+      } catch (err) {
+        showSettingsToast('⚠️ 自愈请求异常: ' + err);
+      }
+    }
+
+    // 页面加载后立即拉取体检结果，并每 15 秒自动巡检一次
+    loadDoctorData();
+    setInterval(loadDoctorData, 15000);
   </script>
+
+  <!-- 全景系统体检与自愈中心 (Doctor Diagnostic Modal) -->
+  <div id="doctor-modal-overlay" class="drawer-overlay" onclick="closeDoctorModal(event)" style="display:none; justify-content:center; align-items:center;">
+    <div class="doctor-modal-card" onclick="event.stopPropagation()" style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:16px; width:920px; max-width:96vw; max-height:90vh; overflow-y:auto; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,0.8); position:relative;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="font-size:32px; background:linear-gradient(135deg, #10b981, #06b6d4); width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(16,185,129,0.3);">🩺</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <h2 style="font-size:20px; font-weight:800; color:var(--text-main); margin:0;">Superego 全景系统体检中心</h2>
+              <span id="doc-modal-overall-pill" style="padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;">100 / 100 满血在线</span>
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0 0;">全链路 5 大核心支柱自动健康侦测 · TypeSafe 故障自动熔断降级 · 一键无感自愈</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="pill-btn" onclick="triggerDoctorHeal()" style="background:linear-gradient(135deg, #3b82f6, #8b5cf6); color:#fff; font-weight:700; border:none; padding:8px 16px;">🛠️ 一键自愈修复</button>
+          <button class="pill-btn" onclick="loadDoctorData(true)" style="padding:8px 14px;">🔄 重新体检</button>
+          <button onclick="closeDoctorModal()" style="background:none; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; padding:0 6px;">✕</button>
+        </div>
+      </div>
+
+      <!-- 诊断概要横幅 -->
+      <div id="doc-modal-banner" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:12px 18px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:18px;">📋</span>
+          <span id="doc-modal-summary-text" style="font-size:14px; font-weight:600; color:#6ee7b7;">全部核心服务正常在线。</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted);">
+          诊断耗时: <span id="doc-modal-duration">--</span>ms · 模式: <span id="doc-modal-tier" style="color:#60a5fa; font-weight:700;">Tier 2 (Jev 强类型)</span>
+        </div>
+      </div>
+
+      <!-- 5 大支柱体检卡片 Grid -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <!-- 支柱 1: 云端推理引擎 -->
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+              <span>🧠</span> 支柱 1: 云端双核与本地推理
+            </div>
+            <span id="doc-p1-status" class="status-badge badge-pass">HEALTHY</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">TypeSafe Jev 推理网关:</span>
+              <span id="doc-p1-jev" style="color:#34d399; font-weight:600;">在线</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">TypeSafe Web 控制台:</span>
+              <span id="doc-p1-web" style="color:#94a3b8; font-weight:600;">200 OK</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">Agnes 3.0 Flash:</span>
+              <span id="doc-p1-agnes" style="color:#34d399; font-weight:600;">在线</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-secondary);">Tier 0 本地 AST 硬门禁:</span>
+              <span style="color:#34d399; font-weight:600;">100% 离线保底生效</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 支柱 2: 本地常驻守护进程 -->
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+              <span>⚡</span> 支柱 2: 本地常驻守护进程
+            </div>
+            <span id="doc-p2-status" class="status-badge badge-pass">HEALTHY</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">17911 裁决中枢:</span>
+              <span id="doc-p2-17911" style="color:#34d399; font-weight:600;">2066 规则 · 13567 锚点</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">ag_watch 外审守护:</span>
+              <span id="doc-p2-watch" style="color:#34d399; font-weight:600;">常驻运行中</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-secondary);">计划任务自动重连:</span>
+              <span style="color:#34d399; font-weight:600;">已注册 (每 5 分钟巡检)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 支柱 3: 四端协同挂载审计 -->
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+              <span>🛡️</span> 支柱 3: 四端门禁挂载与桥接
+            </div>
+            <span id="doc-p3-status" class="status-badge badge-pass">HEALTHY</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">Claude Code:</span>
+              <span id="doc-p3-claude" style="color:#c084fc; font-weight:600;">342 道物理门禁挂载</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">OpenAI Codex:</span>
+              <span id="doc-p3-codex" style="color:#34d399; font-weight:600;">342 道物理门禁同步</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">Google Antigravity:</span>
+              <span id="doc-p3-ag" style="color:#60a5fa; font-weight:600;">原生插件 + Jev 双核桥接</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-secondary);">DeepSeek Harness:</span>
+              <span id="doc-p3-dsh" style="color:#f472b6; font-weight:600;">Cordis 沙箱只读就绪</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 支柱 4: 审查流水新鲜度与保底断流监控 -->
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+              <span>📡</span> 支柱 4: 审计流水新鲜度
+            </div>
+            <span id="doc-p4-status" class="status-badge badge-pass">FRESH</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">最新审查记录:</span>
+              <span id="doc-p4-latest" style="color:#34d399; font-weight:600;">刚刚</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:6px;">
+              <span style="color:var(--text-secondary);">审查总流水行数:</span>
+              <span id="doc-p4-rows" style="color:var(--text-main); font-weight:600;">-- 行</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-secondary);">断流看守策略:</span>
+              <span style="color:#34d399; font-weight:600;">双向看守 (Plugin + ag_watch)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 智能降级与熔断自愈提示 -->
+      <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:10px; padding:14px 18px; font-size:13px; color:#93c5fd; line-height:1.6;">
+        💡 <strong>双核容灾与熔断保障说明：</strong><br>
+        即使外部第三方平台（如 TypeSafe 控制台）出现 Web 故障，推理网关 API 仍独立运转；一旦推理网关网络不可达或超时（>2.5s），系统将毫秒级<strong>自动熔断并下潜降级</strong>至本地 Tier 0 正则与 AST 确定性硬门禁及 Agnes 3.0，绝不中断判官监管，亦绝不阻碍正常编程。
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

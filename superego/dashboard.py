@@ -797,7 +797,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            self.wfile.write(json.dumps(cfg, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/doctor":
+            try:
+                from doctor import run_doctor
+            except ImportError:
+                from superego.doctor import run_doctor
+            data = run_doctor(cached=True)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
         elif path == "/api/health-check":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -816,7 +825,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length) if content_length > 0 else b"{}"
 
-        if url.path == "/api/config":
+        if url.path == "/api/doctor/heal":
+            try:
+                from doctor import auto_heal
+            except ImportError:
+                from superego.doctor import auto_heal
+            data = auto_heal()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+        elif url.path == "/api/config":
             try:
                 new_cfg = json.loads(post_data.decode("utf-8"))
                 cfg = load_config()
