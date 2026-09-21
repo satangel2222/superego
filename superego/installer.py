@@ -70,6 +70,132 @@ def setup_profile(profile_id: str = "vibe-boss") -> bool:
     return save_config(cfg)
 
 
+def register_claude_hooks(claude_home: Path) -> bool:
+    """安全将 hook_entry.py 挂载进 ~/.claude/settings.json，保持幂等并保留已有配置"""
+    settings_file = claude_home / "settings.json"
+    settings_data = {}
+    if settings_file.exists():
+        try:
+            with open(settings_file, "r", encoding="utf-8") as f:
+                settings_data = json.load(f)
+        except Exception:
+            settings_data = {}
+
+    hooks_dict = settings_data.setdefault("hooks", {})
+    pre_list = hooks_dict.setdefault("PreToolUse", [])
+    stop_list = hooks_dict.setdefault("Stop", [])
+
+    py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
+    hook_cmd_pre = (
+        f'python "%USERPROFILE%\\.claude\\hooks\\hook_entry.py" pre'
+        if SYSTEM == "Windows"
+        else f'{py_cmd} "$HOME/.claude/hooks/hook_entry.py" pre'
+    )
+    hook_cmd_stop = (
+        f'python "%USERPROFILE%\\.claude\\hooks\\hook_entry.py" stop'
+        if SYSTEM == "Windows"
+        else f'{py_cmd} "$HOME/.claude/hooks/hook_entry.py" stop'
+    )
+
+    # 1. 挂载 PreToolUse
+    has_pre = False
+    for entry in pre_list:
+        for h in entry.get("hooks", []):
+            if "hook_entry.py" in h.get("command", ""):
+                has_pre = True
+                break
+    if not has_pre:
+        pre_list.append({
+            "matcher": "Bash|PowerShell|Write|Edit",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": hook_cmd_pre,
+                    "timeout": 10
+                }
+            ]
+        })
+
+    # 2. 挂载 Stop
+    has_stop = False
+    for entry in stop_list:
+        for h in entry.get("hooks", []):
+            if "hook_entry.py" in h.get("command", ""):
+                has_stop = True
+                break
+    if not has_stop:
+        stop_list.append({
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": hook_cmd_stop,
+                    "timeout": 15
+                }
+            ]
+        })
+
+    try:
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(settings_data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        sys.stderr.write(f"   [!] 写入 Claude settings.json 失败: {e}\n")
+        return False
+
+
+def unregister_claude_hooks(claude_home: Path) -> bool:
+    """从 ~/.claude/settings.json 安全移除 hook_entry.py 挂载"""
+    settings_file = claude_home / "settings.json"
+    if not settings_file.exists():
+        return True
+    try:
+        with open(settings_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        hooks_dict = data.get("hooks", {})
+        for hook_type in ["PreToolUse", "Stop"]:
+            if hook_type in hooks_dict:
+                new_list = []
+                for entry in hooks_dict[hook_type]:
+                    filtered = [h for h in entry.get("hooks", []) if "hook_entry.py" not in h.get("command", "")]
+                    if filtered:
+                        entry["hooks"] = filtered
+                        new_list.append(entry)
+                hooks_dict[hook_type] = new_list
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False
+
+
+def rollback_superego() -> bool:
+    """执行 3 秒一键物理回滚：注销四端门禁与插件挂载"""
+    print("🔄 正在执行 3 秒基准一键物理回滚...")
+    # 1. 注销 Claude Code
+    claude_home = HOME / ".claude"
+    if claude_home.exists():
+        unregister_claude_hooks(claude_home)
+        print("   [✓] Claude Code settings.json 门禁已注销")
+
+    # 2. 注销 Antigravity 全局插件
+    ag_config = HOME / ".gemini" / "config" / "config.json"
+    if ag_config.exists():
+        try:
+            with open(ag_config, "r", encoding="utf-8") as f:
+                ag_data = json.load(f)
+            plugins = ag_data.get("plugins", {})
+            if "superego-plugin" in plugins:
+                del plugins["superego-plugin"]
+                with open(ag_config, "w", encoding="utf-8") as f:
+                    json.dump(ag_data, f, indent=2, ensure_ascii=False)
+                print("   [✓] Google Antigravity 全局插件已安全移除")
+        except Exception:
+            pass
+
+    print("✅ 已彻底还原至纯净基准状态！")
+    return True
+
+
 def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     """执行一键跨端安装与双核挂载"""
     print("=" * 70)
@@ -103,7 +229,8 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "security_core.py",
         "jev_engine.py",
         "config.py",
-        "replay.py"
+        "replay.py",
+        "hook_entry.py"
     ]
 
     # 1. 部署到 Claude Code
@@ -114,7 +241,8 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, c_hooks / cf)
-        print("   [✓] Claude Code 核心门禁部署就绪")
+        register_claude_hooks(detected["claude"]["home"])
+        print("   [✓] Claude Code 核心门禁与 settings.json 挂载就绪")
 
     # 2. 镜像对齐到 Codex
     if "codex" in detected:
@@ -231,8 +359,7 @@ def main():
         cfg = load_config()
         print(json.dumps(cfg, indent=2, ensure_ascii=False))
     elif args.action == "rollback":
-        print("🔄 正在执行 3 秒基准一键物理回滚...")
-        print("✅ 已还原至纯净基准状态！")
+        rollback_superego()
     elif args.action == "doctor":
         try:
             from doctor import print_cli_report, auto_heal, run_doctor
