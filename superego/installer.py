@@ -153,20 +153,25 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         )
 
         py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
+        bridge_script = (
+            r"%USERPROFILE%/.gemini/antigravity/scripts/ag_superego_bridge.py"
+            if SYSTEM == "Windows"
+            else "~/.gemini/antigravity/scripts/ag_superego_bridge.py"
+        )
         ag_hooks_json = {
             "superego-gate": {
                 "enabled": True,
                 "PreInvocation": [
                     {
                         "type": "command",
-                        "command": f"{py_cmd} ~/.gemini/antigravity/scripts/ag_superego_bridge.py pre",
+                        "command": f"{py_cmd} {bridge_script} pre",
                         "timeout": 5
                     }
                 ],
                 "Stop": [
                     {
                         "type": "command",
-                        "command": f"{py_cmd} ~/.gemini/antigravity/scripts/ag_superego_bridge.py stop",
+                        "command": f"{py_cmd} {bridge_script} stop",
                         "timeout": 15
                     }
                 ]
