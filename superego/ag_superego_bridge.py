@@ -1461,6 +1461,17 @@ def run_worker(transcript_path, conv_id=""):
     except Exception:
         pass
 
+    jev_fired = []
+    try:
+        if not check_is_off("jev", sid=conv_id):
+            if str(CLAUDE_DIR / "hooks") not in sys.path:
+                sys.path.insert(0, str(CLAUDE_DIR / "hooks"))
+            from superego_jev_engine import judge_assistant_text
+            jev_res = judge_assistant_text(text, sid=conv_id)
+            jev_fired = list(jev_res.get("fired") or [])
+    except Exception:
+        pass
+
     try:
         if str(sem_dir) not in sys.path:
             sys.path.insert(0, str(sem_dir))
@@ -1473,18 +1484,21 @@ def run_worker(transcript_path, conv_id=""):
         r = {"verdict": "PASS", "fired": []}
         latency_ms = 0
 
+    all_fired = sorted(list(set(jev_fired + (r.get("fired") or []))))
+    verdict = "FIRE" if all_fired else "PASS"
+
     tp_tag = f"ag-{conv_id}.jsonl" if conv_id else os.path.basename(transcript_path)
 
     rec = {
         "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "verdict": r.get("verdict", "PASS"),
-        "fired": r.get("fired") or [],
+        "verdict": verdict,
+        "fired": all_fired,
         "text": text[-200:],
         "tp": tp_tag
     }
-    if rec["fired"]:
+    if all_fired:
         try:
-            rec["why"] = [semantic_judge.explain(x) for x in rec["fired"][:3]]
+            rec["why"] = [semantic_judge.explain(x) for x in all_fired[:3]]
             rec["groups"] = sorted({w["group"] for w in rec["why"]})
         except Exception:
             pass
@@ -1500,8 +1514,8 @@ def run_worker(transcript_path, conv_id=""):
     log_path = CLAUDE_DIR / "hooks" / "semantic-superego-gate.log"
     sid_short = conv_id[:8] if conv_id else "ag"
     ts_str = time.strftime("%Y-%m-%d %H:%M:%S")
-    trig_str = f"trig='{','.join(r.get('fired') or [])}' " if r.get("fired") else ""
-    log_line = f"{ts_str} [antigravity|{sid_short}] {trig_str}{r.get('verdict', 'PASS')}\n"
+    trig_str = f"trig='{','.join(all_fired)}' " if all_fired else ""
+    log_line = f"{ts_str} [antigravity|{sid_short}] {trig_str}{verdict}\n"
     try:
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(log_line)
