@@ -127,13 +127,70 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
 
     # 3. 关联 Antigravity
     if "antigravity" in detected:
+        ag_home = detected["antigravity"]["home"]
         ag_scripts = detected["antigravity"]["hooks_dir"]
         ag_scripts.mkdir(parents=True, exist_ok=True)
-        for cf in core_files:
+        # 部署核心库与 Antigravity 核心桥接脚本
+        for cf in core_files + ["ag_superego_bridge.py"]:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, ag_scripts / cf)
-        print("   [✓] Google Antigravity 动态安全桥接就绪")
+
+        # 部署全局插件: ~/.gemini/config/plugins/superego-plugin/
+        ag_plugin_dir = ag_home / "config" / "plugins" / "superego-plugin"
+        ag_plugin_dir.mkdir(parents=True, exist_ok=True)
+
+        ag_plugin_json = {
+            "name": "superego-plugin",
+            "version": "2.0.0",
+            "description": "Native Superego governance, quality gating, and toggle management plugin for Google Antigravity.",
+            "author": {
+                "name": "Frank & Superego Community"
+            }
+        }
+        (ag_plugin_dir / "plugin.json").write_text(
+            json.dumps(ag_plugin_json, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
+        ag_hooks_json = {
+            "superego-gate": {
+                "enabled": True,
+                "PreInvocation": [
+                    {
+                        "type": "command",
+                        "command": f"{py_cmd} ~/.gemini/antigravity/scripts/ag_superego_bridge.py pre",
+                        "timeout": 5
+                    }
+                ],
+                "Stop": [
+                    {
+                        "type": "command",
+                        "command": f"{py_cmd} ~/.gemini/antigravity/scripts/ag_superego_bridge.py stop",
+                        "timeout": 15
+                    }
+                ]
+            }
+        }
+        (ag_plugin_dir / "hooks.json").write_text(
+            json.dumps(ag_hooks_json, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        # 注册并激活全局插件到 ~/.gemini/config/config.json
+        ag_config_file = ag_home / "config" / "config.json"
+        cfg_data = {}
+        if ag_config_file.exists():
+            try:
+                cfg_data = json.loads(ag_config_file.read_text(encoding="utf-8"))
+            except Exception:
+                cfg_data = {}
+        plugins_dict = cfg_data.setdefault("plugins", {})
+        plugins_dict["superego-plugin"] = {"enabled": True}
+        ag_config_file.parent.mkdir(parents=True, exist_ok=True)
+        ag_config_file.write_text(
+            json.dumps(cfg_data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        print("   [✓] Google Antigravity 全局插件与安全桥接挂载就绪 (跨项目全局生效)")
 
     # 4. 关联 DSH
     if "dsh" in detected:
