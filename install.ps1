@@ -69,10 +69,23 @@ if (Test-Path $installerPy) {
     exit 1
 }
 
+# 5. 创建 superego 快捷命令行并注册到 PATH
+$binDir = Join-Path $superegoHome "bin"
+if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
+$cmdScript = "@echo off`r`n$pythonCmd `"%USERPROFILE%\.superego\superego\__main__.py`" %*"
+Set-Content -Path (Join-Path $binDir "superego.cmd") -Value $cmdScript -Encoding Ascii
+try {
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($userPath -notlike "*$binDir*") {
+        [Environment]::SetEnvironmentVariable("Path", "$binDir;$userPath", "User")
+        $env:Path = "$binDir;$env:Path"
+    }
+} catch {}
+
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host " 🎉 恭喜！Superego 2.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
-Write-Host " • 实时大盘: 访问 http://127.0.0.1:17911/dashboard 查看实时司法裁决" -ForegroundColor White
+Write-Host " • 实时大盘: 终端运行 superego dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)" -ForegroundColor White
 Write-Host " • 如需一键回滚: 随时运行 superego rollback 即可 3 秒彻底复原" -ForegroundColor White
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host ""

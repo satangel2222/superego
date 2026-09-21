@@ -62,10 +62,21 @@ else
     exit 1
 fi
 
+# 5. 创建 CLI 入口并软链接
+mkdir -p "$SUPEREGO_HOME/bin"
+cat << 'EOF' > "$SUPEREGO_HOME/bin/superego"
+#!/usr/bin/env bash
+python3 "$HOME/.superego/superego/__main__.py" "$@"
+EOF
+chmod +x "$SUPEREGO_HOME/bin/superego"
+if [ -d "$HOME/.local/bin" ]; then
+    ln -sf "$SUPEREGO_HOME/bin/superego" "$HOME/.local/bin/superego" 2>/dev/null || true
+fi
+
 echo ""
 echo "========================================================================"
 echo " 🎉 恭喜！Superego 2.0 已部署完成并开机自适应生效！"
-echo " • 实时大盘: 访问 http://127.0.0.1:17911/dashboard 查看实时司法裁决"
+echo " • 实时大盘: 终端运行 superego dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)"
 echo " • 如需一键回滚: 随时运行 superego rollback 即可 3 秒彻底复原"
 echo "========================================================================"
 echo ""

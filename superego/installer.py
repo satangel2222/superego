@@ -8,6 +8,7 @@
 """
 import os
 import sys
+import time
 import json
 import shutil
 import platform
@@ -205,16 +206,17 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     print("🎉 恭喜！Superego 2.0 已成功部署至全部平台！")
     print("• 行为对齐 (Jev 349ms 快车道): 已就绪")
     print("• 深度安全 (防注入/防覆写/防木马): 100% 物理硬锁生效")
-    print("• 查看大盘: 打开浏览器访问 http://127.0.0.1:17911/dashboard")
+    print("• 启动实时大盘: 运行 python -m superego dashboard (访问 http://127.0.0.1:17925/dashboard)")
     print("=" * 70)
     return True
 
 
 def main():
     parser = argparse.ArgumentParser(description="Superego 2.0 Universal Installer & Warden CLI")
-    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions"], default="install", nargs="?")
+    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", choices=["vibe-boss", "engineer", "safe"], default="vibe-boss", help="Profile mask to apply")
+    parser.add_argument("--port", type=int, default=17925, help="Port to bind dashboard server (default: 17925)")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")
 
     args = parser.parse_args()
@@ -229,6 +231,12 @@ def main():
     elif args.action == "rollback":
         print("🔄 正在执行 3 秒基准一键物理回滚...")
         print("✅ 已还原至纯净基准状态！")
+    elif args.action == "dashboard":
+        try:
+            from dashboard import run_dashboard
+        except ImportError:
+            from superego.dashboard import run_dashboard
+        run_dashboard(port=args.port)
     elif args.action == "replay":
         try:
             from replay import replay_session

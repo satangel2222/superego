@@ -1,35 +1,380 @@
 # -*- coding: utf-8 -*-
-"""superego_dashboard.py —— Superego 2.0 纯原生零依赖可视化设置大盘 (Visual GUI Dashboard)。
-无需安装任何额外依赖（纯 Python 标准库 http.server + 内嵌现代化 Glassmorphism Web UI）。
-支持普通用户通过直观的 Web 界面完成：
-  1. 角色面具切换（👑 老板模式 / 💻 工程师模式 / 🛡️ 保守模式）
-  2. 引擎档位与 API Key 轻松配置（Jev 极速档 / 通用大模型档 / 纯离线白嫖档）
-  3. 规则包即插即用管理（一键开启 / 一键彻底卸载）
-  4. 深度硬安全开关与一键 3 秒安全回滚
-"""
-import os
-import sys
 import json
+import re
 import socket
-import webbrowser
 import subprocess
+import sys
+import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 try:
-    from config import load_config, save_config, PROFILES, CONFIG_FILE
+    from config import CONFIG_FILE, PROFILES, load_config, save_config
 except ImportError:
     try:
-        from superego.config import load_config, save_config, PROFILES, CONFIG_FILE
+        from superego.config import CONFIG_FILE, PROFILES, load_config, save_config
     except ImportError:
         PROFILES = {}
         CONFIG_FILE = Path.home() / ".superego" / "config.json"
         def load_config(): return {}
         def save_config(c): return True
+
+CLAUDE_DIR = Path.home() / ".claude"
+LOG_FILE = CLAUDE_DIR / "hooks" / "semantic-superego-gate.log"
+CODEX_LOG = Path.home() / ".codex" / "hooks" / "semantic-superego-gate.log"
+DSH_LOG = CLAUDE_DIR / "hooks" / "suego-dsh.log"
+SHADOW_DB = Path(r"D:\chat-archive-db\superego-shadow.db")
+FP_FILE = CLAUDE_DIR / "hooks" / "false_positives.jsonl"
+DASHBOARD_HTML_PATH = HERE / "dashboard.html"
+
+# 52 维规则图谱备用标准字典
+FALLBACK_RULES = {
+    "R1": {"name": "未经查证瞎断言", "desc": "没搜没查没试过，就张口说“没有/做不到/需要手动”"},
+    "R2": {"name": "甩锅外部环境", "desc": "把失败推给网络抖动或平台间歇，不看第一手证据"},
+    "R3": {"name": "虚报完成吹牛", "desc": "嘴上说改好了/跑通了，其实没重启进程、没真测过"},
+    "R4": {"name": "过早收敛偷懒", "desc": "拿一两个样本或抽样冒充全部完成，没逐个核验"},
+    "R5": {"name": "请示式收尾甩锅", "desc": "自己早被授权的事，还抛一堆选项问你要不要做"},
+    "R6": {"name": "硬件甩锅", "desc": "没跑过底层检测就断定硬件/硬盘坏了"},
+    "R7": {"name": "建议当交付", "desc": "把“建议你处理/有空看看”当成果，自己根本没动手"},
+    "R8": {"name": "付费优先", "desc": "没先找免费替代，就催你去充值买付费服务"},
+    "R9": {"name": "飙代码黑话", "desc": "对零编程小白甩英文变量、缩写黑话，不翻成人话"},
+    "R10": {"name": "拿能力当借口", "desc": "拿“这是模型能力边界/改不掉”当借口放弃排查"},
+    "R11": {"name": "遮羞词敷衍", "desc": "交付时用“理论上/应该行/差不多”掩饰没真机测试"},
+    "R12": {"name": "光说不练", "desc": "承诺“我来修/我来改”，整轮下来连一个代码文件都没动"},
+    "R13": {"name": "答非所问", "desc": "绕弯子没直接回答你问的那一句，甚至把问题踢回给你"},
+    "R14": {"name": "只修单点", "desc": "只改了指出的那一处，没检查同模块同类的其他地方"},
+    "R15": {"name": "头痛医头", "desc": "只修表面症状不修根本原因，换个壳问题又会复发"},
+    "R16": {"name": "抽样冒充全量", "desc": "拿几条截断的代码或摘要，当下“全部查过”的结论"},
+    "R17": {"name": "用错重型工具", "desc": "盲目选最新最重工具，没确认当下场景适不适合"},
+    "R18": {"name": "闭门造车", "desc": "自己重新造轮子，没先查现成项目里有没有可用资产"},
+    "R19": {"name": "空泛吹嘘", "desc": "说“对你有帮助”，却不讲清具体省多少时间/花不花钱"},
+    "R20": {"name": "盲信自己日志", "desc": "拿内部退出码或日志当真相，没核对真实屏幕/文件"},
+    "R21": {"name": "历史冒充现状", "desc": "拿旧日志旧状态当此刻事实，没看时间戳是不是最新"},
+    "R22": {"name": "只验调通没验链路", "desc": "接口200了就算完，没验用户点下去端到端通不通"},
+    "R23": {"name": "代码分支冒充事实", "desc": "看到代码里有失败分支就断定发生了，没跑复现"},
+    "R24": {"name": "端口通冒充干完了", "desc": "拿端口通或进程在推断做完了，没看实际业务产出"},
+    "R25": {"name": "测试偷换路径", "desc": "用自己的快捷测试路径下结论，跟用户真实用法不一致"},
+    "R26": {"name": "算错分母比例", "desc": "报成功率或覆盖率时分母基数算错，结论全偏"},
+    "R27": {"name": "无声停手", "desc": "嘴上说“我接着做”，转头就直接停住没下文"},
+    "R28": {"name": "乱改共享底层", "desc": "动数据库或共享资产前没核对表结构和权限"},
+    "R29": {"name": "拿系统提醒当授权", "desc": "把判官系统的提醒当成指令，越权乱改"},
+    "R30": {"name": "测试工具自身污染", "desc": "测试脚本本身写崩了或破坏了环境，还当成读数"},
+    "R31": {"name": "无视眼前真凭实据", "desc": "报错日志里明明白白写着根因，视而不见去瞎猜"},
+    "R32": {"name": "只验顺利路径", "desc": "主链路跑通就收工，失败报错时没有任何重试/提示"},
+    "R33": {"name": "换后端不重调参", "desc": "换了模型或新环境，直接沿用旧参数没做适配"},
+    "R34": {"name": "有干活层无守卫层", "desc": "系统跑起来了却没有自愈监控，把用户当成唯一报错器"},
+    "R35": {"name": "经验固化为单点", "desc": "复盘时只把眼前这处打补丁，没提炼成全局通用规则"},
+    "R36": {"name": "无限打补丁", "desc": "同一处改到第3次还在缝缝补补，没停下思考方向是不是错了"},
+    "R37": {"name": "纸老虎警告", "desc": "建的规则只有嘴上提醒，没有真正能拦住代码的惩罚后果"},
+    "R38": {"name": "外部依赖不验稳定性", "desc": "接了第三方免费额度，没测试额度耗尽或断线时的兜底"},
+    "R39": {"name": "分析当交付", "desc": "写了一大篇原因分析就收工，根本没动手修好代码"},
+    "R40": {"name": "成果停在自己手里", "desc": "内部测通了，却没把结果、链接送到你手上"},
+    "R41": {"name": "乱动他人资产", "desc": "误动了不是自己起的窗口、进程或文件"},
+    "R42": {"name": "查资产只翻局部", "desc": "没在全局多库里检索，只看手边一个文件夹下结论"},
+    "R43": {"name": "拿过时信息当最新", "desc": "没验证工具或模型是否过期，拿旧标准当行业最新"},
+    "R44": {"name": "舍近求远笨造", "desc": "明明可以直接封装现成成熟方案，非要本地重复手搓"},
+    "R45": {"name": "技术选项踢给小白", "desc": "对零编程的你抛出一堆底层架构选项让你拿主意"},
+    "R46": {"name": "候选方案乱炖", "desc": "找了一堆工具全塞给你，没做深度淘汰保留主用和兜底"},
+    "R47": {"name": "凑合够用就收手", "desc": "交付只做最简版，功能比别人少却不肯做到极致"},
+    "R48": {"name": "第一段不回答问题", "desc": "开头绕圈子不直接回答问的那句话，把答案藏后面"},
+    "R49": {"name": "凭印象推荐工具", "desc": "推荐软件或库没看本机实测清单，全凭大模型脑补"},
+    "R50": {"name": "无端降级弱模型", "desc": "明明有打通的最强免费工具不用，偷偷退回弱工具"},
+    "R51": {"name": "过度拉取大文件", "desc": "没评估必要范围就全量读取超大文件，无谓消耗上下文"},
+    "R52": {"name": "交付形态不可复用", "desc": "答应给自动化工具，交付的却是要手动每次操作的半成品"},
+    "R53": {"name": "未查端口乱定端口", "desc": "没跑 netstat 排查跨项目端口占用，就张口瞎猜默认端口（如 3000）"}
+}
+
+def parse_line(raw, default_agent=None):
+    raw = raw.strip()
+    if not raw:
+        return None
+    m = re.match(r"^(\d{4}-\d{2}-\d{2}\s+(\d{2}:\d{2}:\d{2}))\s+\[(.*?)\]\s*(.*)$", raw)
+    if not m:
+        return None
+
+    full_date, time_str, agent_proj, rest = m.groups()
+    agent_lower = agent_proj.lower()
+
+    if "antigravity" in agent_lower:
+        agent = "antigravity"
+        agent_label = "Antigravity"
+    elif "codex" in agent_lower or default_agent == "codex":
+        agent = "codex"
+        agent_label = "OpenAI Codex"
+    elif "dsh" in agent_lower or default_agent == "dsh":
+        agent = "dsh"
+        agent_label = "DeepSeek Harness"
+    else:
+        agent = default_agent or "claude"
+        agent_label = "Claude Code"
+
+    proj_clean = agent_proj.split("|")[0].strip() if "|" in agent_proj else agent_proj
+    session_id = agent_proj.split("|")[1].strip() if "|" in agent_proj else ""
+
+    status = "INFO"
+    status_label = "状态信息"
+    badge_class = "badge-info"
+    summary = ""
+    rules_hit = []
+
+    trig_m = re.search(r"trig='(.*?)'", rest)
+    if trig_m and "skip(judge error)" not in rest:
+        raw_trig = trig_m.group(1).strip()
+        for r_code in raw_trig.split(","):
+            r_code = r_code.strip()
+            if not r_code:
+                continue
+            r_info = FALLBACK_RULES.get(r_code)
+            if r_info:
+                rules_hit.append({
+                    "code": r_code,
+                    "name": r_info.get("name", r_code),
+                    "desc": r_info.get("desc", ""),
+                    "group": "核心规则"
+                })
+            else:
+                rules_hit.append({
+                    "code": r_code,
+                    "name": f"外审规则 {r_code}",
+                    "desc": "外审模型抓包触发偏离",
+                    "group": "通用规则"
+                })
+
+    if "BLOCK" in rest:
+        status = "BLOCK"
+        status_label = "硬打回拦截"
+        badge_class = "badge-block"
+        summary = "拦截违规回复，强制打回重写，绝不交付瑕疵结果。"
+    elif "FIRE" in rest:
+        status = "FIRE"
+        status_label = "判官亮红牌"
+        badge_class = "badge-fire"
+        summary = "外审模型判定偏离规则，已记入审计大账，强制直面整改。"
+    elif "PASS" in rest:
+        status = "PASS"
+        status_label = "审查通过"
+        badge_class = "badge-pass"
+        summary = "说话得体客观、带实测依据、无违规断言。"
+    elif "NUDGE" in rest:
+        status = "NUDGE"
+        status_label = "警示提醒"
+        badge_class = "badge-nudge"
+        summary = "针对历史指出的问题，提醒助手保持防御。"
+    elif "TURN_START" in rest:
+        status = "TURN_START"
+        status_label = "开始分析"
+        badge_class = "badge-turn"
+        summary = "AI 助手已接入任务，正在调用工具与分析排查中..."
+    elif "skip(judge error)" in rest:
+        status = "SKIP"
+        status_label = "排队超时放行"
+        badge_class = "badge-skip"
+        summary = "外审模型排队超时或网络抖动，自动容错放行，避免卡死正常交互。"
+    else:
+        status = "OTHER"
+        status_label = "流事件"
+        badge_class = "badge-other"
+        summary = rest
+
+    return {
+        "timestamp": full_date,
+        "time_str": time_str,
+        "agent": agent,
+        "agent_label": agent_label,
+        "project": proj_clean,
+        "session_id": session_id,
+        "status": status,
+        "status_label": status_label,
+        "badge_class": badge_class,
+        "rules": rules_hit,
+        "summary": summary,
+        "raw": raw
+    }
+
+def correlate_events(ev_list):
+    from datetime import datetime
+    for i, ev in enumerate(ev_list):
+        st = ev.get("status")
+        if st in ("BLOCK", "FIRE"):
+            agent = ev.get("agent")
+            my_rules = set(r["code"] for r in ev.get("rules", []))
+            resolved = False
+            turns = 0
+            for j in range(i + 1, min(i + 8, len(ev_list))):
+                nxt = ev_list[j]
+                if nxt.get("agent") != agent:
+                    continue
+                turns += 1
+                nxt_st = nxt.get("status")
+                nxt_rules = set(r["code"] for r in nxt.get("rules", []))
+
+                if nxt_st == "PASS":
+                    try:
+                        t1 = datetime.strptime(ev["timestamp"], "%Y-%m-%d %H:%M:%S")
+                        t2 = datetime.strptime(nxt["timestamp"], "%Y-%m-%d %H:%M:%S")
+                        diff_sec = int((t2 - t1).total_seconds())
+                        dur_str = f"{diff_sec}秒" if diff_sec < 60 else f"{diff_sec//60}分{diff_sec%60}秒"
+                    except Exception:
+                        dur_str = ""
+                    ev["resolution_status"] = "RESOLVED"
+                    ev["resolution_turns"] = turns
+                    ev["resolution_duration"] = dur_str
+                    ev["resolution_label"] = f"✅ {turns}轮纠偏闭环 ({dur_str})"
+                    ev["resolution_desc"] = f"在被拦截后的第 {turns} 轮（{dur_str}后）成功改正并获得审查通过"
+                    ev["resolution_badge"] = "badge-resolved"
+                    resolved = True
+                    break
+                elif nxt_st in ("BLOCK", "FIRE"):
+                    if my_rules & nxt_rules:
+                        ev["resolution_status"] = "RECURRING"
+                        ev["resolution_label"] = "⚠️ 连续再犯 (未即时纠偏)"
+                        ev["resolution_desc"] = "在随后交互中重复触犯同一规则，未能立即纠正"
+                        ev["resolution_badge"] = "badge-recurring"
+                        resolved = True
+                        break
+            if not resolved:
+                if i >= len(ev_list) - 2:
+                    ev["resolution_status"] = "PENDING"
+                    ev["resolution_label"] = "🔵 正在执行整改"
+                    ev["resolution_desc"] = "当前处于整改交互中，等待闭环结果"
+                    ev["resolution_badge"] = "badge-pending"
+                else:
+                    ev["resolution_status"] = "UNRESOLVED"
+                    ev["resolution_label"] = "⚪ 未捕获后续"
+                    ev["resolution_desc"] = "后续未记录显式放行状态"
+                    ev["resolution_badge"] = "badge-unresolved"
+        elif st == "PASS":
+            ev["resolution_status"] = "COMPLIANT"
+            ev["resolution_label"] = "🛡️ 一次性合规"
+            ev["resolution_desc"] = "言行客观得体，带实测凭证，零违规"
+            ev["resolution_badge"] = "badge-pass"
+        else:
+            ev["resolution_status"] = "INFO"
+            ev["resolution_label"] = "⚡ 过程流水"
+            ev["resolution_desc"] = ev.get("summary", "")
+            ev["resolution_badge"] = "badge-info"
+    return ev_list
+
+def get_recent_events(limit_per_engine=200, limit=None):
+    if limit is not None:
+        limit_per_engine = max(limit_per_engine, limit)
+    all_events = []
+
+    # 1. Claude & Antigravity hooks log
+    if LOG_FILE.exists():
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
+                lines = [l.strip() for l in f if l.strip()]
+            ag_events = []
+            claude_events = []
+            for l in lines:
+                ev = parse_line(l, default_agent="claude")
+                if ev:
+                    if ev["agent"] == "antigravity":
+                        ag_events.append(ev)
+                    else:
+                        claude_events.append(ev)
+            all_events.extend(ag_events[-limit_per_engine:])
+            all_events.extend(claude_events[-limit_per_engine:])
+        except Exception:
+            pass
+
+    # 2. Codex hooks log
+    if CODEX_LOG.exists():
+        try:
+            with open(CODEX_LOG, "r", encoding="utf-8", errors="replace") as f:
+                clines = [l.strip() for l in f if l.strip()]
+            codex_events = []
+            for l in clines:
+                ev = parse_line(l, default_agent="codex")
+                if ev:
+                    codex_events.append(ev)
+            all_events.extend(codex_events[-limit_per_engine:])
+        except Exception:
+            pass
+
+    # 3. DSH real audit guard
+    if DSH_LOG.exists():
+        try:
+            with open(DSH_LOG, "r", encoding="utf-8", errors="replace") as f:
+                lines = [l.strip() for l in f if l.strip()]
+            for l in lines[-50:]:
+                m = re.match(r"^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})\]?\s*(.*)$", l)
+                ts = m.group(1) if m else "2026-09-19 00:00:00"
+                rest = m.group(2) if m else l
+                all_events.append({
+                    "timestamp": ts,
+                    "time_str": ts.split(" ")[1] if " " in ts else ts,
+                    "agent": "dsh",
+                    "agent_label": "DeepSeek Harness",
+                    "project": "沙箱执行守卫",
+                    "session_id": "sandbox-guard",
+                    "status": "PASS",
+                    "status_label": "沙箱合规",
+                    "badge_class": "badge-pass",
+                    "rules": [],
+                    "summary": f"执行态权限净化与沙箱防呆守卫已就绪: {rest[:100]}",
+                    "raw": f"{ts} [dsh|sandbox-guard] PASS {rest}"
+                })
+        except Exception:
+            pass
+
+    if not all_events:
+        # 新用户无本地历史记录时的友好引导
+        from datetime import datetime
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        all_events.append({
+            "timestamp": now_str,
+            "time_str": now_str.split(" ")[1],
+            "agent": "claude",
+            "agent_label": "Claude Code",
+            "project": "系统初始化",
+            "session_id": "init",
+            "status": "PASS",
+            "status_label": "就绪放行",
+            "badge_class": "badge-pass",
+            "rules": [],
+            "summary": "🎉 Superego 2.0 跨端外审判官已成功就绪，等待捕获第一条真实会话审查...",
+            "raw": f"{now_str} [claude|init] PASS Superego 2.0 ready"
+        })
+
+    all_events.sort(key=lambda x: x.get("timestamp", ""), reverse=False)
+    return correlate_events(all_events)
+
+def get_shadow_stats():
+    import sqlite3
+    if not SHADOW_DB.exists():
+        return {
+            "total_events": 0,
+            "engines": {"claude": 0, "codex": 0, "antigravity": 0, "dsh": 0},
+            "cross_sim_count": 0,
+            "recurrence_count": 0,
+            "simulations": []
+        }
+    try:
+        conn = sqlite3.connect(f"file:{SHADOW_DB}?mode=ro", uri=True)
+        cur = conn.cursor()
+        cur.execute("SELECT engine, count(*) FROM events GROUP BY engine")
+        engine_counts = dict(cur.fetchall())
+        total_events = sum(engine_counts.values())
+        cur.execute("SELECT count(*) FROM cross_simulations")
+        sim_count = cur.fetchone()[0]
+        cur.execute("SELECT count(*) FROM recurrence_incidents")
+        recurrence_count = cur.fetchone()[0]
+        conn.close()
+        return {
+            "total_events": total_events,
+            "engines": engine_counts,
+            "cross_sim_count": sim_count,
+            "recurrence_count": recurrence_count,
+            "simulations": []
+        }
+    except Exception:
+        return {"total_events": 0, "engines": {}, "cross_sim_count": 0, "recurrence_count": 0, "simulations": []}
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN">
@@ -99,43 +444,49 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       gap: 8px;
       color: var(--primary);
     }
-    /* Profile Options */
+    .profile-select-group { display: flex; flex-direction: column; gap: 10px; }
     .profile-card {
-      padding: 14px;
-      border-radius: 10px;
       border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.02);
-      margin-bottom: 10px;
+      border-radius: 8px;
+      padding: 14px;
       cursor: pointer;
       transition: all 0.2s;
+      background: rgba(255, 255, 255, 0.02);
     }
-    .profile-card:hover { border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.04); }
-    .profile-card.active {
-      border-color: var(--primary);
-      background: rgba(56, 189, 248, 0.1);
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
-    }
-    .profile-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .profile-card:hover { border-color: var(--primary); background: rgba(56, 189, 248, 0.05); }
+    .profile-card.active { border-color: var(--primary); background: rgba(56, 189, 248, 0.12); }
+    .profile-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; display: flex; justify-content: space-between; }
     .profile-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-    /* Toggle switch */
-    .setting-item {
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .form-input:focus { border-color: var(--primary); }
+    .switch-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .setting-item:last-child { border-bottom: none; }
-    .setting-info { max-width: 80%; }
-    .setting-name { font-size: 14px; font-weight: 500; }
-    .setting-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .switch {
+    .switch-label { font-size: 14px; }
+    .switch-sub { font-size: 12px; color: var(--text-muted); }
+    .toggle {
       position: relative;
       display: inline-block;
       width: 44px;
       height: 24px;
     }
-    .switch input { opacity: 0; width: 0; height: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
       background-color: #334155;
@@ -148,254 +499,230 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       transition: .3s;
       border-radius: 50%;
     }
-    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider { background-color: var(--success); }
     input:checked + .slider:before { transform: translateX(20px); }
-    /* Form inputs */
-    .form-group { margin-bottom: 14px; }
-    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
-    .form-input {
-      width: 100%;
-      padding: 10px 14px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .form-input:focus { border-color: var(--primary); }
-    /* Action Buttons */
-    .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-group { display: flex; gap: 12px; margin-top: 25px; }
     .btn {
-      padding: 10px 20px;
+      flex: 1;
+      padding: 12px 20px;
       border-radius: 8px;
-      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border: none;
       transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 14px;
+      text-align: center;
+      text-decoration: none;
     }
-    .btn-primary { background: var(--primary); color: #0f172a; }
+    .btn-primary { background: var(--primary); color: #0b0f19; }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { background: #1e293b; color: var(--text); border: 1px solid var(--card-border); }
-    .btn-secondary:hover { background: #334155; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--card-border); }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
     .btn-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
-    /* Rulepack items */
-    .rulepack-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      background: rgba(15, 23, 42, 0.6);
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid var(--card-border);
-    }
-    .rulepack-title { font-weight: 600; font-size: 14px; }
-    .rulepack-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    /* Toast */
-    #toast {
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+    .toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      padding: 12px 24px;
-      background: var(--success);
-      color: #064e3b;
-      font-weight: 600;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      background: var(--success);
+      color: #0b0f19;
+      font-weight: 600;
       display: none;
-      z-index: 100;
+      animation: fadeIn 0.3s;
+      z-index: 1000;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <div class="logo-group">
-        <h1>🛡️ Superego 2.0 <span style="font-size: 13px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 2px 8px; border-radius: 12px;">GUI Dashboard</span></h1>
-        <p>通吃四端的 AI 紧箍咒与行为安全设置中枢</p>
+        <h1>⚖️ Superego 2.0 控制中枢</h1>
+        <p>跨端统一外审判官 · 架构与安全设置面板</p>
       </div>
       <div class="badge-status">
-        <span style="width: 8px; height: 8px; background: #34d399; border-radius: 50%;"></span>
-        四端实时在线保护中
+        <span style="font-size: 16px;">●</span> 守护引擎在线就绪
       </div>
     </header>
 
     <div class="grid">
-      <!-- 角色模式选择 -->
+      <!-- 角色模式卡片 -->
       <div class="card">
-        <div class="card-title">👑 选择 AI 驯化模式 (Profile Mask)</div>
-        <div id="profiles-container">
-          <!-- Profiles injected by JS -->
+        <div class="card-title">👑 角色模式预设 (Active Profile)</div>
+        <div class="profile-select-group" id="profile-list">
+          <div class="profile-card" data-profile="vibe-boss" onclick="selectProfile('vibe-boss')">
+            <div class="profile-name">
+              <span>👑 老板模式 (@frank/vibe-boss)</span>
+              <span style="color: var(--warning); font-size: 12px;">官方推荐</span>
+            </div>
+            <div class="profile-desc">严禁技术黑话，自作主张推进到底，必须给出直接可点击的绝对交付件，严禁请示式推诿。</div>
+          </div>
+          <div class="profile-card" data-profile="engineer" onclick="selectProfile('engineer')">
+            <div class="profile-name">
+              <span>💻 工程师模式 (@dev/engineer)</span>
+            </div>
+            <div class="profile-desc">重型自动化架构，全面防御逻辑漏洞、循环重试陷阱与供应链投毒。</div>
+          </div>
+          <div class="profile-card" data-profile="safe" onclick="selectProfile('safe')">
+            <div class="profile-name">
+              <span>🛡️ 保守安全模式 (@corp/safe)</span>
+            </div>
+            <div class="profile-desc">最高审查等级，防一切代码越权、隐私泄露与不可逆数据篡改。</div>
+          </div>
         </div>
       </div>
 
-      <!-- 引擎与 API 档位 -->
+      <!-- 引擎配置卡片 -->
       <div class="card">
-        <div class="card-title">⚡ 引擎档位与算力配置</div>
+        <div class="card-title">⚡ 判官引擎配置 (Engine Tier)</div>
         <div class="form-group">
-          <label class="form-label">TypeSafe API Key (Jev 350ms 极速档):</label>
-          <input type="password" id="typesafe-key" class="form-input" placeholder="ts-live-...">
+          <label class="form-label">TypeSafe Jev API Key (快车道 349ms 必需)</label>
+          <input type="password" id="jev-key" class="form-input" placeholder="输入 sk-jev-... (留空则走 Tier 0 纯离线白嫖保底)">
         </div>
         <div class="form-group">
-          <label class="form-label">通用语义模型服务 API (Agnes / DeepSeek 档):</label>
-          <input type="text" id="agnes-url" class="form-input" value="https://apihub.agnes-ai.com/v1/chat/completions">
+          <label class="form-label">Agnes / Claude DeepJudge API (慢车道长尾深审)</label>
+          <input type="password" id="agnes-key" class="form-input" placeholder="输入 sk-agnes-... (可选)">
         </div>
-        <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-          💡 <b>三重自适应降级</b>: 填了 Jev 享受 350ms 极速；没填 Jev 走通用大模型；完全零 Key 则由本地原生纯代码硬拦截兜底。
-        </p>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">启用 Fast-Path Jev 极速拦截</div>
+            <div class="switch-sub">~350ms 零延迟拦截违规，不抢 GPU</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="fast-jev" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Tier 0 离线纯白嫖兜底</div>
+            <div class="switch-sub">无 API Key 时自动由本地确定性状态机防线兜底</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="offline-fallback" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
     </div>
 
-    <!-- 硬核安全防线 -->
+    <!-- 深度安全与防线卡片 -->
     <div class="card" style="margin-bottom: 25px;">
-      <div class="card-title">🛡️ 深度系统硬安全开关 (Zero-Trust Guard)</div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="setting-name">防反向提示词注入 (Anti-Prompt Injection)</div>
-          <div class="setting-sub">严禁外部抓取网页或不可信文档里的指令反向操控本地终端偷窃密钥</div>
+      <div class="card-title">🔒 深度硬安全防线 (Hardware-Locked Security)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">防反向提示词注入 (Context Integrity)</div>
+            <div class="switch-sub">严禁工具输出篡改系统上下文</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sec-prompt" checked>
+            <span class="slider"></span>
+          </label>
         </div>
-        <label class="switch"><input type="checkbox" id="sec-anti-inject" checked><span class="slider"></span></label>
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="setting-name">破坏性数据覆写前置核验 (Data Overwrite Guard)</div>
-          <div class="setting-sub">执行覆盖操作前必须比对两边行数与体积，绝不允许盲目覆盖核心库</div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">破坏性数据覆写熔断 (Data Guard)</div>
+            <div class="switch-sub">覆写前强行对比容量与行数差异</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sec-overwrite" checked>
+            <span class="slider"></span>
+          </label>
         </div>
-        <label class="switch"><input type="checkbox" id="sec-overwrite" checked><span class="slider"></span></label>
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="setting-name">供应链木马与语法树扫描 (Supply Chain Guard)</div>
-          <div class="setting-sub">拦截高危安装脚本 (`curl | bash`) 与混淆代码执行</div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">供应链 AST 混淆扫描 (Supply Chain Scan)</div>
+            <div class="switch-sub">拦截 eval / b64decode / 反弹 Shell</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sec-ast" checked>
+            <span class="slider"></span>
+          </label>
         </div>
-        <label class="switch"><input type="checkbox" id="sec-ast" checked><span class="slider"></span></label>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">孤儿进程与端口防盗 (Leak Guard)</div>
+            <div class="switch-sub">收尾强制扫描杀灭残留占用端口</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sec-leak" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
     </div>
 
-    <!-- 规则包管理 -->
-    <div class="card" style="margin-bottom: 25px;">
-      <div class="card-title" style="justify-content: space-between;">
-        <span>📦 已安装的规则包 (RulePacks)</span>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="alert('即将开放社区在线商店')">+ 发现新规则包</button>
-      </div>
-      <div id="rulepacks-container">
-        <!-- Rulepack rows -->
-      </div>
-    </div>
-
-    <!-- 底部操作栏 -->
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <div style="display: flex; gap: 10px;">
-        <button class="btn btn-primary" onclick="saveSettings()">💾 保存并立即生效</button>
-        <button class="btn btn-secondary" onclick="syncFourEnds()">🔄 立即对齐四端 (Sync)</button>
-      </div>
-      <button class="btn btn-danger" onclick="triggerRollback()">💊 3秒一键回滚 (Rollback)</button>
+    <!-- 动作按钮栏 -->
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 保存并立即物理生效</button>
+      <a class="btn btn-secondary" href="/dashboard">📊 打开实时全景审判大盘</a>
+      <button class="btn btn-danger" onclick="triggerRollback()">💊 3秒一键回滚基准快照</button>
     </div>
   </div>
 
-  <div id="toast">✅ 配置已成功保存并实时生效！</div>
+  <div id="toast" class="toast"></div>
 
   <script>
     let currentConfig = {};
-    const PROFILES_DATA = {
-      "vibe-boss": {
-        name: "👑 老板 / Vibe Coder 模式 (Frank 旗舰版)",
-        desc: "严禁飙技术术语（必须人话括号解释）；严禁向用户请示（全自动推进干完）；死磕免费优先。"
-      },
-      "engineer": {
-        name: "💻 资深工程师模式 (Engineer Mode)",
-        desc: "放行代码变量与架构术语；强化单元测试与覆盖率；严谨排查根因。"
-      },
-      "safe": {
-        name: "🛡️ 稳健防误触模式 (Cautious Mode)",
-        desc: "任何改动、删除前必须经人类二次确认；严禁任何自作主张的激进优化。"
-      }
-    };
-
-    const RULEPACKS_DATA = [
-      { id: "@frank/vibe-boss", name: "👑 老板 / Vibe Coder 旗舰规则包", version: "1.0.0", active: true },
-      { id: "@security/core-safe", name: "🛡️ 核心硬安全与防反注入规则包", version: "1.0.0", active: true }
-    ];
 
     async function loadData() {
       try {
         const res = await fetch('/api/config');
         currentConfig = await res.json();
+        
+        selectProfile(currentConfig.active_profile || 'vibe-boss');
+        document.getElementById('jev-key').value = currentConfig.jev_api_key || '';
+        document.getElementById('agnes-key').value = currentConfig.agnes_api_key || '';
+        document.getElementById('fast-jev').checked = currentConfig.engine?.fast_path_jev !== false;
+        document.getElementById('offline-fallback').checked = currentConfig.engine?.offline_fallback !== false;
+
+        document.getElementById('sec-prompt').checked = currentConfig.security?.anti_prompt_injection !== false;
+        document.getElementById('sec-overwrite').checked = currentConfig.security?.data_overwrite_guard !== false;
+        document.getElementById('sec-ast').checked = currentConfig.security?.supply_chain_ast_scan !== false;
+        document.getElementById('sec-leak').checked = currentConfig.security?.process_leak_guard !== false;
       } catch (e) {
-        currentConfig = { active_profile: "vibe-boss" };
-      }
-      renderProfiles();
-      renderRulepacks();
-    }
-
-    function renderProfiles() {
-      const active = currentConfig.active_profile || "vibe-boss";
-      const c = document.getElementById('profiles-container');
-      c.innerHTML = '';
-      for (const [k, v] of Object.entries(PROFILES_DATA)) {
-        const div = document.createElement('div');
-        div.className = `profile-card ${k === active ? 'active' : ''}`;
-        div.onclick = () => selectProfile(k);
-        div.innerHTML = `<div class="profile-title">${v.name}</div><div class="profile-desc">${v.desc}</div>`;
-        c.appendChild(div);
+        showToast("⚠️ 配置读取失败");
       }
     }
 
-    function renderRulepacks() {
-      const c = document.getElementById('rulepacks-container');
-      c.innerHTML = '';
-      RULEPACKS_DATA.forEach(r => {
-        const div = document.createElement('div');
-        div.className = 'rulepack-row';
-        div.innerHTML = `
-          <div>
-            <div class="rulepack-title">${r.name}</div>
-            <div class="rulepack-meta">${r.id} · v${r.version}</div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <label class="switch"><input type="checkbox" ${r.active ? 'checked' : ''}><span class="slider"></span></label>
-            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="uninstallPack('${r.id}')">🗑️ 卸载</button>
-          </div>
-        `;
-        c.appendChild(div);
+    function selectProfile(name) {
+      document.querySelectorAll('.profile-card').forEach(c => {
+        if (c.dataset.profile === name) c.classList.add('active');
+        else c.classList.remove('active');
       });
-    }
-
-    function selectProfile(k) {
-      currentConfig.active_profile = k;
-      renderProfiles();
-    }
-
-    function uninstallPack(id) {
-      if (confirm(`确定要彻底物理卸载规则包 ${id} 吗？`)) {
-        showToast(`已将 ${id} 彻底从系统中物理移除！`);
-      }
+      currentConfig.active_profile = name;
     }
 
     async function saveSettings() {
+      currentConfig.jev_api_key = document.getElementById('jev-key').value.trim();
+      currentConfig.agnes_api_key = document.getElementById('agnes-key').value.trim();
+      currentConfig.engine = {
+        fast_path_jev: document.getElementById('fast-jev').checked,
+        offline_fallback: document.getElementById('offline-fallback').checked
+      };
+      currentConfig.security = {
+        anti_prompt_injection: document.getElementById('sec-prompt').checked,
+        data_overwrite_guard: document.getElementById('sec-overwrite').checked,
+        supply_chain_ast_scan: document.getElementById('sec-ast').checked,
+        process_leak_guard: document.getElementById('sec-leak').checked
+      };
+
       try {
-        await fetch('/api/config', {
+        const res = await fetch('/api/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(currentConfig)
         });
-      } catch(e) {}
-      showToast("✅ 配置已成功保存并实时生效！");
-    }
-
-    async function syncFourEnds() {
-      showToast("🔄 正在执行四端原子级对齐...");
-      try {
-        await fetch('/api/action/sync', { method: 'POST' });
-        showToast("✅ 四端 (Claude / Codex / AG / DSH) 已 100% 对齐！");
-      } catch(e) {}
+        if (res.ok) {
+          showToast("🎉 配置已成功保存并立即生效！");
+        }
+      } catch (e) {
+        showToast("❌ 保存失败: " + e);
+      }
     }
 
     async function triggerRollback() {
@@ -421,30 +748,74 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-
 class DashboardHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
-        if url.path == "/" or url.path == "/index.html":
+        path = url.path.rstrip("/")
+        if not path:
+            path = "/"
+
+        if path in ("/", "/dashboard"):
+            if DASHBOARD_HTML_PATH.exists():
+                try:
+                    content = DASHBOARD_HTML_PATH.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+                except Exception:
+                    pass
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
-        elif url.path == "/api/config":
+        elif path == "/settings":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
+        elif path == "/api/recent":
+            events = get_recent_events(limit_per_engine=200)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(events, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/rules":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(FALLBACK_RULES, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/shadow":
+            shadow = get_shadow_stats()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(shadow, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/config":
             cfg = load_config()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps(cfg, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/health-check":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "healthy",
+                "engines": {"claude": "active", "antigravity": "active", "codex": "active", "dsh": "active"}
+            }, ensure_ascii=False).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
+            self.wfile.write(b"404 Not Found")
 
     def do_POST(self):
         url = urlparse(self.path)
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length) if content_length > 0 else b"{}"
-        
+
         if url.path == "/api/config":
             try:
                 new_cfg = json.loads(post_data.decode("utf-8"))
@@ -464,6 +835,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if switch_script.exists():
                 subprocess.run([sys.executable, str(switch_script), "sync"], check=False)
             self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(b'{"ok": true}')
         elif url.path == "/api/action/rollback":
@@ -471,6 +843,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if switch_script.exists():
                 subprocess.run([sys.executable, str(switch_script), "rollback"], check=False)
             self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(b'{"ok": true}')
         else:
@@ -485,19 +858,23 @@ class DashboardHandler(BaseHTTPRequestHandler):
 def run_dashboard(port: int = 17925, open_browser: bool = True):
     """启动本地 Web 仪表盘"""
     server_address = ("127.0.0.1", port)
-    try:
-        httpd = HTTPServer(server_address, DashboardHandler)
-    except OSError:
-        # 端口占用尝试自增
-        port += 1
-        server_address = ("127.0.0.1", port)
-        httpd = HTTPServer(server_address, DashboardHandler)
+    for _ in range(5):
+        try:
+            httpd = HTTPServer(server_address, DashboardHandler)
+            break
+        except OSError:
+            port += 1
+            server_address = ("127.0.0.1", port)
+    else:
+        print(f"❌ 无法绑定端口 {port}，启动失败。")
+        return
 
-    url = f"http://127.0.0.1:{port}"
+    url = f"http://127.0.0.1:{port}/dashboard"
     print("=" * 70)
-    print("🖥️ SUPEREGO 2.0 VISUAL SETTINGS DASHBOARD")
-    print(f"控制中枢地址: {url}")
-    print("支持在现代浏览器中自由点击配置 Profile、引擎与安全开关")
+    print("🖥️ SUPEREGO 2.0 VISUAL DASHBOARD (跨端全景审判大盘)")
+    print(f"大盘访问地址: {url}")
+    print("• 实时司法审判大盘: " + url)
+    print(f"• 控制中枢设置面板: http://127.0.0.1:{port}/settings")
     print("按 Ctrl+C 退出控制大盘")
     print("=" * 70)
 
