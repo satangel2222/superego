@@ -349,6 +349,16 @@ Superego 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对�
 
 ---
 
+## 🙏 致敬与同行探索 (Prior Art & Acknowledgements)
+
+在对抗 AI Agent 偷懒、甩锅与虚假完成的探索道路上，Superego 吸收了开源社区诸多优秀先驱的灵感与工程智慧：
+* [Canny](https://github.com/qkal/Canny)：启发了确定性单会话事实账本与离线回放 (`replay`) 的极简设计哲学；
+* [TypeSafe](https://typesafe.ai)：提供了毫秒级 System One 强类型原语架构与决策模型能力；
+* [nullius](https://github.com/TejasViswa/nullius) / [pi-warden](https://github.com/DevMortimer/pi-warden)：为 Coding Agent 引入独立守卫与证据校验的早期探索；
+* [Claude Code] / [OpenAI Codex]：提供了开放灵活的宿主级 Hooks 基础设施。
+
+---
+
 ## 🤝 贡献与共建你的规则包
 
 如果你在日常使用 AI 的过程中，发现了 AI 欺骗你的新花招，欢迎为开源社区贡献规则包：
