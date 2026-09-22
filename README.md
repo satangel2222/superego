@@ -70,7 +70,7 @@ truthgate status
 ```text
 帮我安装 TruthGate (真理门禁) 紧箍咒系统 (https://github.com/satangel2222/truthgate)：
 1. 确认本机 Python 3.10+ 环境可用；
-2. 执行 pip install truthgate（或克隆 https://github.com/satangel2222/truthgate.git 到 ~/.superego 并执行 python -m truthgate install --profile vibe-boss）；
+2. 执行 pip install truthgate（或克隆 https://github.com/satangel2222/truthgate.git 到 ~/.truthgate 并执行 python -m truthgate install --profile vibe-boss）；
 3. 执行 tg status 验证生效规则总数与物理安全内核；
 4. 用 3 行以内告诉我你完成了什么，并展示当前生效的核心门禁状态。
 ```
@@ -200,7 +200,7 @@ if verdict["verdict"] == "FIRE":
 
 > **“我不是科班出身的程序员，我是一个每天靠 AI 推进真金白银业务的 Vibe Coder。”**
 
-从 **2024 年 10 月** 写下第一行业务代码，到 **2026 年 9 月** Superego 3.0 全球正式开源，在整整 **23 个月（700 多个日夜）** 的实战长跑里，我用 AI 操盘真实的商业系统：高并发爬虫矩阵、房客自动化入住放行、金融网银收据多模态反伪欺诈、以及跨四端自动化调度。
+从 **2024 年 10 月** 写下第一行业务代码，到 **2026 年 9 月** TruthGate 1.0 (原 Superego) 全球正式开源，在整整 **23 个月（700 多个日夜）** 的实战长跑里，我用 AI 操盘真实的商业系统：高并发爬虫矩阵、房客自动化入住放行、金融网银收据多模态反伪欺诈、以及跨四端自动化调度。
 
 在这 700 多个日夜里，我被主流顶级模型（Claude 3.5 Sonnet、GPT-4o、DeepSeek-V3/R1、OpenAI Codex）偷懒耍滑、撒谎欺骗过**成千上万次**。
 
@@ -403,14 +403,14 @@ TruthGate 1.0 是真正做到跨多端一致治理的元级治理系统，但绝
 
 ---
 
-## 📜 确定性会话事实账本与回放 (`superego replay`)
+## 📜 确定性会话事实账本与回放 (`	g replay`)
 
-学习极客社区最严谨的不可篡改审计理念，TruthGate 将每一次与 AI 交互的真实事实（执行的命令、退出码、代码变更、最终判决）独立记录在 `~/.superego/sessions/<session_id>.jsonl` 单会话流水账本中。
+学习极客社区最严谨的不可篡改审计理念，TruthGate 将每一次与 AI 交互的真实事实（执行的命令、退出码、代码变更、最终判决）独立记录在 `~/.truthgate/sessions/<session_id>.jsonl` 单会话流水账本中。
 
 任何时候，无需联网，敲一句命令即可离线 100% 确定性重放：
 
 ```text
-$ python ~/.superego/superego/installer.py replay
+$ tg replay  # 或 python -m truthgate replay
 
 ================================================================================
 📜 TruthGate 会话确定性事实账本 (Session Ledger Replay): demo_session.jsonl
@@ -455,7 +455,7 @@ Stop     “测试全绿 (exit code 0)，功能已验证闭环交付。”      
 TruthGate 不只是死板的一堆脚本，而是一个**开放、解耦、支持自由组合的规则生态**：
 
 ```text
- ~/.superego/rulepacks/
+ ~/.truthgate/rulepacks/ (兼容 ~/.superego/rulepacks/)
   ├── @frank/vibe-boss.rulepack.json       # 旗舰防偷懒与老板模式规则包
   ├── @security/core-safe.rulepack.json     # 核心零信任硬安全规则包
   ├── @frontend/react-visual.rulepack.json  # 改完前端必须出示真实截图门禁
@@ -492,21 +492,21 @@ TruthGate 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始人�
 
 * **查看画像列表**：
   ```bash
-  superego profile list
+  tg profile list
   ```
 * **一键切换画像**（内置旗舰老板 `vibe-boss`、架构师工程师 `engineer`、防误触稳健 `safe`）：
   ```bash
-  superego profile use engineer
+  tg profile use engineer
   ```
 * **打造你自己的专属画像**：
   ```bash
-  superego profile init my-company
-  # 编辑 ~/.superego/profiles/my-company.json 自由组合 RulePacks
-  superego profile use my-company
+  tg profile init my-company
+  # 编辑 ~/.truthgate/profiles/my-company.json 自由组合 RulePacks
+  tg profile use my-company
   ```
 * **画像任意融合 (Profile Merge)**：
   ```bash
-  superego profile merge vibe-boss engineer -o balanced
+  tg profile merge vibe-boss engineer -o balanced
   # 自动合并规则包与开关，生成兼具老板执行力与架构师严谨度的 balanced 画像
   ```
 
@@ -525,33 +525,33 @@ TruthGate 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始人�
 
 ```bash
 # 1. 查看当前外审路由器状态
-superego critic show
+tg critic show
 
 # 2. 接入 DeepSeek (高性价比推荐)
-superego critic set --provider openai_compatible --base-url https://api.deepseek.com/v1 --model deepseek-chat --api-key sk-xxxx
+tg critic set --provider openai_compatible --base-url https://api.deepseek.com/v1 --model deepseek-chat --api-key sk-xxxx
 
 # 3. 接入本地 Ollama (完全免费离线，无隐私风险)
-superego critic set --provider openai_compatible --base-url http://localhost:11434/v1 --model llama3
+tg critic set --provider openai_compatible --base-url http://localhost:11434/v1 --model llama3
 
 # 4. 接入 TypeSafe Jev (349ms 结构化强类型原语)
-superego critic set --provider jev --api-key sk-typesafe-xxxx
+tg critic set --provider jev --api-key sk-typesafe-xxxx
 
 # 5. 切换为纯本地确定性启发式 (零 Key 离线极速)
-superego critic set --provider local_heuristic
+tg critic set --provider local_heuristic
 
 # 6. 现场测试外审击发效果
-superego critic test "剩下的三个文件我先不改了，等您指示了我再接着做。"
+tg critic test "剩下的三个文件我先不改了，等您指示了我再接着做。"
 ```
 
 ---
 
 ## 📦 规则包开发者指南 (RulePack CLI)
 
-* **列出所有已安装的规则包**：`superego rulepack list`
-* **对当前规则包跑回归测试**：`superego rulepack test`
-* **为新业务创建规则包模板**：`superego rulepack init @myteam/security-clean`
-* **在当前画像中启用规则包**：`superego rulepack enable @myteam/security-clean`
-* **在当前画像中停用规则包**：`superego rulepack disable @frank/vibe-boss`
+* **列出所有已安装的规则包**：`tg rulepack list`
+* **对当前规则包跑回归测试**：`tg rulepack test`
+* **为新业务创建规则包模板**：`tg rulepack init @myteam/security-clean`
+* **在当前画像中启用规则包**：`tg rulepack enable @myteam/security-clean`
+* **在当前画像中停用规则包**：`tg rulepack disable @frank/vibe-boss`
 
 ---
 

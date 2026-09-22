@@ -27,10 +27,14 @@ IS_MAC = SYSTEM == "Darwin"
 IS_LINUX = SYSTEM == "Linux"
 
 HOME = Path.home()
+TRUTHGATE_HOME = HOME / ".truthgate"
 SUPEREGO_HOME = HOME / ".superego"
-CONFIG_FILE = SUPEREGO_HOME / "config.json"
-CUSTOM_PROFILES_DIR = SUPEREGO_HOME / "profiles"
-CUSTOM_RULEPACKS_DIR = SUPEREGO_HOME / "rulepacks"
+
+# 优先使用 .truthgate，若存在旧的 .superego 则平滑兼容读取
+APP_HOME = TRUTHGATE_HOME if TRUTHGATE_HOME.exists() else (SUPEREGO_HOME if SUPEREGO_HOME.exists() else TRUTHGATE_HOME)
+CONFIG_FILE = APP_HOME / "config.json"
+CUSTOM_PROFILES_DIR = APP_HOME / "profiles"
+CUSTOM_RULEPACKS_DIR = APP_HOME / "rulepacks"
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 BUILTIN_RULEPACKS_DIR = PACKAGE_DIR / "rulepacks"

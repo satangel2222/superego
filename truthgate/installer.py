@@ -680,7 +680,7 @@ def handle_profile_cli(args: list):
             merged = merge_profiles(p1, p2, new_id)
             print(f"🎉 成功合并画像 [{p1}] 与 [{p2}] -> 生成新画像: {new_id} ({merged.get('name')})")
             print(f"   生效规则包: {merged.get('rulepacks')}")
-            print(f"   启用新画像: python -m superego profile use {new_id}")
+            print(f"   启用新画像: tg profile use {new_id}")
         except Exception as e:
             print(f"❌ 合并失败: {e}")
             sys.exit(1)
@@ -694,15 +694,15 @@ def handle_rulepack_cli(args: list):
         from config import list_rulepacks, get_active_profile, load_config, save_config, CUSTOM_RULEPACKS_DIR
         from rulepack_runner import validate_rulepack_file, test_all_rulepacks
     except ImportError:
-        from superego.config import list_rulepacks, get_active_profile, load_config, save_config, CUSTOM_RULEPACKS_DIR
-        from superego.rulepack_runner import validate_rulepack_file, test_all_rulepacks
+        from truthgate.config import list_rulepacks, get_active_profile, load_config, save_config, CUSTOM_RULEPACKS_DIR
+        from truthgate.rulepack_runner import validate_rulepack_file, test_all_rulepacks
 
     sub = args[0] if args else "list"
     if sub == "list":
         packs = list_rulepacks()
         active_packs = get_active_profile().get("rulepacks", [])
         print("=" * 75)
-        print("📦 Superego 3.0 规则包生态列表 (Available RulePacks):")
+        print("📦 TruthGate 1.0 规则包生态列表 (Available RulePacks):")
         print("=" * 75)
         for pk_id, pk in packs.items():
             is_enabled = pk_id in active_packs
@@ -726,14 +726,14 @@ def handle_rulepack_cli(args: list):
             sys.exit(0 if success else 1)
     elif sub == "init":
         if len(args) < 2:
-            print("❌ 用法: python -m superego rulepack init <rulepack_id>")
+            print("❌ 用法: tg rulepack init <rulepack_id> (或 python -m truthgate rulepack init <rulepack_id>)")
             sys.exit(1)
         pk_id = args[1]
         clean_name = pk_id.replace("@", "").replace("/", "_")
         CUSTOM_RULEPACKS_DIR.mkdir(parents=True, exist_ok=True)
         target_path = CUSTOM_RULEPACKS_DIR / f"{clean_name}.rulepack.json"
         template = {
-            "$schema": "https://superego.ai/schema/rulepack-v1.json",
+            "$schema": "https://truthgate.ai/schema/rulepack-v1.json",
             "id": pk_id,
             "name": f"自定义规则包: {pk_id}",
             "version": "1.0.0",
@@ -770,10 +770,10 @@ def handle_rulepack_cli(args: list):
             json.dump(template, f, ensure_ascii=False, indent=2)
         print(f"✅ 自定义规则包模板已生成: {target_path}")
         print(f"   您可以按 rulepack_spec.md 规范补充规则与样本，并运行:")
-        print(f"   python -m superego rulepack test {pk_id}")
+        print(f"   tg rulepack test {pk_id}")
     elif sub == "enable":
         if len(args) < 2:
-            print("❌ 用法: python -m superego rulepack enable <rulepack_id>")
+            print("❌ 用法: tg rulepack enable <rulepack_id>")
             sys.exit(1)
         pk_id = args[1]
         cfg = load_config()
@@ -787,7 +787,7 @@ def handle_rulepack_cli(args: list):
             print(f"ℹ️ 规则包已在当前画像中处于启用状态: {pk_id}")
     elif sub == "disable":
         if len(args) < 2:
-            print("❌ 用法: python -m superego rulepack disable <rulepack_id>")
+            print("❌ 用法: tg rulepack disable <rulepack_id>")
             sys.exit(1)
         pk_id = args[1]
         cfg = load_config()
@@ -809,8 +809,8 @@ def handle_critic_cli(args: list):
         from config import get_critic_config, set_critic_config
         from critic_engine import audit_assistant_turn
     except ImportError:
-        from superego.config import get_critic_config, set_critic_config
-        from superego.critic_engine import audit_assistant_turn
+        from truthgate.config import get_critic_config, set_critic_config
+        from truthgate.critic_engine import audit_assistant_turn
 
     sub = args[0] if args else "show"
     if sub == "show":
@@ -818,7 +818,7 @@ def handle_critic_cli(args: list):
         api_key = cfg.get("api_key", "")
         masked_key = (api_key[:4] + "****" + api_key[-3:]) if len(api_key) > 7 else ("(not set)" if not api_key else "****")
         print("=" * 65)
-        print("🔬 Superego 3.0 外审路由器状态 (Universal Critic Engine):")
+        print("🔬 TruthGate 1.0 外审路由器状态 (TruthGate Critic Engine):")
         print("=" * 65)
         print(f"  • 外审选型 (Provider):  {cfg.get('provider')}")
         print(f"  • 服务端点 (Base URL):  {cfg.get('base_url')}")
@@ -826,9 +826,9 @@ def handle_critic_cli(args: list):
         print(f"  • 超时熔断 (Timeout):   {cfg.get('timeout')}s")
         print(f"  • 鉴权密钥 (API Key):   {masked_key}")
         print("-" * 65)
-        print("提示: 可使用 'python -m superego critic set ...' 接入 DeepSeek, Qwen, Ollama, GPT 或 Jev")
+        print("提示: 可使用 'tg critic set ...' (或 python -m truthgate critic set ...) 接入 DeepSeek, Qwen, Ollama, GPT 或 Jev")
     elif sub == "set":
-        set_parser = argparse.ArgumentParser(prog="superego critic set")
+        set_parser = argparse.ArgumentParser(prog="tg critic set")
         set_parser.add_argument("--provider", choices=["openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
         set_parser.add_argument("--base-url", dest="base_url", help="API Base URL (如 https://api.deepseek.com/v1 或 http://localhost:11434/v1)")
         set_parser.add_argument("--model", help="外审大模型名称 (如 deepseek-chat, qwen-plus, llama3)")
