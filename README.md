@@ -244,6 +244,22 @@ flowchart TD
 
 ---
 
+### 🧬 独创自进化免疫协议：postmortem-to-guard (翻车转机器永久防御)
+
+为什么所有让 AI “下次注意”的规则都会在三天后失效？  
+因为大模型的根本病根是：**当输出看起来合理时，AI 根本不觉得需要警告。口头警告在“没意识到需要它”的时刻，一个字都进不去。**
+
+Superego 3.0 正式将这套沉淀自数百次实战翻车的**强制自愈技能**作为官方一等公民分发至 Claude Code、OpenAI Codex 与 Google Antigravity：
+- **触发机制**：当用户表达不满（「你又错了」「这不对」「跑不通」「你在骗我」）或 AI 发现结论被推翻时，Dissatisfaction Hook 毫秒级捕获并强制激活 [`postmortem-to-guard`](./skills/postmortem-to-guard/SKILL.md)；
+- **强制 5 步协议**：
+  1. ⛔ **禁止廉价道歉**：严禁说“我下次一定注意”，绝不许先解释“其实是因为...”；
+  2. 🔍 **归纳 5 大通用软件工程错误形状**：覆盖窗口谎报 (Coverage Bluff)、推论当事实 (Inference as Fact)、破坏性降级 (Silent Stubbing)、虚报完成 (Phantom Delivery)、掩耳盗铃假单测 (Toy Test Fallacy)；
+  3. 🔢 **检索历史复发次数**：用数字本身对 AI 施加结构性压力；
+  4. 🤖 **断言机器能否防御**：能机器防的（数据覆盖、退出码、静态 AST、恶性输入复现测试）坚决机器防；
+  5. 🧪 **物理生成测试用例与代码抗体**：**必须先用本次真实的破坏性输入写出挂掉的失败用例 (Red)，修好后再跑通 (Green)**，将人类每一次口头纠错，变成项目里的一枚永久性代码抗体！
+
+---
+
 ## ⚡ Powered by TypeSafe Jev System One：349ms 实时强类型司法通道
 
 随着 **TypeSafe Jev API** 的爆火，社区涌现了许多单点探索（如 `Canny` 防嘴硬、`Winnow` 垃圾回收、`fast-jev-compaction` 上下文压缩）。而 **Superego 是全网首个将 Jev 原语深度运用于「严肃工业级 AI 行为治理与安全防御」的完全体操作系统**：

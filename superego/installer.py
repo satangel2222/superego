@@ -301,6 +301,68 @@ def rollback_superego() -> bool:
     return True
 
 
+def register_skills(detected_platforms: dict) -> list:
+    """跨端分发 Superego 官方核心治理与自愈技能 (如 postmortem-to-guard)"""
+    synced = []
+    candidates = [
+        HERE.parent / "skills",
+        HERE / "skills",
+        Path.cwd() / "skills"
+    ]
+    skills_src_dir = None
+    for cand in candidates:
+        if cand.exists():
+            skills_src_dir = cand
+            break
+
+    if not skills_src_dir:
+        return synced
+
+    skill_folders = [p for p in skills_src_dir.iterdir() if p.is_dir()]
+    if not skill_folders:
+        return synced
+
+    # 1. Claude Code (~/.claude/skills)
+    if "claude" in detected_platforms:
+        target_dir = detected_platforms["claude"]["home"] / "skills"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for sk in skill_folders:
+            dest = target_dir / sk.name
+            shutil.copytree(sk, dest, dirs_exist_ok=True)
+            synced.append(f"Claude: {sk.name}")
+
+    # 2. OpenAI Codex (~/.codex/skills)
+    if "codex" in detected_platforms:
+        target_dir = detected_platforms["codex"]["home"] / "skills"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for sk in skill_folders:
+            dest = target_dir / sk.name
+            shutil.copytree(sk, dest, dirs_exist_ok=True)
+            synced.append(f"Codex: {sk.name}")
+
+    # 3. Antigravity (~/.gemini/config/skills)
+    if "antigravity" in detected_platforms:
+        target_dir = detected_platforms["antigravity"]["home"] / "config" / "skills"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for sk in skill_folders:
+            dest = target_dir / sk.name
+            shutil.copytree(sk, dest, dirs_exist_ok=True)
+            synced.append(f"Antigravity: {sk.name}")
+
+    # 4. Workspace Level (.agents/skills) if in a workspace
+    try:
+        ws_agents_skills = Path.cwd() / ".agents" / "skills"
+        ws_agents_skills.mkdir(parents=True, exist_ok=True)
+        for sk in skill_folders:
+            dest = ws_agents_skills / sk.name
+            shutil.copytree(sk, dest, dirs_exist_ok=True)
+            synced.append(f"Workspace: {sk.name}")
+    except Exception:
+        pass
+
+    return synced
+
+
 def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     """执行一键跨端安装与双核挂载"""
     print("=" * 70)
@@ -348,7 +410,9 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "config.py",
         "replay.py",
         "hook_entry.py",
-        "no-nagging-guard.py"
+        "no-nagging-guard.py",
+        "parity_auditor.py",
+        "doctor.py"
     ]
 
     # 同步规则包到 ~/.superego/rulepacks
@@ -471,6 +535,11 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     # 4. 关联 DSH
     if "dsh" in detected:
         print("   [✓] DeepSeek Harness (DSH) 旁路监听就绪 (零侵入模式)")
+
+    # 5. 跨端分发官方核心治理与自愈技能 (postmortem-to-guard)
+    synced_skills = register_skills(detected)
+    if synced_skills:
+        print(f"   [✓] 核心治理与自愈技能分发完成: {', '.join(sorted(set(synced_skills)))}")
 
     print("\n" + "=" * 70)
     print("🎉 恭喜！Superego 3.0 已成功部署至全部平台！")
