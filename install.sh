@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# 🛡️ Superego 2.0 一键安装脚本 (macOS / Linux)
+# 🛡️ Superego 3.0 一键安装脚本 (macOS / Linux)
 # 用法: curl -fsSL https://raw.githubusercontent.com/satangel2222/superego/main/install.sh | bash
 # ==============================================================================
 
@@ -8,7 +8,7 @@ set -e
 
 echo ""
 echo "========================================================================"
-echo " 🛡️  SUPEREGO 2.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)"
+echo " 🛡️  SUPEREGO 3.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)"
 echo "========================================================================"
 echo ""
 
@@ -75,7 +75,7 @@ fi
 
 echo ""
 echo "========================================================================"
-echo " 🎉 恭喜！Superego 2.0 已部署完成并开机自适应生效！"
+echo " 🎉 恭喜！Superego 3.0 已部署完成并开机自适应生效！"
 echo " • 切换画像: 终端运行 superego profile list / superego profile use engineer"
 echo " • 自由外审: 终端运行 superego critic show / superego critic set (支持 DeepSeek/Ollama/Jev)"
 echo " • 规则市场: 终端运行 superego rulepack list / superego rulepack test"

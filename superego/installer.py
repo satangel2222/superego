@@ -282,7 +282,7 @@ def rollback_superego() -> bool:
         unregister_codex_hooks(codex_home)
         print("   [✓] OpenAI Codex hooks.json 门禁已注销")
 
-    # 2. 注销 Antigravity 全局插件
+    # 3. 注销 Antigravity 全局插件与 Native MCP
     ag_config = HOME / ".gemini" / "config" / "config.json"
     if ag_config.exists():
         try:
@@ -291,9 +291,27 @@ def rollback_superego() -> bool:
             plugins = ag_data.get("plugins", {})
             if "superego-plugin" in plugins:
                 del plugins["superego-plugin"]
-                with open(ag_config, "w", encoding="utf-8") as f:
-                    json.dump(ag_data, f, indent=2, ensure_ascii=False)
-                print("   [✓] Google Antigravity 全局插件已安全移除")
+            user_settings = ag_data.get("userSettings", {})
+            grants = user_settings.get("globalPermissionGrants", {})
+            if "allow" in grants:
+                grants["allow"] = [p for p in grants["allow"] if not (isinstance(p, str) and p.startswith("mcp(superego"))]
+            with open(ag_config, "w", encoding="utf-8") as f:
+                json.dump(ag_data, f, indent=2, ensure_ascii=False)
+            print("   [✓] Google Antigravity 全局插件与权限授权已安全移除")
+        except Exception:
+            pass
+
+    ag_mcp_cfg = HOME / ".gemini" / "config" / "mcp_config.json"
+    if ag_mcp_cfg.exists():
+        try:
+            with open(ag_mcp_cfg, "r", encoding="utf-8") as f:
+                mdata = json.load(f)
+            servers = mdata.get("mcpServers", {})
+            if "superego" in servers:
+                del servers["superego"]
+                with open(ag_mcp_cfg, "w", encoding="utf-8") as f:
+                    json.dump(mdata, f, indent=2, ensure_ascii=False)
+                print("   [✓] Google Antigravity Native MCP 挂载已安全注销")
         except Exception:
             pass
 
@@ -460,8 +478,9 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         ag_home = detected["antigravity"]["home"]
         ag_scripts = detected["antigravity"]["hooks_dir"]
         ag_scripts.mkdir(parents=True, exist_ok=True)
-        # 部署核心库与 Antigravity 核心桥接脚本
-        for cf in core_files + ["ag_superego_bridge.py"]:
+        # 部署核心库、Antigravity 核心桥接脚本、Native MCP 服务端与看门狗
+        ag_deploy_files = core_files + ["ag_superego_bridge.py", "superego_mcp_server.py", "ag_watch.py"]
+        for cf in ag_deploy_files:
             src = HERE / cf
             if src.exists():
                 shutil.copy2(src, ag_scripts / cf)
@@ -471,6 +490,34 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             for rp in rulepacks_src.glob("*.rulepack.json"):
                 shutil.copy2(rp, rp_dest / rp.name)
 
+        # 部署 MCP 懒加载工具模式定义到 ~/.gemini/antigravity/mcp/superego/
+        ag_mcp_dir = ag_home / "antigravity" / "mcp" / "superego"
+        ag_mcp_dir.mkdir(parents=True, exist_ok=True)
+        mcp_src_dir = HERE / "mcp"
+        if mcp_src_dir.exists():
+            for mf in mcp_src_dir.glob("*"):
+                if mf.is_file():
+                    shutil.copy2(mf, ag_mcp_dir / mf.name)
+
+        # 注册 Native MCP 服务到 ~/.gemini/config/mcp_config.json
+        ag_mcp_config = ag_home / "config" / "mcp_config.json"
+        mcp_cfg = {}
+        if ag_mcp_config.exists():
+            try:
+                mcp_cfg = json.loads(ag_mcp_config.read_text(encoding="utf-8"))
+            except Exception:
+                mcp_cfg = {}
+        mcp_servers = mcp_cfg.setdefault("mcpServers", {})
+        server_script = (ag_scripts / "superego_mcp_server.py").as_posix()
+        mcp_servers["superego"] = {
+            "command": "python",
+            "args": [server_script]
+        }
+        ag_mcp_config.parent.mkdir(parents=True, exist_ok=True)
+        ag_mcp_config.write_text(
+            json.dumps(mcp_cfg, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
         # 部署全局插件: ~/.gemini/config/plugins/superego-plugin/
         ag_plugin_dir = ag_home / "config" / "plugins" / "superego-plugin"
         ag_plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -478,7 +525,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         ag_plugin_json = {
             "name": "superego-plugin",
             "version": "3.0.0",
-            "description": "Native Superego governance, quality gating, and toggle management plugin for Google Antigravity.",
+            "description": "Native Superego 3.0 governance, quality gating, MCP verification, and active watchdog plugin for Google Antigravity.",
             "author": {
                 "name": "Frank & Superego Community"
             }
@@ -493,9 +540,12 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             if SYSTEM == "Windows"
             else "~/.gemini/antigravity/scripts/ag_superego_bridge.py"
         )
+        # 注: Antigravity 内部 language_server 对通用 hooks.json 执行服务端灰度控制，
+        # Superego 3.0 正式采用 Native MCP (superego_verify) + ag_watch.py 物理闭环
         ag_hooks_json = {
             "superego-gate": {
-                "enabled": True,
+                "enabled": False,
+                "note": "Antigravity language_server gates hooks server-side; Superego 3.0 runs via Native MCP + ag_watch.py.",
                 "PreInvocation": [
                     {
                         "type": "command",
@@ -516,7 +566,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
             json.dumps(ag_hooks_json, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
-        # 注册并激活全局插件到 ~/.gemini/config/config.json
+        # 注册并激活全局插件与权限授权到 ~/.gemini/config/config.json
         ag_config_file = ag_home / "config" / "config.json"
         cfg_data = {}
         if ag_config_file.exists():
@@ -526,11 +576,25 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
                 cfg_data = {}
         plugins_dict = cfg_data.setdefault("plugins", {})
         plugins_dict["superego-plugin"] = {"enabled": True}
+
+        # 预授权 Native MCP 工具权限，防止弹窗阻塞自动化
+        user_settings = cfg_data.setdefault("userSettings", {})
+        grants = user_settings.setdefault("globalPermissionGrants", {})
+        allow_list = grants.setdefault("allow", [])
+        for perm in [
+            "mcp(superego/*)",
+            "mcp(superego/superego_verify)",
+            "mcp(superego/superego_status)"
+        ]:
+            if perm not in allow_list:
+                allow_list.append(perm)
+
         ag_config_file.parent.mkdir(parents=True, exist_ok=True)
         ag_config_file.write_text(
             json.dumps(cfg_data, indent=2, ensure_ascii=False), encoding="utf-8"
         )
-        print("   [✓] Google Antigravity 全局插件与安全桥接挂载就绪 (跨项目全局生效)")
+        print("   [✓] Google Antigravity Native MCP (superego_verify) 与权限挂载就绪")
+        print("   [✓] Google Antigravity 全局插件与后台看门狗 (ag_watch.py) 就绪 (跨项目全局生效)")
 
     # 4. 关联 DSH
     if "dsh" in detected:
@@ -561,7 +625,7 @@ def handle_profile_cli(args: list):
         profiles = list_profiles()
         active_id = get_active_profile().get("id")
         print("=" * 65)
-        print("🎭 Superego 2.0 用户治理画像列表 (Active Profiles):")
+        print("🎭 Superego 3.0 用户治理画像列表 (Active Profiles):")
         print("=" * 65)
         for pid, p in profiles.items():
             is_active = (pid == active_id)
@@ -638,7 +702,7 @@ def handle_rulepack_cli(args: list):
         packs = list_rulepacks()
         active_packs = get_active_profile().get("rulepacks", [])
         print("=" * 75)
-        print("📦 Superego 2.0 规则包生态列表 (Available RulePacks):")
+        print("📦 Superego 3.0 规则包生态列表 (Available RulePacks):")
         print("=" * 75)
         for pk_id, pk in packs.items():
             is_enabled = pk_id in active_packs
@@ -754,7 +818,7 @@ def handle_critic_cli(args: list):
         api_key = cfg.get("api_key", "")
         masked_key = (api_key[:4] + "****" + api_key[-3:]) if len(api_key) > 7 else ("(not set)" if not api_key else "****")
         print("=" * 65)
-        print("🔬 Superego 2.0 外审路由器状态 (Universal Critic Engine):")
+        print("🔬 Superego 3.0 外审路由器状态 (Universal Critic Engine):")
         print("=" * 65)
         print(f"  • 外审选型 (Provider):  {cfg.get('provider')}")
         print(f"  • 服务端点 (Base URL):  {cfg.get('base_url')}")
@@ -805,7 +869,7 @@ def main():
             handle_critic_cli(sys.argv[2:])
             return
 
-    parser = argparse.ArgumentParser(description="Superego 2.0 Universal Meta-Harness & Installer CLI")
+    parser = argparse.ArgumentParser(description="Superego 3.0 Universal Meta-Harness & Installer CLI")
     parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", default="vibe-boss", help="Profile mask to apply")
@@ -826,7 +890,7 @@ def main():
         rules = resolve_profile_rules()
         critic = get_critic_config()
         print("=" * 65)
-        print(f"👑 Superego 2.0 运行状态报告 (Meta-Harness Status):")
+        print(f"👑 Superego 3.0 运行状态报告 (Meta-Harness Status):")
         print("=" * 65)
         print(f"  • 当前激活画像:  {prof.get('name')} ({prof.get('id')})")
         print(f"  • 挂载规则包:    {prof.get('rulepacks')}")

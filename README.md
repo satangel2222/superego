@@ -24,7 +24,7 @@
        │   🤖 AI Agent 思考、代码生成与工具调用                          │
        └────────────────────────────────┬────────────────────────────────┘
                                         │
-                         ⚡ 349ms 实时审判双核通道 (Superego 2.0)
+                          ⚡ 349ms 实时审判双核通道 (Superego 3.0)
                                         │
        ┌────────────────────────────────┴────────────────────────────────┐
        │  🛑 试图虚报完成？ ── 打回！没见真实终端退出码与截图，休想交卷！  │
@@ -128,7 +128,7 @@
 
 > **“我不是科班出身的程序员，我是一个每天靠 AI 推进真金白银业务的 Vibe Coder。”**
 
-从 **2024 年 10 月** 写下第一行业务代码，到 **2026 年 9 月** Superego 2.0 全球正式开源，在整整 **23 个月（700 多个日夜）** 的实战长跑里，我用 AI 操盘真实的商业系统：高并发爬虫矩阵、房客自动化入住放行、金融网银收据多模态反伪欺诈、以及跨四端自动化调度。
+从 **2024 年 10 月** 写下第一行业务代码，到 **2026 年 9 月** Superego 3.0 全球正式开源，在整整 **23 个月（700 多个日夜）** 的实战长跑里，我用 AI 操盘真实的商业系统：高并发爬虫矩阵、房客自动化入住放行、金融网银收据多模态反伪欺诈、以及跨四端自动化调度。
 
 在这 700 多个日夜里，我被主流顶级模型（Claude 3.5 Sonnet、GPT-4o、DeepSeek-V3/R1、OpenAI Codex）偷懒耍滑、撒谎欺骗过**成千上万次**。
 
@@ -282,6 +282,19 @@ Superego 采用 **Jev Noul 强类型决策原语**：
 | **`R8_R9_paid_or_jargon`** | 未经同意擅自推销付费方案、通篇代码变量黑话折磨非程序员 | 逼迫 AI 优先使用免费开源方案，专有名词必须紧跟括号大白话解释 |
 
 👉 详见独立开发者集成指南与案卷拆解：[Jev Coding Guard Showcase](./showcase/jev-coding-guard.md)
+
+---
+
+## 🌐 跨四端挂载与物理闭环架构 (Multi-Platform Architecture)
+
+Superego 3.0 是真正做到跨多端一致治理的元级治理系统，但绝非简单粗暴地在不同平台套用相同的死脚本。针对不同宿主运行时的底层特性，Superego 3.0 实行**量体裁衣的物理闭环机制**：
+
+| AI 客户端 | 物理接入形态 | 拦截原理与生命周期 |
+| :--- | :--- | :--- |
+| **Claude Code** | `~/.claude/settings.json` | 挂载原生 `PreToolUse`（高危命令拦截）与 `Stop`（交卷前 15 道硬门禁 + Jev 毫秒审判）钩子，同进程阻断。 |
+| **OpenAI Codex** | `~/.codex/hooks.json` | 挂载原生 `PreToolUse` 与 `Stop` 事件镜像，保证与 Claude Code 100% 规则对齐。 |
+| **Google Antigravity** | **Native MCP + 活跃看门狗 (`ag_watch.py`)** | **双轨机制**：针对其 Go 语言内核 (`language_server.exe`) 服务端灰度控制通用 Hook 的特性，Superego 3.0 创新推出：<br>1. **原生 MCP 实体硬门禁 (`superego_verify` / `superego_status`)**：交卷前强制提交物理截图路径、DOM/curl 现场文本证据与断言，物理防作弊与假完成；<br>2. **全天候看门狗 (`ag_watch.py`)**：跨会话实时吞吐 transcript，15 道门禁全量巡检，违规即时发出蜂鸣音 (`winsound.MessageBeep`) 与系统托盘气泡告警！ |
+| **DeepSeek Harness (DSH)** | Cordis & 自愈技能分发 | 零侵入旁路审计监听，跨端分发 [`postmortem-to-guard`](./skills/postmortem-to-guard/SKILL.md) 核心治理技能。 |
 
 ---
 

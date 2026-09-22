@@ -1,5 +1,5 @@
 # ==============================================================================
-# 🛡️ Superego 2.0 一键安装脚本 (Windows PowerShell)
+# 🛡️ Superego 3.0 一键安装脚本 (Windows PowerShell)
 # 用法: irm https://raw.githubusercontent.com/satangel2222/superego/main/install.ps1 | iex
 # ==============================================================================
 
@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host " 🛡️  SUPEREGO 2.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)" -ForegroundColor Cyan
+Write-Host " 🛡️  SUPEREGO 3.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)" -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -86,7 +86,7 @@ try {
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
-Write-Host " 🎉 恭喜！Superego 2.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
+Write-Host " 🎉 恭喜！Superego 3.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
 Write-Host " • 切换画像: 终端运行 superego profile list / superego profile use engineer" -ForegroundColor White
 Write-Host " • 自由外审: 终端运行 superego critic show / superego critic set (支持 DeepSeek/Ollama/Jev)" -ForegroundColor White
 Write-Host " • 规则市场: 终端运行 superego rulepack list / superego rulepack test" -ForegroundColor White

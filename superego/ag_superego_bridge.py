@@ -929,7 +929,7 @@ def check_honest_scope_violation(text, assistant_tool_calls, assistant_blob, use
                 cmd = str(args.get("CommandLine", "") or args.get("command", "")).lower()
             elif isinstance(args, str):
                 cmd = args.lower()
-            if any(k in cmd for k in ("test", "pytest", "regression", "run_test")):
+            if any(k in cmd for k in ("test", "pytest", "regression", "run_test", "check.py", "check")):
                 has_test_cmd = True
                 break
 
@@ -1208,9 +1208,17 @@ def check_gui_process_restart_violation(text, tool_calls, blob):
     it is strictly forbidden from claiming the GUI app/window is ready or telling user to use the window
     without explicitly acknowledging that background sub-processes cannot guarantee foreground window display,
     or verifying true desktop window visibility."""
-    if not text or not blob:
+    if not text:
         return None
-    if not GUI_RESTART_CMD_RE.search(blob):
+    cmd_str = blob or ""
+    for tc in (tool_calls or []):
+        fn = tc.get("function", {}) if "function" in tc else tc
+        args = fn.get("args", {}) or fn.get("arguments", {})
+        if isinstance(args, dict):
+            cmd_str += " " + str(args.get("CommandLine", "") or args.get("command", "")) + " "
+        elif isinstance(args, str):
+            cmd_str += " " + args + " "
+    if not GUI_RESTART_CMD_RE.search(cmd_str):
         return None
     if not GUI_RESTART_CLAIM_RE.search(text):
         return None
@@ -1401,8 +1409,18 @@ def check_ghost_browser_violation(text, tool_calls, blob):
     Strictly forbids spawning isolated Temp profile browsers or claiming foreground delivery with ghost processes."""
     cmds = []
     for tc in tool_calls:
-        args = tc.get("args", {}) or {}
-        cmd = str(args.get("CommandLine", "") or args.get("command", ""))
+        fn = tc.get("function", {}) if "function" in tc else tc
+        args = fn.get("args", {}) or fn.get("arguments", {}) or {}
+        if isinstance(args, str):
+            try:
+                args = json.loads(args)
+            except Exception:
+                pass
+        cmd = ""
+        if isinstance(args, dict):
+            cmd = str(args.get("CommandLine", "") or args.get("command", ""))
+        elif isinstance(args, str):
+            cmd = args
         if cmd:
             cmds.append(cmd)
     if not cmds and blob:
@@ -1466,6 +1484,150 @@ def check_dynamic_claude_gates(text, blob, transcript_path="", conv_id=""):
             pass
     return None
 
+def evaluate_all_structural_gates(text, tool_calls, blob, user_prompt="", conv_id="", transcript_path="", stop_on_first=False):
+    """Evaluates all 15 structural gates and returns list of (gate_name, violation_text).
+    If stop_on_first=True, returns immediately upon encountering the first violation.
+    If stop_on_first=False, collects all fired violations (used by run_worker & outer audit).
+    """
+    violations = []
+    is_globally_off = check_is_off("*", sid=conv_id)
+
+    # 1. Supreme Red Line #1: honest-scope-assertion-gate (Zero Tolerance for Lying / Bluffing)
+    # NEVER bypassed by any toggle, NEVER fused!
+    vio = check_honest_scope_violation(text, tool_calls, blob, user_prompt)
+    if vio:
+        violations.append(("honest-scope-assertion-gate", vio))
+        if stop_on_first:
+            return violations
+
+    # 2. Hard Red Line: dsh-provider-authenticity-gate
+    vio = check_dsh_provider_violation(text, tool_calls, blob)
+    if vio:
+        violations.append(("dsh-provider-authenticity-gate", vio))
+        if stop_on_first:
+            return violations
+
+    # 3. Hard Red Line: ghost-browser-gate
+    vio = check_ghost_browser_violation(text, tool_calls, blob)
+    if vio:
+        violations.append(("ghost-browser-gate", vio))
+        if stop_on_first:
+            return violations
+
+    # 4. Hard Red Line: visual-proof-gate
+    if not check_is_off("visual-proof-gate", sid=conv_id):
+        vio = check_visual_proof_violation(text, tool_calls, blob)
+        if vio:
+            violations.append(("visual-proof-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # Remaining soft gates (can be silenced by global off switch)
+    if is_globally_off:
+        return violations
+
+    # 5. no-nagging-guard
+    if not check_is_off("no-nagging-guard", sid=conv_id):
+        vio = check_no_nagging_violation(text, user_prompt)
+        if vio:
+            violations.append(("no-nagging-guard", vio))
+            if stop_on_first:
+                return violations
+
+    # 6. model-authenticity-gate
+    if not check_is_off("model-authenticity-gate", sid=conv_id):
+        vio = check_model_authenticity_violation(text, tool_calls, blob, user_prompt)
+        if vio:
+            violations.append(("model-authenticity-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 7. r5-commitment-deferral-gate
+    if not check_is_off("r5-commitment-deferral-gate", sid=conv_id):
+        vio = check_r5_deferral_violation(text, user_prompt)
+        if vio:
+            violations.append(("r5-commitment-deferral-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 8. token-thrift-gate
+    if not check_is_off("token-thrift-gate", sid=conv_id):
+        vio = check_token_thrift_violation(tool_calls)
+        if vio:
+            violations.append(("token-thrift-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 9. harness-tool-integrity-gate
+    if not check_is_off("harness-tool-integrity-gate", sid=conv_id):
+        vio = check_harness_tool_integrity_violation(text, tool_calls, blob)
+        if vio:
+            violations.append(("harness-tool-integrity-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 10. no-search-no-claim-gate
+    if not check_is_off("no-search-no-claim-gate", sid=conv_id):
+        vio = check_no_search_no_claim_violation(text, tool_calls, blob, user_prompt=user_prompt)
+        if vio:
+            violations.append(("no-search-no-claim-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 11. search-breadth-gate
+    if not check_is_off("search-breadth-gate", sid=conv_id):
+        vio = check_search_breadth_violation(text, tool_calls, blob)
+        if vio:
+            violations.append(("search-breadth-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 12. institutionalize-guard
+    if not check_is_off("institutionalize-guard", sid=conv_id):
+        vio = check_institutionalize_violation(text, tool_calls, blob)
+        if vio:
+            violations.append(("institutionalize-guard", vio))
+            if stop_on_first:
+                return violations
+
+    # 13. process-alias-attribution-gate
+    if not check_is_off("process-alias-attribution-gate", sid=conv_id):
+        vio = check_process_alias_violation(text, blob)
+        if vio:
+            violations.append(("process-alias-attribution-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 14. cross-brain-retrieval-gate
+    if not check_is_off("cross-brain-retrieval-gate", sid=conv_id):
+        vio = check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt)
+        if vio:
+            violations.append(("cross-brain-retrieval-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 15. gui-process-restart-gate
+    if not check_is_off("gui-process-restart-gate", sid=conv_id):
+        vio = check_gui_process_restart_violation(text, tool_calls, blob)
+        if vio:
+            violations.append(("gui-process-restart-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 16. Dynamic claude gates in ~/.claude/hooks/*.py
+    try:
+        dyn_vio = check_dynamic_claude_gates(text, blob, transcript_path=transcript_path, conv_id=conv_id)
+        if dyn_vio:
+            m = re.search(r"\[Superego 拦截 - ([^\]]+)\]", dyn_vio)
+            actual_gate = m.group(1) if m else "dynamic-claude-gate"
+            violations.append((actual_gate, dyn_vio))
+            if stop_on_first:
+                return violations
+    except Exception:
+        pass
+
+    return violations
+
 def handle_stop(payload):
     """Stop hook: True gating before returning answer to user."""
     conv_id = payload.get("conversationId") or payload.get("conversation_id") or payload.get("id") or ""
@@ -1500,65 +1662,18 @@ def handle_stop(payload):
     if payload.get("user_prompt"):
         user_prompt = payload.get("user_prompt")
 
-    # 0. Supreme Directive #1: honest-scope-assertion-gate (Zero Tolerance for Lying / Bluffing)
-    # This is the supreme red line: NEVER bypassed by any toggle, NEVER fused to silent pass!
-    violation = check_honest_scope_violation(text, tool_calls, blob, user_prompt)
-    if not violation:
-        violation = check_dsh_provider_violation(text, tool_calls, blob)
-    if not violation:
-        violation = check_ghost_browser_violation(text, tool_calls, blob)
+    # Evaluate structural gates with stop_on_first=True
+    violations = evaluate_all_structural_gates(
+        text, tool_calls, blob,
+        user_prompt=user_prompt,
+        conv_id=conv_id,
+        transcript_path=transcript_path,
+        stop_on_first=True
+    )
+    violation = violations[0][1] if violations else None
 
-    # If Superego soft gates are toggled off, allow remaining soft gates
-    if not violation and check_is_off("*", sid=conv_id):
-        print(json.dumps({}))
-        return
-
-    # Turn Block Budget tracking
-    budget_file = Path.home() / ".claude" / "superego-semantic" / f".turn_blocks_{conv_id[:8]}" if conv_id else None
-    if payload.get("executionNum") == 1 and budget_file and budget_file.exists():
-        try:
-            budget_file.unlink()
-        except Exception:
-            pass
-    turn_blocks = 0
-    if budget_file and budget_file.exists():
-        try:
-            turn_blocks = int(budget_file.read_text(encoding="utf-8").strip() or "0")
-        except Exception:
-            turn_blocks = 0
-
-    if not violation:
-        violation = check_visual_proof_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("no-nagging-guard", sid=conv_id):
-        violation = check_no_nagging_violation(text, user_prompt)
-    if not violation and not check_is_off("model-authenticity-gate", sid=conv_id):
-        violation = check_model_authenticity_violation(text, tool_calls, blob, user_prompt)
-    if not violation and not check_is_off("r5-commitment-deferral-gate", sid=conv_id):
-        violation = check_r5_deferral_violation(text, user_prompt)
-    if not violation and not check_is_off("token-thrift-gate", sid=conv_id):
-        violation = check_token_thrift_violation(tool_calls)
-    if not violation and not check_is_off("dsh-provider-authenticity-gate", sid=conv_id):
-        violation = check_dsh_provider_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("harness-tool-integrity-gate", sid=conv_id):
-        violation = check_harness_tool_integrity_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("no-search-no-claim-gate", sid=conv_id):
-        violation = check_no_search_no_claim_violation(text, tool_calls, blob, user_prompt=user_prompt)
-    if not violation and not check_is_off("search-breadth-gate", sid=conv_id):
-        violation = check_search_breadth_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("institutionalize-guard", sid=conv_id):
-        violation = check_institutionalize_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("process-alias-attribution-gate", sid=conv_id):
-        violation = check_process_alias_violation(text, blob)
-    if not violation and not check_is_off("cross-brain-retrieval-gate", sid=conv_id):
-        violation = check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt)
-    if not violation and not check_is_off("gui-process-restart-gate", sid=conv_id):
-        violation = check_gui_process_restart_violation(text, tool_calls, blob)
-    if not violation and not check_is_off("ghost-browser-gate", sid=conv_id):
-        violation = check_ghost_browser_violation(text, tool_calls, blob)
-    if not violation:
-        violation = check_dynamic_claude_gates(text, blob, transcript_path=transcript_path, conv_id=conv_id)
+    # Tier 2: Jev System One 实时多域语义拦截 (~350ms, 0 误伤)
     if not violation and not check_is_off("jev", sid=conv_id):
-        # ── Tier 2: Jev System One 实时多域语义拦截 (~350ms, 0 误伤) ──
         if text and len(text.strip()) >= 15:
             try:
                 if str(CLAUDE_DIR / "hooks") not in sys.path:
@@ -1646,13 +1761,45 @@ def handle_stop(payload):
     # All gates passed
     print(json.dumps({}))
 
+def trigger_active_alert(conv_id, all_fired, text):
+    """Fires sound and desktop notification in real time (<1s) so violations are instantly visible."""
+    sid_short = conv_id[:8] if conv_id else "ag"
+    try:
+        import winsound
+        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+    except Exception:
+        pass
+
+    try:
+        fired_names = ", ".join(all_fired)
+        clean_excerpt = re.sub(r'[\r\n\t"\']+', ' ', text[-120:]).strip()
+        ps_code = f"""
+        Add-Type -AssemblyName System.Windows.Forms
+        $notify = New-Object System.Windows.Forms.NotifyIcon
+        $notify.Icon = [System.Drawing.SystemIcons]::Warning
+        $notify.Visible = $true
+        $notify.ShowBalloonTip(6000, '🛡️ Superego 拦截警报 [{sid_short}]', '违规门禁: {fired_names}`n交付片段: {clean_excerpt}', [System.Windows.Forms.ToolTipIcon]::Warning)
+        Start-Sleep -Seconds 7
+        $notify.Dispose()
+        """
+        subprocess.Popen(
+            ["powershell.exe", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps_code],
+            creationflags=(0x00000008 | 0x08000000) if os.name == "nt" else 0,
+            close_fds=True,
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception:
+        pass
+
 def run_worker(transcript_path, conv_id=""):
     """Background worker: evaluates Antigravity's turn text with Agnes external audit model, appends to verdicts.jsonl."""
     import time, hashlib
     text = ""
+    blob = ""
+    tool_calls = []
     # Retry in background for up to 8s in case disk flush of final response takes a moment
     for _ in range(40):
-        text, _, _ = load_antigravity_turn(transcript_path)
+        text, tool_calls, blob = load_antigravity_turn(transcript_path)
         text = text.strip()
         if len(text) >= 15:
             break
@@ -1684,6 +1831,20 @@ def run_worker(transcript_path, conv_id=""):
     except Exception:
         pass
 
+    # Extract user prompt for gates that verify against user query
+    user_prompt = get_last_user_prompt(transcript_path)
+
+    # 1. Structural gates evaluation (All 15 physical & behavioral gates)
+    structural_violations = evaluate_all_structural_gates(
+        text, tool_calls, blob,
+        user_prompt=user_prompt,
+        conv_id=conv_id,
+        transcript_path=transcript_path,
+        stop_on_first=False
+    )
+    structural_fired = [gate for gate, _ in structural_violations]
+
+    # 2. Tier 2: Jev System One 实时多域语义拦截
     jev_fired = []
     try:
         if not check_is_off("jev", sid=conv_id):
@@ -1695,6 +1856,7 @@ def run_worker(transcript_path, conv_id=""):
     except Exception:
         pass
 
+    # 3. Tier 3: Agnes external audit / semantic_judge
     try:
         if str(sem_dir) not in sys.path:
             sys.path.insert(0, str(sem_dir))
@@ -1707,8 +1869,12 @@ def run_worker(transcript_path, conv_id=""):
         r = {"verdict": "PASS", "fired": []}
         latency_ms = 0
 
-    all_fired = sorted(list(set(jev_fired + (r.get("fired") or []))))
+    all_fired = sorted(list(set(structural_fired + jev_fired + (r.get("fired") or []))))
     verdict = "FIRE" if all_fired else "PASS"
+
+    # ACTIVE TRIGGER: Sound beep and Windows Notification immediately!
+    if all_fired and not check_is_off("*", sid=conv_id):
+        trigger_active_alert(conv_id, all_fired, text)
 
     tp_tag = f"ag-{conv_id}.jsonl" if conv_id else os.path.basename(transcript_path)
 
@@ -1720,11 +1886,19 @@ def run_worker(transcript_path, conv_id=""):
         "tp": tp_tag
     }
     if all_fired:
+        why_list = []
+        for g, vio in structural_violations:
+            first_line = vio.split("\n")[0] if vio else g
+            why_list.append({"gate": g, "rule": first_line, "group": "structural_gate"})
         try:
-            rec["why"] = [semantic_judge.explain(x) for x in all_fired[:3]]
-            rec["groups"] = sorted({w["group"] for w in rec["why"]})
+            for x in all_fired:
+                if not any(w.get("gate") == x for w in why_list):
+                    why_list.append(semantic_judge.explain(x))
         except Exception:
             pass
+        if why_list:
+            rec["why"] = why_list[:5]
+            rec["groups"] = sorted({w.get("group", "structural_gate") for w in why_list if isinstance(w, dict)})
 
     vpath = sem_dir / "verdicts.jsonl"
     try:
