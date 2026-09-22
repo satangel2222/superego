@@ -1,0 +1,1 @@
+{"name":"superego_status","description":"Query active Superego governance state, toggle switch, and gate policies.","parameters":{"properties":{},"required":[],"type":"object"}}

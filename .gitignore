@@ -5,3 +5,6 @@ __pycache__/
 *.tmp
 .env
 .agents/
+dist/
+build/
+*.egg-info/

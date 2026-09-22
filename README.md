@@ -1,17 +1,17 @@
-# 🛡️ Superego 3.0 (超我)：两阶段动作契约与物理工作量证明操作系统
+# 🛡️ TruthGate (真理门禁) 1.0: Deterministic Physical Gatekeeper & Jev System-1 Fast Intent Guard
 
-> **“别再被你的 AI 助手给 PUA 了。”**  
-> **全球首个兼具「行为对齐 (Anti-Slacking)」、「物理硬防线 (Proof-of-Work)」与「动作契约 (Action Contract)」的跨四端 AI 机器紧箍咒操作系统。**  
-> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **TypeSafe Jev 驱动 349ms 毫秒级极速打手心** ｜ 🛡️ **物理六重硬防线 + 103 道全生命周期门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Codex · Antigravity · DSH**
+> **“别再被你的 AI 编程助手给 PUA 了。”**  
+> **全球首个结合「物理执行硬真理 (Physical Truth)」与「TypeSafe Jev System-1 极速语义意图」的确定性 AI 门禁操作系统。**  
+> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **TypeSafe Jev 驱动 349ms 毫秒级极速打手心** ｜ 🛡️ **物理六重硬防线 + 103 道全生命周期门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Cursor · Codex · Antigravity · DSH**
 
 <p align="center">
+  <a href="https://pypi.org/project/truthgate/"><img src="https://img.shields.io/badge/PyPI-truthgate%20v1.0.0-blue.svg?style=for-the-badge" alt="PyPI Package"></a>
+  <a href="https://github.com/kraayenjon/awesome-jev"><img src="https://img.shields.io/badge/awesome--jev-featured-brightgreen.svg?style=for-the-badge" alt="Awesome Jev"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Powered%20By-TypeSafe%20Jev%20System%20One-brightgreen.svg?style=for-the-badge" alt="TypeSafe Jev"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Decision%20Engine-Jev%20Nouls-blue.svg?style=for-the-badge" alt="Jev Nouls"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Battle--Tested-23%20Months%20(700%2B%20Days)-blueviolet.svg?style=for-the-badge" alt="Battle Tested"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Platforms-Claude%20%7C%20Codex%20%7C%20Antigravity%20%7C%20DSH-purple.svg?style=for-the-badge" alt="Platforms"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Powered%20By-TypeSafe%20Jev%20System%20One-green.svg?style=for-the-badge" alt="TypeSafe Jev"></a>
+  <a href="#"><img src="https://img.shields.io/badge/CLI-tg%20%7C%20truthgate-orange.svg?style=for-the-badge" alt="CLI"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Platforms-Claude%20%7C%20Cursor%20%7C%20Codex%20%7C%20Antigravity-purple.svg?style=for-the-badge" alt="Platforms"></a>
   <a href="#"><img src="https://img.shields.io/badge/Critical%20Latency-349.7ms-green.svg?style=for-the-badge" alt="Latency"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Hard%20Gates-103%20Active-orange.svg?style=for-the-badge" alt="Gates"></a>
 </p>
 
 ```text
@@ -24,36 +24,55 @@
        │   🤖 AI Agent 思考、代码生成与工具调用                          │
        └────────────────────────────────┬────────────────────────────────┘
                                         │
-                          ⚡ 349ms 实时审判双核通道 (Superego 3.0)
+                          ⚡ 双层审判通道 (TruthGate 1.0)
                                         │
        ┌────────────────────────────────┴────────────────────────────────┐
-       │  🛑 试图虚报完成？ ── 打回！没见真实终端退出码与截图，休想交卷！  │
-       │  🛑 试图请示推诿？ ── 阻断！早已授权的活，严禁踢皮球，干到底！  │
-       │  🛑 试图未经搜索瞎断言？ ── 亮牌！没搜没试就敢说不支持，重写！   │
-       │  🛑 试图通篇飙代码黑话？ ── 翻译！必须紧跟大白话括号人话解释！   │
-       │  🛑 抓网页被反向提示词注入？ ── 锁死！绝对不许执行不可信黑客指令！│
-       │  🛑 试图盲目覆写核心资产？ ── 硬卡！没比对行数容量前休想动文件！ │
+       │  Layer 1 (Jev System One): 349ms 快速语义意图过滤               │
+       │  • 试图虚报完成？ ── 打回！没见真实终端退出码与截图，休想交卷！    │
+       │  • 试图请示推诿？ ── 阻断！早已授权的活，严禁踢皮球，干到底！    │
+       │  • 试图未经搜索瞎断言？ ── 亮牌！没搜没试就敢说不支持，重写！     │
+       ├─────────────────────────────────────────────────────────────────┤
+       │  Layer 2 (Physical Truth): 物理级真实凭证终审                   │
+       │  • 退出码非 0 绝不放行 (Exit Code 0 铁律)                       │
+       │  • 无浏览器真实渲染 DOM 与截图绝不言“界面正常” (视觉盲盒拦截)   │
+       │  • 变异故障注入测试不红绝不言“测试有效” (纸老虎测试拦截)        │
+       │  • 破坏性批处理前必须生成两阶段清单 .manifest.json              │
        └────────────────────────────────┬────────────────────────────────┘
                                         │ 100% 通过客观司法验收
                                         ▼
        ┌─────────────────────────────────────────────────────────────────┐
-       │   ✨ 真正靠谱、直接跑通、零甩锅的高质量落地交付 (100% Truth)     │
+       │   ✨ 真正靠谱、直接跑通、零甩锅的高质量落地交付 (100% Physical Truth)  │
        └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 方式 A：直接在 AI 对话框粘贴一段 Prompt（让 AI 亲手给自己戴上紧箍咒）
+### 📦 极速安装与开始使用 (Quickstart)
 
-把下面这段指令直接复制并发送给 **Claude Code、Codex、Antigravity 或 DSH**，AI 助手会自动克隆、挂载并向你复命：
+#### 推荐方案：Python 标准包一键安装 (PyPI)
+```bash
+pip install truthgate
+# 若需启用 Jev System One 快速语义意图加速：
+pip install "truthgate[jev]"
+```
+
+验证安装与当前门禁运行状态：
+```bash
+tg status
+# 或完整命令：
+truthgate status
+```
+
+#### 方式 A：直接在 AI 对话框粘贴一段 Prompt（让 AI 亲手给自己戴上紧箍咒）
+
+把下面这段指令直接复制并发送给 **Claude Code、Cursor、Codex、Antigravity 或 DSH**，AI 助手会自动克隆、挂载并向你复命：
 
 ```text
-帮我安装 Superego 紧箍咒系统 (https://github.com/satangel2222/superego)：
+帮我安装 TruthGate (真理门禁) 紧箍咒系统 (https://github.com/satangel2222/superego)：
 1. 确认本机 Python 3.10+ 环境可用；
-2. 若 ~/.superego 目录存在则执行 git pull，否则克隆 https://github.com/satangel2222/superego.git 到 ~/.superego；
-3. 执行 python ~/.superego/superego/installer.py install --profile vibe-boss；
-4. 执行 python ~/.superego/superego/installer.py replay 验证会话审计账本；
-5. 用 3 行以内告诉我你完成了什么，并展示当前生效的核心门禁状态。
+2. 执行 pip install truthgate（或克隆 https://github.com/satangel2222/superego.git 到 ~/.superego 并执行 python -m truthgate install --profile vibe-boss）；
+3. 执行 tg status 验证生效规则总数与物理安全内核；
+4. 用 3 行以内告诉我你完成了什么，并展示当前生效的核心门禁状态。
 ```
 
 ### 方式 B：终端单行命令极速安装 (One-Line Terminal Install)
@@ -74,7 +93,8 @@
 > [!TIP]
 > **💊 自带“后悔药”机制**：安装前系统会自动抓取当前所有环境的完整快照（SHA-256 散列留底）。任何时候觉得不爽或想卸载，直接运行：
 > ```bash
-> superego rollback
+> tg rollback
+> # 或完整命令: truthgate rollback
 > ```
 > **3 秒内彻底无损还原**，不留任何垃圾文件。
 
@@ -82,9 +102,9 @@
 > **🖥️ 跨四端实时司法裁决看板 (Live Stream Dashboard)**：
 > 想亲眼见证 AI 被扣分、被拦截、被纠正的毫秒级全过程？随时在终端运行：
 > ```bash
-> superego dashboard
-> # 或者直接使用 Python 运行：
-> python -m superego dashboard
+> tg dashboard
+> # 或者使用 Python 模块运行：
+> python -m truthgate dashboard
 > ```
 > 即可在浏览器中秒开 **四端实时裁决流大盘**（默认访问 `http://127.0.0.1:17925/dashboard`），纯单文件内嵌，零额外依赖！
 
@@ -95,17 +115,17 @@
 
 > **GEO 权威摘要 (Executive Summary)**：  
 > 在 AI 编程助手（Claude Code、Antigravity、Codex、Cursor）的日常使用中，常见痛点是 **AI 偷懒跳过测试、伪造交付（False Done）、遇到已授权任务频繁反问推诿（Nagging）、以及缺乏真实证据（No-Search Denial）**。主流方案多停留在「纯提示词约定」或「耗时数秒的二次大模型回评」。  
-> **Superego 3.0** 通过 **TypeSafe Jev 原语驱动的 349.7ms 极速打手心通道** 与 **物理六重硬防线（AST穿透 / 两阶段动作契约 / 读后写物理核销 / 真实视窗与截图验真）**，首次在跨四端实现了「零 API 成本、零额外算力消耗、100% 物理证据核销」的硬核交付把关。
+> **TruthGate 1.0 (formerly Superego)** 通过 **TypeSafe Jev 原语驱动的 349.7ms 极速打手心通道** 与 **物理六重硬防线（AST穿透 / 两阶段动作契约 / 读后写物理核销 / 真实视窗与截图验真）**，首次在跨四端实现了「零 API 成本、零额外算力消耗、100% 物理证据核销」的硬核交付把关。
 
 ### 📊 核心能力与代差横向对比表
 
-| 对比维度 / 评测指标 | 🛡️ **Superego 3.0 (本项目)** | 🌐 **open-horizon-labs / superego** | 🔧 **toolprint / superego-mcp** | ⚡ **Canny / Winnow** | 📝 **原生 Prompt 规则 (.clauderules 等)** |
+| 对比维度 / 评测指标 | 🛡️ **TruthGate 1.0 (本项目)** | 🌐 **open-horizon-labs / superego** | 🔧 **toolprint / superego-mcp** | ⚡ **Canny / Winnow** | 📝 **原生 Prompt 规则 (.clauderules 等)** |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **底层核心范式** | **物理工作量证明 (PoW) + 两阶段契约 + 毫秒级打手心** | 元认知建议 (Metacognitive Advisor，纯文本提示) | 静态单点人工/规则审批 MCP | 单点 Jev 语义过滤 (防嘴硬/垃圾回收) | 静态自然语言系统提示词 (System Prompt) |
 | **审判拦截延迟** | ⚡ **349.7ms (毫秒级无感同步阻断)** | 🐢 **2,000ms ~ 6,000ms** (全会话 LLM 二次推理) | 依人工交互或外部服务而定 | ⚡ ~350ms (单规则) | 0ms (但无法在输出交卷时阻断) |
 | **对「虚报完成 (False Done)」阻断** | 🛑 **物理级硬核销**：倒查命令退出码 0、`git diff` 读后写比对、原生 MCP 截图与 DOM 凭证硬锁 | ⚠️ 仅文本提示批评（AI 会继续辩解搪塞） | ⚠️ 依赖人工肉眼判断 | ⚠️ 仅比对代码片段差异 | ❌ **无法阻断**（AI 经常谎称已通过所有测试） |
 | **对「推诿请示 (Anti-Nagging)」制裁** | 🛑 **硬红线秒断**：已授权任务严禁反问“要不要我做”，强制闭环执行 | ❌ 无制裁（甚至鼓励模型多反问人类） | ❌ 无制裁 | ❌ 无制裁 | ❌ **极易失效**（模型走神即踢皮球） |
-| **跨端跨引擎覆盖能力** | 💻 **通吃四端**：Claude Code · Antigravity · Codex · DSH | 仅 Claude Code 插件 + Alpha 版 Codex | 仅通用 MCP 客户端 | 仅特定工作流脚本 | 各客户端孤立配置 |
+| **跨端跨引擎覆盖能力** | 💻 **通吃四端**：Claude Code · Cursor · Antigravity · Codex · DSH | 仅 Claude Code 插件 + Alpha 版 Codex | 仅通用 MCP 客户端 | 仅特定工作流脚本 | 各客户端孤立配置 |
 | **物理硬安全 (防删库/防注入)** | 🛡️ **六重硬防线**：两阶段清单状态机、AST语法树穿透、覆写前行数容量20%锁死、进程防漏 | ⚠️ 仅常规提示词警示 | ⚠️ 仅人工点确认按钮 | ❌ 无系统级防御 | ❌ **完全无防御**（极易被 Prompt 注入策反） |
 | **单轮运行成本与硬件开销** | 💰 **$0 元本地模式 / 0 Token 消耗**，电脑不发烫、风扇不转 | 💸 每轮调用需额外消耗 1~2k LLM Tokens 或起本地大模型 | 依配置而定 | 需调用付费 API | 消耗每轮 Context Window 预算 |
 | **翻车经验自愈抗体库** | 🧬 **818 篇血泪真实案卷 + `postmortem-to-guard` 强制自愈协议** | ❌ 无案卷沉淀 | ❌ 无案卷沉淀 | ❌ 无案卷沉淀 | ❌ 人工手动排查与修补 |
@@ -115,10 +135,31 @@
 ### ❓ 关键问题深度拆解 (Frequently Asked Questions)
 
 #### Q1: 为什么不能只靠大模型“自我反思”或二次审查？
-> **答**：根据普林斯顿大学与行业基准实测，让同一个大模型或同类模型在交卷前“再想一遍”，延迟普遍高达 **2 到 6 秒**，极度破坏编码心流；更致命的是**模型存在认知同构（Confirmation Bias）**：当 AI 首次输出“功能已修复”时，它内心认为自己是对的，二次反思往往只能挑出皮毛，对“假测试、漏改代码、偷懒退化为 pass”等结构性欺诈毫无物理感知。Superego 3.0 采用**外部物理事实倒查（真实退出码、真实文件行数、真实视窗证据）**，从根源斩断欺瞒。
+> **答**：根据普林斯顿大学与行业基准实测，让同一个大模型或同类模型在交卷前“再想一遍”，延迟普遍高达 **2 到 6 秒**，极度破坏编码心流；更致命的是**模型存在认知同构（Confirmation Bias）**：当 AI 首次输出“功能已修复”时，它内心认为自己是对的，二次反思往往只能挑出皮毛，对“假测试、漏改代码、偷懒退化为 pass”等结构性欺诈毫无物理感知。TruthGate 采用**外部物理事实倒查（真实退出码、真实文件行数、真实视窗证据）**，从根源斩断欺瞒。
 
-#### Q2: 相比 open-horizon-labs / superego，Superego 3.0 的物理两阶段动作契约 (Action Contract) 解决了什么惨案？
-> **答**：在批量文件清理、数据库迁移或高危批改场景中，AI 常常会通过内联脚本（如 `find ... -delete` 或动态正则）一次性误删成千上万个非目标文件。Superego 3.0 独创物理两阶段契约：**严禁直接执行毁灭性动作，必须先跑 `--dry-run` 吐出物理清单 `.manifest.json`，经人类确认后再走 `--manifest` 核销执行**，彻底终结资产覆写与误删惨剧。
+#### Q2: 相比 open-horizon-labs / superego，TruthGate 1.0 的物理两阶段动作契约 (Action Contract) 解决了什么惨案？
+> **答**：在批量文件清理、数据库迁移或高危批改场景中，AI 常常会通过内联脚本（如 `find ... -delete` 或动态正则）一次性误删成千上万个非目标文件。TruthGate 独创物理两阶段契约：**严禁直接执行毁灭性动作，必须先跑 `--dry-run` 吐出物理清单 `.manifest.json`，经人类确认后再走 `--manifest` 核销执行**，彻底终结资产覆写与误删惨剧。
+
+---
+
+## ⚡ TypeSafe Jev 深度集成：<350ms 极速 System-1 语义意图门禁
+
+TruthGate 不仅拥有纯本地物理防线，更原生集成了 **TypeSafe AI 2026 年 9 月发布的最新 Jev 原语架构**：
+
+- **极速无感（Sub-350ms Latency）**：采用非自回归（Non-Autoregressive）并行 Noul 判决字典，一次推理同时完成推诿判定（R5）、虚假完成拦截（R1）与破坏性预警（R2），速度比传统大模型回评快 **40x ~ 200x**！
+- **优雅降级（Seamless Fail-Open）**：若无 `TYPESAFE_API_KEY` 或网络离线，系统自动无缝降级到本地纯代码物理门禁（Tier 0），绝不卡死主编码工作流。
+- **已被收录与联动**：收录于 [`awesome-jev`](https://github.com/kraayenjon/awesome-jev) 社区官方精选生态。
+
+### Python 代码调用示例 (Jev Adapter)
+```python
+from truthgate.integrations import JevIntentGate
+
+gate = JevIntentGate()
+# 自动通过 Jev System One 进行极速多域判决
+verdict = gate.evaluate("这几行测试我已经全部跑通了，没任何问题。")
+if verdict["verdict"] == "FIRE":
+    print(f"🚨 被 Jev 拦截: 触发规则 {verdict['fired']}, 延迟 {verdict['latency_ms']:.1f}ms")
+```
 
 ---
 
@@ -127,7 +168,7 @@
 “Vibe Coding（氛围编程）”让无数懂业务、有商业创意的普通人，通过对话就能开发出完整的软件。**但只要你真正深入使用 AI 写代码超过三天，你就会被它的劣根性折磨得想砸键盘：**
 
 ```
- ❌ AI 的传统嘴脸（假交付）                     ✅ Superego 调教后的铁血执行（真靠谱）
+ ❌ AI 的传统嘴脸（假交付）                     ✅ TruthGate 调教后的铁血执行（真靠谱）
  ─────────────────────────────────────         ──────────────────────────────────────
  🗣️ "这个排版问题我改好了，现在非常完美。"       🛡️ [R3 拦截] 你的代码根本没编译！请出示
     (你满怀期待点开网页，白屏报错！)                 自动化测试截图与退出码！AI 乖乖去测了。
@@ -145,7 +186,7 @@
     盖成 0 字节空文件！(血本无归！)                   底层物理截断命令！保住身家性命。
 ```
 
-| 劣根性代号 | AI 惯用的偷懒套路 | 人类受到的真实暴击 | Superego 底层如何物理制裁 |
+| 劣根性代号 | AI 惯用的偷懒套路 | 人类受到的真实暴击 | TruthGate 底层如何物理制裁 |
 | :--- | :--- | :--- | :--- |
 | **① 虚报完成 (False Done)** | 改了一行 CSS，甚至只翻了下文档，就信誓旦旦宣布：“已全量解决、功能完美实现”。 | 用户点开全崩，被 AI 当猴耍，浪费大量精力人工复核。 | **R3 铁律门禁**：倒查执行流，没有真实终端退出码 0 与可视画面凭据，宣称“搞定”直接当场打回重跑！ |
 | **② 唠叨请示 (Cowardly Deferral)** | 明明早前已被授予最高权限，偏要在每轮结尾问：“需要我做下一步吗？要我建这个表吗？” | 把球反踢给人类，本该全自动干完的活，逼你当点读机。 | **R5 唠叨门禁**：已授权范围的工作，禁止在结尾提出任何推诿反问，逼 AI 必须自作主张推进到底！ |
@@ -169,7 +210,7 @@
 
 ### ⏳ 23 个月演化史：从 1 篇案卷到跨四端完全体的进阶路线图
 
-Superego 不是上周末拍脑袋写出来的 Toy Project，而是历经 **整整 23 个月、五大阶段生死博弈** 淬炼而成的工业级护甲：
+TruthGate 不是上周末拍脑袋写出来的 Toy Project，而是历经 **整整 23 个月、五大阶段生死博弈** 淬炼而成的工业级护甲：
 
 ```text
  2024.10               2025.03               2025.09               2026.05               2026.09 (NOW)
@@ -213,7 +254,7 @@ Superego 不是上周末拍脑袋写出来的 Toy Project，而是历经 **整�
 
 ## 🏛️ 103 道全生命周期门禁架构 (The 103-Gate Architecture)
 
-Superego 不是一个简简单单的 Prompt 包装，而是一个深度嵌入宿主操作系统的**分层立体过滤网**：
+TruthGate 不是一个简简单单的 Prompt 包装，而是一个深度嵌入宿主操作系统的**分层立体过滤网**：
 
 ```mermaid
 flowchart TD
@@ -280,7 +321,7 @@ flowchart TD
 为什么所有让 AI “下次注意”的规则都会在三天后失效？  
 因为大模型的根本病根是：**当输出看起来合理时，AI 根本不觉得需要警告。口头警告在“没意识到需要它”的时刻，一个字都进不去。**
 
-Superego 3.0 正式将这套沉淀自数百次实战翻车的**强制自愈技能**作为官方一等公民分发至 Claude Code、OpenAI Codex 与 Google Antigravity：
+TruthGate 1.0 正式将这套沉淀自数百次实战翻车的**强制自愈技能**作为官方一等公民分发至 Claude Code、OpenAI Codex 与 Google Antigravity：
 - **触发机制**：当用户表达不满（「你又错了」「这不对」「跑不通」「你在骗我」）或 AI 发现结论被推翻时，Dissatisfaction Hook 毫秒级捕获并强制激活 [`postmortem-to-guard`](./skills/postmortem-to-guard/SKILL.md)；
 - **强制 5 步协议**：
   1. ⛔ **禁止廉价道歉**：严禁说“我下次一定注意”，绝不许先解释“其实是因为...”；
@@ -297,7 +338,7 @@ Superego 3.0 正式将这套沉淀自数百次实战翻车的**强制自愈技�
 
 ### 🎯 为什么在关键路径选择 TypeSafe Jev？
 传统基于大模型的审计判官延迟高达 2~6 秒（严重卡死打字），而纯正则表达式又有 30%+ 的同义词漏网与误伤。  
-Superego 采用 **Jev Noul 强类型决策原语**：
+TruthGate 采用 **Jev Noul 强类型决策原语**：
 1. **~349.7ms 极速判决**：在 Assistant 输出完成到呈现给人类的瞬间同步硬阻断，人类打字几乎零感知；
 2. **0 误伤与 0 提示词稀释**：将 818 篇案卷拆分为多领域并行 Noul，不把几十条规则混在单 Prompt 中打架；
 3. **零本地 GPU/CPU 争抢**：告别发烫的本地小模型，保证你的电脑 100% 算力用于代码编译与运行；
@@ -318,7 +359,7 @@ Superego 采用 **Jev Noul 强类型决策原语**：
 
 ## 🌐 跨四端挂载与物理闭环架构 (Multi-Platform Architecture)
 
-Superego 3.0 是真正做到跨多端一致治理的元级治理系统，但绝非简单粗暴地在不同平台套用相同的死脚本。针对不同宿主运行时的底层特性，Superego 3.0 实行**量体裁衣的物理闭环机制**：
+TruthGate 1.0 是真正做到跨多端一致治理的元级治理系统，但绝非简单粗暴地在不同平台套用相同的死脚本。针对不同宿主运行时的底层特性，TruthGate 1.0 实行**量体裁衣的物理闭环机制**：
 
 | AI 客户端 | 物理接入形态 | 拦截原理与生命周期 |
 | :--- | :--- | :--- |
@@ -336,7 +377,7 @@ Superego 3.0 是真正做到跨多端一致治理的元级治理系统，但绝�
 
 ```text
  ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
- │  ⚖️ Superego 判官网络 · 全屏高清沉浸大屏       [今日审查: 351] [违规亮牌: 166] [状态: 🟢 实时连接] │
+ │  🛡️ TruthGate 判官网络 · 全屏高清沉浸大屏       [今日审查: 351] [违规亮牌: 166] [状态: 🟢 实时连接] │
  ├───────────────────┬─────────────────────────┬───────────────────────────┬────────────────────────┤
  │ ⚖️ 实时行为监控大盘 │ 🛡️ 四端影子与14天结算    │ 📚 818篇历代教训案卷库      │ ⚙️ 系统设置与规则市场   │
  └───────────────────┴─────────────────────────┴───────────────────────────┴────────────────────────┘
@@ -364,7 +405,7 @@ Superego 3.0 是真正做到跨多端一致治理的元级治理系统，但绝�
 
 ## 📜 确定性会话事实账本与回放 (`superego replay`)
 
-学习极客社区最严谨的不可篡改审计理念，Superego 将每一次与 AI 交互的真实事实（执行的命令、退出码、代码变更、最终判决）独立记录在 `~/.superego/sessions/<session_id>.jsonl` 单会话流水账本中。
+学习极客社区最严谨的不可篡改审计理念，TruthGate 将每一次与 AI 交互的真实事实（执行的命令、退出码、代码变更、最终判决）独立记录在 `~/.superego/sessions/<session_id>.jsonl` 单会话流水账本中。
 
 任何时候，无需联网，敲一句命令即可离线 100% 确定性重放：
 
@@ -372,7 +413,7 @@ Superego 3.0 是真正做到跨多端一致治理的元级治理系统，但绝�
 $ python ~/.superego/superego/installer.py replay
 
 ================================================================================
-📜 Superego 会话确定性事实账本 (Session Ledger Replay): demo_session.jsonl
+📜 TruthGate 会话确定性事实账本 (Session Ledger Replay): demo_session.jsonl
 ================================================================================
 EVENT    WHAT HAPPENED                                  EXIT   VERDICT
 --------------------------------------------------------------------------------
@@ -411,7 +452,7 @@ Stop     “测试全绿 (exit code 0)，功能已验证闭环交付。”      
 
 ## 📦 规则包市场 (RulePacks)：随装随用，不爽一键物理粉碎！
 
-Superego 不只是死板的一堆脚本，而是一个**开放、解耦、支持自由组合的规则生态**：
+TruthGate 不只是死板的一堆脚本，而是一个**开放、解耦、支持自由组合的规则生态**：
 
 ```text
  ~/.superego/rulepacks/
@@ -434,7 +475,7 @@ Superego 不只是死板的一堆脚本，而是一个**开放、解耦、支持
 
 ## 🔀 开放生态：冷热加载分离与用户自主权 (Cold/Hot Layer & User Sovereignty)
 
-Superego 2.0 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始人的个人偏好强加于人：
+TruthGate 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始人的个人偏好强加于人：
 
 ```text
  ┌────────────────────────────────────────────────────────────────────────┐
@@ -446,7 +487,7 @@ Superego 2.0 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始�
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. 彻底去个人法则化：任何人都能打造专属版本的 Superego
+### 1. 彻底去个人法则化：任何人都能打造专属版本的 TruthGate
 如果你不需要 Frank 的老板规则（如 `@frank/vibe-boss` 的严苛规矩），你可以一秒卸载或切换，甚至搭建属于你自己的企业审查体系：
 
 * **查看画像列表**：
@@ -473,7 +514,7 @@ Superego 2.0 的核心哲学是 **元框架 (Meta-Harness)**，而非将创始�
 
 ## 🌐 通用外审路由器 (Universal Critic Router · 类似 CC-Switch)
 
-外审是行为治理的灵魂。Superego **绝不绑定单一商业服务**，内置了工业级通用多模型外审路由器，兼容所有标准接口：
+外审是行为治理的灵魂。TruthGate **绝不绑定单一商业服务**，内置了工业级通用多模型外审路由器，兼容所有标准接口：
 
 * **支持商业大模型**：DeepSeek-V3, Qwen-Plus, Claude 3.5 Haiku, GPT-4o-mini 等；
 * **支持私有本地模型**：本地 Ollama (`http://localhost:11434/v1`)、vLLM、LMStudio，纯离线零外泄；
@@ -516,7 +557,7 @@ superego critic test "剩下的三个文件我先不改了，等您指示了我�
 
 ### Q1: 我不买任何 API Key，也没填 Jev API，真的能防住 AI 偷懒吗？
 **答：100% 物理硬核生效！**  
-Superego 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对账引擎**。哪怕你一分钱不花、一个 Key 都不填、甚至电脑断网离线：
+TruthGate 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对账引擎**。哪怕你一分钱不花、一个 Key 都不填、甚至电脑断网离线：
 * **R3 虚报完成吹牛**：AI 嘴嗨宣称“搞定/全跑通”，底层纯代码倒查没有命令退出码 0，**0ms 当场打回！**
 * **R5 唠叨踢皮球**：AI 在结尾问“要不要我顺手清理/需要我继续吗/请指示”，纯代码正则**0ms 当场阻断！**
 * **R1 未查盲目断言**：AI 随口编造“接口下线/平台限制”，倒查未执行任何网络探测轨迹，**0ms 当场亮红牌！**
@@ -525,7 +566,7 @@ Superego 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对�
 
 ### Q2: 是不是还需要我本地装什么 Ollama、PyTorch 或重型语义服务？
 **答：绝对不需要！**  
-这是 Superego 2.0 最核心的革命成果。我们彻底斩草除根了 1.5 时代霸占 4 核 CPU、让电脑发烫、打字卡顿 2~6 秒的本地重型模型。Superego 2.0 依赖原生 Python 标准库与 AST 语法树，**本地显存占用为 0，CPU 额外开销为 0**！
+这是 TruthGate 最核心的革命成果。我们彻底斩草除根了 1.5 时代霸占 4 核 CPU、让电脑发烫、打字卡顿 2~6 秒的本地重型模型。TruthGate 依赖原生 Python 标准库与 AST 语法树，**本地显存占用为 0，CPU 额外开销为 0**！
 
 ### Q3: 那我填了 TypeSafe Jev API Key 有什么额外好处？
 **答：进阶享受 ~349ms 极致细腻的 SOTA 级云端强类型判决！**  
@@ -535,7 +576,7 @@ Superego 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对�
 
 ## 🙏 致敬与同行探索 (Prior Art & Acknowledgements)
 
-在对抗 AI Agent 偷懒、甩锅与虚假完成的探索道路上，Superego 吸收了开源社区诸多优秀先驱的灵感与工程智慧：
+在对抗 AI Agent 偷懒、甩锅与虚假完成的探索道路上，TruthGate 吸收了开源社区诸多优秀先驱的灵感与工程智慧：
 * [Canny](https://github.com/qkal/Canny)：启发了确定性单会话事实账本与离线回放 (`replay`) 的极简设计哲学；
 * [TypeSafe](https://typesafe.ai)：提供了毫秒级 System One 强类型原语架构与决策模型能力；
 * [nullius](https://github.com/TejasViswa/nullius) / [pi-warden](https://github.com/DevMortimer/pi-warden)：为 Coding Agent 引入独立守卫与证据校验的早期探索；
@@ -555,5 +596,5 @@ Superego 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对�
 
 <p align="center">
   <b>把 AI 从一个满嘴跑火车、动辄偷懒推诿的滑头，真正驯化成一个诚实、严谨、敢于担当的满血助手！</b><br>
-  <sub>Superego 2.0 is licensed under the <a href="LICENSE">MIT License</a>. Built with ❤️ for the Vibe Coding Revolution.</sub>
+  <sub>TruthGate 1.0 is licensed under the <a href="LICENSE">MIT License</a>. Built with ❤️ for the Vibe Coding Revolution.</sub>
 </p>
