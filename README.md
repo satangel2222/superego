@@ -68,9 +68,9 @@ truthgate status
 把下面这段指令直接复制并发送给 **Claude Code、Cursor、Codex、Antigravity 或 DSH**，AI 助手会自动克隆、挂载并向你复命：
 
 ```text
-帮我安装 TruthGate (真理门禁) 紧箍咒系统 (https://github.com/satangel2222/superego)：
+帮我安装 TruthGate (真理门禁) 紧箍咒系统 (https://github.com/satangel2222/truthgate)：
 1. 确认本机 Python 3.10+ 环境可用；
-2. 执行 pip install truthgate（或克隆 https://github.com/satangel2222/superego.git 到 ~/.superego 并执行 python -m truthgate install --profile vibe-boss）；
+2. 执行 pip install truthgate（或克隆 https://github.com/satangel2222/truthgate.git 到 ~/.superego 并执行 python -m truthgate install --profile vibe-boss）；
 3. 执行 tg status 验证生效规则总数与物理安全内核；
 4. 用 3 行以内告诉我你完成了什么，并展示当前生效的核心门禁状态。
 ```
@@ -79,11 +79,11 @@ truthgate status
 
 * **Windows 用户（PowerShell 终端 / 复制即跑）**：
   ```powershell
-  irm https://raw.githubusercontent.com/satangel2222/superego/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/satangel2222/truthgate/main/install.ps1 | iex
   ```
 * **macOS / Linux 用户（终端 / 复制即跑）**：
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/satangel2222/superego/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/satangel2222/truthgate/main/install.sh | bash
   ```
 
 > [!NOTE]

@@ -50,11 +50,11 @@ jev = ["typesafe-sdk>=0.1.0"]
 all = ["truthgate[jev]"]
 
 [project.urls]
-Homepage = "https://github.com/satangel2222/superego"
-Documentation = "https://github.com/satangel2222/superego#readme"
-Repository = "https://github.com/satangel2222/superego.git"
-Issues = "https://github.com/satangel2222/superego/issues"
-Changelog = "https://github.com/satangel2222/superego/releases"
+Homepage = "https://github.com/satangel2222/truthgate"
+Documentation = "https://github.com/satangel2222/truthgate#readme"
+Repository = "https://github.com/satangel2222/truthgate.git"
+Issues = "https://github.com/satangel2222/truthgate/issues"
+Changelog = "https://github.com/satangel2222/truthgate/releases"
 
 [project.scripts]
 truthgate = "truthgate.cli:main"

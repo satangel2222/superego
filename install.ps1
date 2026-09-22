@@ -1,6 +1,6 @@
 # ==============================================================================
 # 🛡️ Superego 3.0 一键安装脚本 (Windows PowerShell)
-# 用法: irm https://raw.githubusercontent.com/satangel2222/superego/main/install.ps1 | iex
+# 用法: irm https://raw.githubusercontent.com/satangel2222/truthgate/main/install.ps1 | iex
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -39,7 +39,7 @@ if (-not (Test-Path $superegoHome)) {
 }
 
 # 3. 拉取或更新 Superego 仓库
-$repoUrl = "https://github.com/satangel2222/superego.git"
+$repoUrl = "https://github.com/satangel2222/truthgate.git"
 if (Get-Command git -ErrorAction SilentlyContinue) {
     if (Test-Path (Join-Path $superegoHome ".git")) {
         Write-Host "  🔄 检测到已安装，正在同步拉取最新版本..." -ForegroundColor Cyan
@@ -50,7 +50,7 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
     }
 } else {
     Write-Host "  📦 正在下载 Superego 源码包 (ZIP)..." -ForegroundColor Cyan
-    $zipUrl = "https://github.com/satangel2222/superego/archive/refs/heads/main.zip"
+    $zipUrl = "https://github.com/satangel2222/truthgate/archive/refs/heads/main.zip"
     $zipFile = Join-Path $HOME "superego-main.zip"
     Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
     Expand-Archive -Path $zipFile -DestinationPath $HOME -Force

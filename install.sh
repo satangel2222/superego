@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # 🛡️ Superego 3.0 一键安装脚本 (macOS / Linux)
-# 用法: curl -fsSL https://raw.githubusercontent.com/satangel2222/superego/main/install.sh | bash
+# 用法: curl -fsSL https://raw.githubusercontent.com/satangel2222/truthgate/main/install.sh | bash
 # ==============================================================================
 
 set -e
@@ -35,7 +35,7 @@ echo "  [✓] 目标安装目录: $SUPEREGO_HOME"
 mkdir -p "$SUPEREGO_HOME"
 
 # 3. 克隆或同步仓库
-REPO_URL="https://github.com/satangel2222/superego.git"
+REPO_URL="https://github.com/satangel2222/truthgate.git"
 if command -v git &>/dev/null; then
     if [ -d "$SUPEREGO_HOME/.git" ]; then
         echo "  🔄 正在同步拉取最新版本..."
@@ -46,7 +46,7 @@ if command -v git &>/dev/null; then
     fi
 else
     echo "  📦 正在下载源码包 (TAR.GZ)..."
-    TAR_URL="https://github.com/satangel2222/superego/archive/refs/heads/main.tar.gz"
+    TAR_URL="https://github.com/satangel2222/truthgate/archive/refs/heads/main.tar.gz"
     curl -fsSL "$TAR_URL" | tar -xz -C "$HOME"
     cp -r "$HOME/superego-main/"* "$SUPEREGO_HOME/"
     rm -rf "$HOME/superego-main"

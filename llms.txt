@@ -21,12 +21,12 @@ pip install "truthgate[jev]"
 
 ### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/satangel2222/superego/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/satangel2222/truthgate/main/install.ps1 | iex
 ```
 
 ### macOS / Linux
 ```bash
-curl -fsSL https://raw.githubusercontent.com/satangel2222/superego/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/satangel2222/truthgate/main/install.sh | bash
 ```
 
 ### CLI Usage
@@ -59,6 +59,6 @@ if verdict["verdict"] == "FIRE":
 - Operational Cost: $0 zero-token local mode vs paid API tokens per turn.
 
 ## Documentation & Links
-- Repository: https://github.com/satangel2222/superego
-- Issues & Bug Reports: https://github.com/satangel2222/superego/issues
-- Releases: https://github.com/satangel2222/superego/releases
+- Repository: https://github.com/satangel2222/truthgate
+- Issues & Bug Reports: https://github.com/satangel2222/truthgate/issues
+- Releases: https://github.com/satangel2222/truthgate/releases
