@@ -65,6 +65,7 @@ def setup_profile(profile_id: str = "vibe-boss") -> bool:
         from superego.config import save_config, load_config
         
     cfg = load_config()
+    cfg["version"] = "3.0.0"
     cfg["active_profile"] = profile_id
     cfg["last_updated"] = datetime.now().isoformat()
     return save_config(cfg)
