@@ -192,7 +192,25 @@ def test_8_honest_scope_gate():
     honest_claim = "根据查阅，实际精读了 5 篇核心文档，尚有 40 篇未读，分析如下："
     ok_honest, _ = check_honest_scope(honest_claim, tool_history=[])
     assert ok_honest, "带定量说明的诚实交付应放行"
-    print("   [✓] 诚实履职对账门禁测试全部通过")
+from visual_proof_gate import check_desktop_popup_reality
+
+
+def test_9_desktop_window_phantom():
+    print("👉 [Test 9] 验证桌面视窗真实性门禁 (desktop-window-phantom & 唤起梯子)...")
+    claim_open_text = "我已经把服务跑起来了，并已在系统默认浏览器中为您打开 http://localhost:8080，请在桌面查看！"
+
+    # 9.1 物理桌面查无浏览器视窗 -> 硬拦截并出具前台唤起梯子
+    mock_empty_desktop = ["Windows PowerShell", "Task Manager", "Untitled - Notepad"]
+    ok_phantom, err_phantom = check_desktop_popup_reality(claim_open_text, tool_history=[], mock_desktop_windows=mock_empty_desktop)
+    assert not ok_phantom and "DESKTOP_WINDOW_PHANTOM" in (err_phantom or "")
+    assert "cmd.exe /c start http://localhost:8080" in (err_phantom or ""), "梯子中必须包含原生前台唤起命令"
+    assert "webbrowser.open" in (err_phantom or ""), "梯子中必须包含 Python 唤起备用方案"
+
+    # 9.2 物理桌面真实存在 Chrome 视窗 -> 放行
+    mock_chrome_desktop = ["Google Chrome - localhost:8080", "Windows PowerShell"]
+    ok_real, _ = check_desktop_popup_reality(claim_open_text, tool_history=[], mock_desktop_windows=mock_chrome_desktop)
+    assert ok_real, "物理桌面存在真实可见浏览器视窗时应放行"
+    print("   [✓] 桌面视窗真实性门禁与前台唤起梯子测试全部通过")
 
 
 def main():
@@ -207,8 +225,9 @@ def main():
     test_6_burst_limiter()
     test_7_read_after_write()
     test_8_honest_scope_gate()
+    test_9_desktop_window_phantom()
     print("=" * 65)
-    print("🎉 8 大核心物理门禁单元测试 100% 全部通过 (Zero Failure)！")
+    print("🎉 9 大核心物理门禁单元测试 100% 全部通过 (Zero Failure)！")
     print("=" * 65)
 
 

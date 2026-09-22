@@ -339,6 +339,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "burst_limiter.py",
         "read_after_write.py",
         "honest_scope_gate.py",
+        "visual_proof_gate.py",
         "nav_ladder.py",
         "security_core.py",
         "critic_engine.py",

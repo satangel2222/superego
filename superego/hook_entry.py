@@ -43,10 +43,12 @@ try:
     from read_after_write import audit_proof_of_work
     from honest_scope_gate import check_honest_scope
     from nav_ladder import format_ladder_response
+    from visual_proof_gate import check_desktop_popup_reality
 except ImportError:
     from superego.read_after_write import audit_proof_of_work
     from superego.honest_scope_gate import check_honest_scope
     from superego.nav_ladder import format_ladder_response
+    from superego.visual_proof_gate import check_desktop_popup_reality
 
 
 def _extract_last_assistant_text(transcript_path: str) -> str:
@@ -184,7 +186,14 @@ def handle_stop(payload: Dict[str, Any]) -> int:
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
-    # 3. Jev System One / 启发式语言对齐审判
+    # 3. 桌面视窗真实性门禁 (desktop-window-phantom / 严禁无头假弹窗欺诈)
+    desk_ok, desk_err = check_desktop_popup_reality(last_text, tool_history)
+    if not desk_ok:
+        resp = {"decision": "block", "reason": desk_err}
+        print(json.dumps(resp, ensure_ascii=False))
+        return 0
+
+    # 4. Jev System One / 启发式语言对齐审判
     res = audit_assistant_turn(last_text)
     if res.get("verdict") == "BLOCK":
         profile = get_active_profile()
