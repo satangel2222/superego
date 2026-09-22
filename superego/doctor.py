@@ -325,6 +325,50 @@ def check_pipeline_freshness():
 
     return res
 
+def check_cross_engine_parity():
+    """Checks cross-engine asset and evolution loop parity (Pillar 5)."""
+    try:
+        cur_dir = Path(__file__).parent
+        if str(cur_dir) not in sys.path:
+            sys.path.insert(0, str(cur_dir))
+        from parity_auditor import audit_skills_parity, audit_evolution_loop
+        sk_rep = audit_skills_parity()
+        ev_rep = audit_evolution_loop()
+
+        has_core_missing = bool(sk_rep.get("core_missing_codex") or sk_rep.get("core_missing_ag"))
+        ev_intact = ev_rep.get("all_complete", False)
+
+        status = "HEALTHY"
+        details = []
+        if has_core_missing:
+            status = "DEGRADED"
+            if sk_rep.get("core_missing_codex"):
+                details.append(f"Codex缺失核心治理技能: {sk_rep['core_missing_codex']}")
+            if sk_rep.get("core_missing_ag"):
+                details.append(f"Antigravity缺失核心治理技能: {sk_rep['core_missing_ag']}")
+        if not ev_intact:
+            status = "DEGRADED"
+            details.append("自动反思进化闭环 (Dissat->Postmortem->Lessons) 存在短板")
+
+        if not details:
+            details.append(f"四端核心治理技能与自动进化闭环 100% 对齐 (母库 {sk_rep['claude_count']} 个技能，Codex {sk_rep['codex_count']}，AG {sk_rep['ag_count']})")
+
+        return {
+            "name": "四端资产与自动进化闭环 (Parity & Evolution)",
+            "status": status,
+            "parity_score": sk_rep.get("parity_score", 100.0),
+            "detail": "；".join(details),
+            "skills_parity": sk_rep,
+            "evolution_loop": ev_rep
+        }
+    except Exception as e:
+        return {
+            "name": "四端资产与自动进化闭环 (Parity & Evolution)",
+            "status": "WARN",
+            "parity_score": 50.0,
+            "detail": f"对账审计异常: {e}"
+        }
+
 def run_doctor(cached=True):
     """Runs full-spectrum diagnostics across all 6 pillars."""
     global _CACHE_DATA, _CACHE_TIME
@@ -334,18 +378,20 @@ def run_doctor(cached=True):
 
     t0 = time.perf_counter()
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=5) as ex:
+    with ThreadPoolExecutor(max_workers=6) as ex:
         f_typesafe = ex.submit(check_typesafe_jev)
         f_agnes = ex.submit(check_agnes)
         f_daemons = ex.submit(check_local_daemons)
         f_platforms = ex.submit(check_platforms)
         f_freshness = ex.submit(check_pipeline_freshness)
+        f_parity = ex.submit(check_cross_engine_parity)
 
         typesafe_info = f_typesafe.result()
         agnes_info = f_agnes.result()
         daemons_info = f_daemons.result()
         platforms_info = f_platforms.result()
         freshness_info = f_freshness.result()
+        parity_info = f_parity.result()
     duration_ms = round((time.perf_counter() - t0) * 1000, 1)
 
     # Compute overall score and state
@@ -373,6 +419,10 @@ def run_doctor(cached=True):
             score -= 15
             issues.append(f"{p['name']} 挂载不完整")
 
+    if parity_info["status"] != "HEALTHY":
+        score -= 20
+        issues.append(f"跨端资产或进化闭环异常: {parity_info['detail']}")
+
     if score >= 90:
         overall_status = "HEALTHY"
         status_label = "🟢 全系统满血就绪 (All Systems Operational)"
@@ -397,7 +447,8 @@ def run_doctor(cached=True):
             "agnes": agnes_info,
             "daemons": daemons_info,
             "platforms": platforms_info,
-            "freshness": freshness_info
+            "freshness": freshness_info,
+            "parity": parity_info
         },
         "circuit_breaker": {
             "active_tier": "Tier 2 (Jev 强类型)" if typesafe_info["api_status"] == "HEALTHY" else "Tier 0 (本地启发式硬门禁保底)",
@@ -470,30 +521,35 @@ def print_cli_report():
     # 1. 云端双核推理
     tj = p["typesafe_jev"]
     ag = p["agnes"]
-    print("\n🧠 [1/5] 云端双核与本地推理引擎")
+    print("\n🧠 [1/6] 云端双核与本地推理引擎")
     print(f"   • TypeSafe Jev : [{tj['api_status']}] {tj['api_detail']}")
     print(f"   • TypeSafe Web : [{tj['console_status']}] {tj['console_detail']}")
     print(f"   • Agnes 3.0    : [{ag['status']}] {ag['detail']}")
     print(f"   • Tier 0 本地  : [HEALTHY] 原生 AST / 正则 / 命令退出码核验 (100% 离线硬生效)")
 
     # 2. 本地常驻守护
-    print("\n⚡ [2/5] 本地常驻守护与服务")
+    print("\n⚡ [2/6] 本地常驻守护与服务")
     for d in p["daemons"]:
         print(f"   • {d['name']:<28} : [{d['status']}] {d['detail']}")
 
     # 3. 四端挂载
-    print("\n🛡️ [3/5] 四端门禁集成与桥接")
+    print("\n🛡️ [3/6] 四端门禁集成与桥接")
     for pl in p["platforms"]:
         print(f"   • {pl['name']:<28} : [{pl['status']}] {pl['detail']}")
 
     # 4. 数据管道
     fr = p["freshness"]
-    print("\n📡 [4/5] 审计日志流新鲜度")
+    print("\n📡 [4/6] 审计日志流新鲜度")
     print(f"   • 状态: [{fr['status']}] {fr['detail']} (总行数: {fr['total_lines']})")
 
-    # 5. 总结
+    # 5. 跨端资产与自动进化闭环
+    par = p.get("parity", {})
+    print("\n🔄 [5/6] 四端资产与自动进化闭环对账")
+    print(f"   • 状态: [{par.get('status', 'UNKNOWN')}] {par.get('detail', '')}")
+
+    # 6. 总结
     print("\n" + "-" * 72)
-    print(f"📋 综合研判: {data['summary']}")
+    print(f"📋 [6/6] 综合研判: {data['summary']}")
     print("=" * 72)
 
 if __name__ == "__main__":
