@@ -229,7 +229,7 @@ def _deterministic_offline_judge(clean_tail: str) -> dict:
     }
 
 
-def judge_assistant_text(text: str, timeout: float = 2.5) -> dict:
+def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> dict:
     """对 Assistant 输出文本进行实时强类型多域判决。
     AST/引用剥离 ➔ Tier 0 离线确定性引擎 ➔ Jev 原语 (若有 Key)。
     """
