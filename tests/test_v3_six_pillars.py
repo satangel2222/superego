@@ -21,8 +21,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
-if str(REPO_ROOT / "superego") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "superego"))
+for p in (REPO_ROOT / "truthgate", REPO_ROOT):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
 from tool_normalizer import normalize_tool_call
 from ast_inspector import audit_command_ast, audit_python_code

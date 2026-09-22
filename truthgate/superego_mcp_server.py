@@ -32,8 +32,8 @@ SERVER_INFO = {
 
 TOOLS = [
     {
-        "name": "superego_verify",
-        "description": "【Mandatory Completion Gate】Physical gate required before declaring any task 'fixed', 'started', or 'done'. Verifies physical existence of screenshots, recent file modifications, and DOM/HTTP curl evidence to prevent unverified hallucinated claims.",
+        "name": "truthgate_verify",
+        "description": "【TruthGate Mandatory Completion Gate】Physical gate required before declaring any task 'fixed', 'started', or 'done'. Verifies physical existence of screenshots, recent file modifications, and DOM/HTTP curl evidence to prevent unverified hallucinated claims.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -59,8 +59,44 @@ TOOLS = [
         }
     },
     {
+        "name": "truthgate_status",
+        "description": "Query active TruthGate governance state, toggle switch, and gate policies.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "superego_verify",
+        "description": "【Legacy Alias for truthgate_verify】Physical gate required before declaring any task 'fixed', 'started', or 'done'.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "claim_type": {
+                    "type": "string",
+                    "enum": ["ui_rendering", "service_startup", "bug_fix", "general_delivery"],
+                    "description": "Category of claim being verified."
+                },
+                "screenshot_path": {
+                    "type": "string",
+                    "description": "Absolute path to a screenshot image file (mandatory for ui_rendering claims)."
+                },
+                "dom_or_curl_evidence": {
+                    "type": "string",
+                    "description": "Raw DOM text snippet or curl HTTP response proving the state."
+                },
+                "verified_assertion": {
+                    "type": "string",
+                    "description": "A clear, falsifiable assertion of what was physically verified."
+                }
+            },
+            "required": ["claim_type", "verified_assertion"]
+        }
+    },
+    {
         "name": "superego_status",
-        "description": "Query active Superego governance state, toggle switch, and gate policies.",
+        "description": "【Legacy Alias for truthgate_status】Query active governance state and gate policies.",
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -129,7 +165,7 @@ def verify_claim(args):
         }
 
     stamp_seed = f"{claim_type}:{assertion}:{time.time()}"
-    clearance_id = f"SE-PASS-{hashlib.sha256(stamp_seed.encode('utf-8')).hexdigest()[:12].upper()}"
+    clearance_id = f"TG-PASS-{hashlib.sha256(stamp_seed.encode('utf-8')).hexdigest()[:12].upper()}"
 
     return {
         "status": "APPROVED",
@@ -138,14 +174,14 @@ def verify_claim(args):
         "claim_type": claim_type,
         "assertion": assertion,
         "verified_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "message": "物理证据核验通过。已颁发 Superego 交付许可。"
+        "message": "物理证据核验通过。已颁发 TruthGate 交付许可。"
     }
 
 def handle_tools_call(params):
     tool_name = params.get("name")
     args = params.get("arguments", {})
 
-    if tool_name == "superego_verify":
+    if tool_name in ("truthgate_verify", "superego_verify"):
         res = verify_claim(args)
         is_err = not res.get("passed", False)
         return {
@@ -157,10 +193,11 @@ def handle_tools_call(params):
             ],
             "isError": is_err
         }
-    elif tool_name == "superego_status":
+    elif tool_name in ("truthgate_status", "superego_status"):
         is_off = check_is_off()
         status_info = {
-            "superego_version": "3.0.0",
+            "truthgate_version": "1.0.0",
+            "legacy_superego_version": "3.0.0",
             "gatekeeper_mode": "NATIVE_MCP_ACTIVE",
             "is_disabled": is_off,
             "status": "OFF" if is_off else "ENFORCING",

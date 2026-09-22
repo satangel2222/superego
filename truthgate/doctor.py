@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""superego_doctor.py: 全方位体检与自动化监控诊断引擎 (Superego Full-Spectrum System Doctor).
+"""truthgate_doctor.py: 全方位体检与自动化监控诊断引擎 (TruthGate Full-Spectrum System Doctor).
 核心使命:
 1. 严禁头疼医头与盲人摸象 —— 一键穿透探测 6 大支柱全景健康;
 2. 实时探测:
@@ -33,7 +33,7 @@ _CACHE_TIME = 0.0
 def _probe_url(url, timeout=2.5, headers=None):
     """Probes a URL and returns (status_code, latency_ms, error_msg)."""
     t0 = time.perf_counter()
-    h = {"User-Agent": "Superego-Doctor/2.0"}
+    h = {"User-Agent": "TruthGate-Doctor/1.0"}
     if headers:
         h.update(headers)
     req = urllib.request.Request(url, headers=h)
@@ -77,9 +77,13 @@ def check_typesafe_jev():
 
     # 2. Check API key and live Jev API query
     try:
-        if str(CLAUDE_DIR / "hooks") not in sys.path:
-            sys.path.insert(0, str(CLAUDE_DIR / "hooks"))
-        from superego_jev_engine import _get_api_key, judge_assistant_text
+        try:
+            from truthgate.jev_engine import _get_api_key, judge_assistant_text
+        except ImportError:
+            try:
+                from jev_engine import _get_api_key, judge_assistant_text
+            except ImportError:
+                from superego_jev_engine import _get_api_key, judge_assistant_text
         key = _get_api_key()
         if not key:
             res["api_status"] = "UNCONFIGURED"
@@ -513,7 +517,7 @@ def print_cli_report():
     data = run_doctor(cached=False)
     p = data["pillars"]
     print("=" * 72)
-    print(f"🩺 SUPEREGO SYSTEM DOCTOR (全景健康诊断体检中心)  [{data['timestamp']}]")
+    print(f"🩺 TRUTHGATE SYSTEM DOCTOR (全景健康诊断体检中心)  [{data['timestamp']}]")
     print(f"系统状态: {data['overall_status_label']}  |  健康评分: {data['overall_score']} / 100")
     print(f"诊断耗时: {data['diagnostic_duration_ms']}ms  |  运行模式: {data['circuit_breaker']['active_tier']}")
     print("=" * 72)

@@ -18,14 +18,18 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
-SUPEREGO_PKG = REPO_ROOT / "superego"
-if str(SUPEREGO_PKG) not in sys.path:
-    sys.path.insert(0, str(SUPEREGO_PKG))
+TRUTHGATE_PKG = REPO_ROOT / "truthgate"
+for p in (TRUTHGATE_PKG, REPO_ROOT):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
 try:
-    from critic_engine import audit_assistant_turn
+    from truthgate.critic_engine import audit_assistant_turn
 except ImportError:
-    from superego.critic_engine import audit_assistant_turn
+    try:
+        from critic_engine import audit_assistant_turn
+    except ImportError:
+        from superego.critic_engine import audit_assistant_turn
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 54 组必须硬拦截的违规推诿样本 (MUST FIRE)

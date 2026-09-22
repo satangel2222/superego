@@ -13,7 +13,18 @@ import json
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any
 
-STATE_DIR = Path.home() / ".superego" / "state"
+try:
+    from truthgate.config import APP_HOME
+    STATE_DIR = APP_HOME / "state"
+except ImportError:
+    try:
+        from config import APP_HOME
+        STATE_DIR = APP_HOME / "state"
+    except ImportError:
+        _home = Path.home()
+        _tg = _home / ".truthgate"
+        _se = _home / ".superego"
+        STATE_DIR = (_tg if _tg.exists() else (_se if _se.exists() else _tg)) / "state"
 
 
 def _get_state_file(conv_id: str) -> Path:

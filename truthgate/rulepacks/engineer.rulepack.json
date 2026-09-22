@@ -1,5 +1,5 @@
 {
-  "$schema": "https://superego.ai/schema/rulepack-v1.json",
+  "$schema": "https://truthgate.ai/schema/rulepack-v1.json",
   "id": "@standard/engineer",
   "name": "💻 资深工程师 / 技术架构师规则包",
   "version": "1.0.0",

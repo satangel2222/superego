@@ -1,5 +1,5 @@
 {
-  "$schema": "https://superego.ai/schema/rulepack-v1.json",
+  "$schema": "https://truthgate.ai/schema/rulepack-v1.json",
   "id": "@frank/vibe-boss",
   "name": "👑 老板 / Vibe Coder 旗舰规则包",
   "version": "1.0.0",

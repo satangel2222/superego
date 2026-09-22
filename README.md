@@ -109,6 +109,46 @@ truthgate status
 > 即可在浏览器中秒开 **四端实时裁决流大盘**（默认访问 `http://127.0.0.1:17925/dashboard`），纯单文件内嵌，零额外依赖！
 
 
+
+---
+
+## 🧩 去个人法则化：自定义规则包与打造专属 TruthGate (Create Your Own TruthGate)
+
+> **💡 彻底解耦个人规则**：TruthGate 不是某一个人的私有规则，而是一套**去中心化、物理确定性的 AI 编码质检外审框架**。  
+> 任何人或团队都可以完全卸载预设画像（如 `@frank/vibe-boss`），用自己的规则包（RulePack）搭建属于你们团队专属的 TruthGate！
+
+### 4 步打造属于你自己的团队门禁：
+
+1. **一键生成规则包模板**：
+   ```bash
+   tg rulepack init @myteam/prod-safety
+   ```
+   *(在 `~/.truthgate/rulepacks/` 自动生成符合 JSON Schema 规范的规则包模板)*
+
+2. **填入你们团队专属的红线规则与测试样例**：
+   - 规定必须遵守的编程规范、业务安全底线、禁止使用的危险 API；
+   - 编写配对的违规样本 (`FIRE`) 与合规样本 (`PASS`)。
+
+3. **运行自带准入回归测试 (Meta-Harness)**：
+   ```bash
+   tg rulepack test @myteam/prod-safety
+   ```
+   *(内置自动化回归引擎，确保规则 100% 击中违规、且误伤率严格低于 0.5%)*
+
+4. **一键激活或创建专属 Profile**：
+   ```bash
+   # 创建你们团队的专属角色画像
+   tg profile init myteam-default
+   # 挂载团队规则包
+   tg rulepack enable @myteam/prod-safety
+   # 停用不想要的预设规则
+   tg rulepack disable @frank/vibe-boss
+   # 查看当前生效状态
+   tg status
+   ```
+
+👉 **查看完整开发文档**：[《自定义规则包与专属 TruthGate 搭建指南》](docs/CUSTOM_RULEPACK_GUIDE.md)
+
 ---
 
 ## ⚡ 全网 AI 编程门禁与治理方案横向深度对比 (Comprehensive Benchmark Matrix)

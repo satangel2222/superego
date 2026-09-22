@@ -13,15 +13,18 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 try:
-    from config import CONFIG_FILE, PROFILES, load_config, save_config
+    from truthgate.config import CONFIG_FILE, PROFILES, load_config, save_config
 except ImportError:
     try:
-        from superego.config import CONFIG_FILE, PROFILES, load_config, save_config
+        from config import CONFIG_FILE, PROFILES, load_config, save_config
     except ImportError:
-        PROFILES = {}
-        CONFIG_FILE = Path.home() / ".superego" / "config.json"
-        def load_config(): return {}
-        def save_config(c): return True
+        try:
+            from superego.config import CONFIG_FILE, PROFILES, load_config, save_config
+        except ImportError:
+            PROFILES = {}
+            CONFIG_FILE = Path.home() / ".truthgate" / "config.json"
+            def load_config(): return {}
+            def save_config(c): return True
 
 CLAUDE_DIR = Path.home() / ".claude"
 LOG_FILE = CLAUDE_DIR / "hooks" / "semantic-superego-gate.log"
@@ -338,8 +341,8 @@ def get_recent_events(limit_per_engine=200, limit=None):
             "status_label": "就绪放行",
             "badge_class": "badge-pass",
             "rules": [],
-            "summary": "🎉 Superego 2.0 跨端外审判官已成功就绪，等待捕获第一条真实会话审查...",
-            "raw": f"{now_str} [claude|init] PASS Superego 2.0 ready"
+            "summary": "🎉 TruthGate 1.0 跨端外审判官已成功就绪，等待捕获第一条真实会话审查...",
+            "raw": f"{now_str} [claude|init] PASS TruthGate 1.0 ready"
         })
 
     all_events.sort(key=lambda x: x.get("timestamp", ""), reverse=False)
@@ -381,7 +384,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Superego 2.0 控制中枢 · Settings Dashboard</title>
+  <title>TruthGate 1.0 控制中枢 · Settings Dashboard</title>
   <style>
     :root {
       --bg: #0b0f19;
@@ -540,7 +543,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <header>
       <div class="logo-group">
-        <h1>⚖️ Superego 2.0 控制中枢</h1>
+        <h1>⚖️ TruthGate 1.0 控制中枢</h1>
         <p>跨端统一外审判官 · 架构与安全设置面板</p>
       </div>
       <div class="badge-status">
@@ -799,9 +802,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.end_headers()
         elif path == "/api/doctor":
             try:
-                from doctor import run_doctor
+                from truthgate.doctor import run_doctor
             except ImportError:
-                from superego.doctor import run_doctor
+                try:
+                    from doctor import run_doctor
+                except ImportError:
+                    from superego.doctor import run_doctor
             data = run_doctor(cached=True)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -827,9 +833,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if url.path == "/api/doctor/heal":
             try:
-                from doctor import auto_heal
+                from truthgate.doctor import auto_heal
             except ImportError:
-                from superego.doctor import auto_heal
+                try:
+                    from doctor import auto_heal
+                except ImportError:
+                    from superego.doctor import auto_heal
             data = auto_heal()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -890,7 +899,7 @@ def run_dashboard(port: int = 17925, open_browser: bool = True):
 
     url = f"http://127.0.0.1:{port}/dashboard"
     print("=" * 70)
-    print("🖥️ SUPEREGO 2.0 VISUAL DASHBOARD (跨端全景审判大盘)")
+    print("🖥️ TRUTHGATE 1.0 VISUAL DASHBOARD (跨端全景审判大盘)")
     print(f"大盘访问地址: {url}")
     print("• 实时司法审判大盘: " + url)
     print(f"• 控制中枢设置面板: http://127.0.0.1:{port}/settings")

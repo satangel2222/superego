@@ -1,0 +1,1 @@
+{"name":"truthgate_status","description":"Query active TruthGate governance state, toggle switch, and gate policies.","parameters":{"properties":{},"required":[],"type":"object"}}

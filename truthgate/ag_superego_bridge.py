@@ -166,7 +166,7 @@ def handle_pre(payload):
     if check_is_off("*", sid=conv_id):
         inject_steps.append({
             "ephemeralMessage": (
-                "[Superego] ⚠️ Superego 拦截保护当前处于【关闭】状态。"
+                "[TruthGate] ⚠️ Superego 拦截保护当前处于【关闭】状态。"
                 "如需恢复，请执行 `superego on`。"
             )
         })
@@ -597,7 +597,7 @@ def check_no_nagging_violation(text, user_prompt=""):
             last_line = clean_tail.strip().split("\n")[-1].strip()
             if m.group(0) in last_line and not any(k in last_line for k in ("# 教训", "规则", "案例")):
                 return (
-                    f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
+                    f"[TruthGate 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
                     "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
                     "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
                     "现在【别问废话，直接做完再汇报】！"
@@ -610,7 +610,7 @@ def check_no_nagging_violation(text, user_prompt=""):
     window = clean_tail[max(0, m.start() - 30): min(len(clean_tail), m.end() + 30)]
     if not QUOTING_HISTORIC.search(window):
         return (
-            f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
+            f"[TruthGate 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
             "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
             "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
             "现在【别问废话，直接做完再汇报】！"
@@ -656,7 +656,7 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
 
         if not has_matched_window and not has_real_screen_shot:
             return (
-                f"[Superego 拦截 - visual-proof-gate / desktop-window-phantom] 🚨 触发硬红线拦截：\n"
+                f"[TruthGate 拦截 - visual-proof-gate / desktop-window-phantom] 🚨 触发硬红线拦截：\n"
                 f"检测到在回复中声称「{claim_snippet}」（桌面弹出/已在浏览器中打开），\n"
                 f"但当前物理主桌面 (WinSta0\\default) 真实窗口枚举中查无对应可见视窗！\n"
                 f"铁律规定：严禁将后台无头沙盒执行 (如 headless Playwright / background cmd) 脑补为前台真机弹窗！\n"
@@ -726,7 +726,7 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
 
     if not viewed_images:
         return (
-            "[Superego 拦截 - visual-proof-gate] 检测到对 UI/视窗/看板/渲染状态作出了【升级/就绪/完成/效果呈现】的断言，"
+            "[TruthGate 拦截 - visual-proof-gate] 检测到对 UI/视窗/看板/渲染状态作出了【升级/就绪/完成/效果呈现】的断言，"
             "但本轮交互中未曾使用 view_file 查验任何实际画面截图证据（.png/.jpg/screenshot）。"
             "全局铁律规定「空壳=没做，宣称UI健康必须先看画面」。"
             "请先进行实际画面/截图取证，使用 view_file 亲眼验证视觉效果无乱码、无错位后再交付！"
@@ -737,7 +737,7 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
         has_real_grounding = any(any(k in img.lower() for k in ("real_screen", "desktop", "fullscreen", "screen_bounds")) for img in viewed_images)
         if not has_real_grounding:
             return (
-                "[Superego 拦截 - visual-proof-gate / headless-mock-fraud] 🚨 触发硬红线拦截：\n"
+                "[TruthGate 拦截 - visual-proof-gate / headless-mock-fraud] 🚨 触发硬红线拦截：\n"
                 "检测到在声称宿主桌面打开/弹出视窗时，仅查验了后台无头沙盒爬虫生成的局部图片，\n"
                 "而非通过系统 GDI 或窗口捕获的真实物理桌面 (WinSta0\\default) 画面！\n"
                 "严禁用无头浏览器（headless Playwright）自导自演假截图冒充桌面真实弹窗交付！"
@@ -794,7 +794,7 @@ def check_model_authenticity_violation(text, assistant_tool_calls, assistant_blo
         bad_model = cliche_match.group(1)
         if not QUOTING_HISTORIC_OR_REFUTING.search(text):
             return (
-                f"[Superego 拦截 - model-authenticity-gate] 检测到在回复或生成资产中出现了公版刻板印象模型名【{bad_model}】！\n"
+                f"[TruthGate 拦截 - model-authenticity-gate] 检测到在回复或生成资产中出现了公版刻板印象模型名【{bad_model}】！\n"
                 f"本机运行着 CC Switch 代理并存储有真实账本（C:\\Users\\Casp\\.cc-switch\\cc-switch.db）。\n"
                 f"铁律 2026-09-14-C 规定「严禁凭空捏造公版模型，必须以本地数据库 5 万条记录为唯一基准」。\n"
                 f"请先查询本地真实数据库（`C:\\Users\\Casp\\.cc-switch\\cc-switch.db`），根据真实调用模型进行交付！"
@@ -827,7 +827,7 @@ def check_model_authenticity_violation(text, assistant_tool_calls, assistant_blo
     if not has_queried_db:
         if user_prompt and re.search(r"(?:哪个模型|什么模型|ide和模型|全部模型|主力模型|模型列表)", user_prompt):
             return (
-                "[Superego 拦截 - model-authenticity-gate] 用户询问了模型/IDE相关账本，"
+                "[TruthGate 拦截 - model-authenticity-gate] 用户询问了模型/IDE相关账本，"
                 "但本轮交互中未曾查验 CC Switch 真实调用数据库（C:\\Users\\Casp\\.cc-switch\\cc-switch.db）。\n"
                 "铁律规定：涉及本机模型与路由，必须先查询真实数据库，严禁凭印象脑补！"
             )
@@ -907,7 +907,7 @@ def check_honest_scope_violation(text, assistant_tool_calls, assistant_blob, use
             if total_reads < 20 or (user_demanded_all and total_reads < 30):
                 matched = m_read.group(0)[:35]
                 return (
-                    f"[Superego 拦截 - honest-scope-assertion-gate] 🚨 触发最高第一铁律【严禁虚假履职与夸大欺诈】：\n"
+                    f"[TruthGate 拦截 - honest-scope-assertion-gate] 🚨 触发最高第一铁律【严禁虚假履职与夸大欺诈】：\n"
                     f"检测到回复中断言了全量/穷尽式调阅（命中:「{matched}」），\n"
                     f"但当前回合工具执行流水（Execution Telemetry）显示：实际仅抓取了 {len(read_urls)} 个网页 / {len(read_files)} 个代码文件！\n"
                     f"铁律规定：\n"
@@ -936,7 +936,7 @@ def check_honest_scope_violation(text, assistant_tool_calls, assistant_blob, use
         if not has_test_cmd and not ("test" in blob_lower and "regression" in blob_lower):
             matched = m_test.group(0)[:30]
             return (
-                f"[Superego 拦截 - honest-scope-assertion-gate] 🚨 触发最高第一铁律【严禁虚假测试断言】：\n"
+                f"[TruthGate 拦截 - honest-scope-assertion-gate] 🚨 触发最高第一铁律【严禁虚假测试断言】：\n"
                 f"检测到回复中断言了全量测试通过（命中:「{matched}」），\n"
                 f"但当前回合工具执行流水中【零次执行测试命令】（未运行 pytest / test 脚本）！\n"
                 f"铁律规定：严禁空脑宣称测试通过，必须在当前轮次实际运行全量回归命令并取得全绿日志后，方可放行！"
@@ -1042,7 +1042,7 @@ def check_no_search_no_claim_violation(text, tool_calls, blob, user_prompt=""):
     if m_policy and ("web" not in channels):
         matched = m_policy.group(0)[:30]
         return (
-            f"[Superego 拦截 - no-search-no-claim-gate] 本轮断言了外部平台规则/服务条款/违规风险（命中:「{matched}」），"
+            f"[TruthGate 拦截 - no-search-no-claim-gate] 本轮断言了外部平台规则/服务条款/违规风险（命中:「{matched}」），"
             f"但整轮交互中【零次执行联网检索工具】（未运行 search_web 或 read_url_content）！\n"
             f"全局铁律规定：涉及外部平台政策、服务条款与违规判定，必须先抓取并查阅官方第一手协议原件，严禁空脑凭通用常识臆断！"
         )
@@ -1052,7 +1052,7 @@ def check_no_search_no_claim_violation(text, tool_calls, blob, user_prompt=""):
     if m and not channels:
         matched = m.group(0)[:30]
         return (
-            f"[Superego 拦截 - no-search-no-claim-gate] 本轮断言了【否定/不存在/查不到/项目缺失】（命中:「{matched}」），"
+            f"[TruthGate 拦截 - no-search-no-claim-gate] 本轮断言了【否定/不存在/查不到/项目缺失】（命中:「{matched}」），"
             f"但整轮交互中【零次执行搜索工具】（未运行 grep_search, find_by_name, search_web 或查找命令）！\n"
             f"全局铁律规定：严禁空脑断言不存在，必须在当前轮次完成真实搜索查证后再下结论！"
         )
@@ -1062,7 +1062,7 @@ def check_no_search_no_claim_violation(text, tool_calls, blob, user_prompt=""):
         if not channels:
             matched_prompt = user_prompt[:40]
             return (
-                f"[Superego 拦截 - no-search-no-claim-gate] 用户质询了平台规则/客观存在性（「{matched_prompt}」），"
+                f"[TruthGate 拦截 - no-search-no-claim-gate] 用户质询了平台规则/客观存在性（「{matched_prompt}」），"
                 f"但助手在整轮交互中【零次执行搜索/查证工具】，直接给出了定性回答！\n"
                 f"全局铁律规定：面对用户求证型质询，严禁直接脑补盲答，必须先调用搜索工具（search_web / read_url_content / grep_search 等）获取第一手客观依据！"
             )
@@ -1085,7 +1085,7 @@ def check_search_breadth_violation(text, tool_calls, blob):
         matched = m.group(0)[:30]
         ch_list = list(channels) if channels else ["无"]
         return (
-            f"[Superego 拦截 - search-breadth-gate] 本轮给出了【领域级定论/全局技术断言】（命中:「{matched}」），"
+            f"[TruthGate 拦截 - search-breadth-gate] 本轮给出了【领域级定论/全局技术断言】（命中:「{matched}」），"
             f"但所使用的检索通道仅有 {len(channels)} 种（当前探测: {ch_list}），未满足至少 2 种独立互盲通道的要求！\n"
             f"全局铁律规定：下定论必须跨多源求证（权威学术源、开源代码库、全球与本土开发者社区等），严禁单一通道武断定调！"
         )
@@ -1128,7 +1128,7 @@ def check_institutionalize_violation(text, tool_calls, blob):
 
     if not has_institutionalized:
         return (
-            "[Superego 拦截 - institutionalize-guard] 本轮新建或修改了可复用脚本，但未将其固化沉淀为规范资产（未注册/更新全局 SKILL.md、未做成常态可复用 CLI 或未记入 lessons.md）！\n"
+            "[TruthGate 拦截 - institutionalize-guard] 本轮新建或修改了可复用脚本，但未将其固化沉淀为规范资产（未注册/更新全局 SKILL.md、未做成常态可复用 CLI 或未记入 lessons.md）！\n"
             "全局铁律规定：严禁『催一次动一次』的一次性脚本应付，产出的任何可复用能力必须立即固化成长期复用资产！"
         )
     return None
@@ -1186,7 +1186,7 @@ def check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt):
 
     if not has_queried_brain:
         return (
-            "[Superego 拦截 - cross-brain-retrieval-gate] 检测到用户询问了 Codex / Claude / 跨项目历史事实，"
+            "[TruthGate 拦截 - cross-brain-retrieval-gate] 检测到用户询问了 Codex / Claude / 跨项目历史事实，"
             "但本轮交互中未曾查验三端真实脑库（D:\\chat-archive-db\\ 或 ~/.codex/thread_history_1.sqlite）。\n"
             "铁律 2026-09-15-G 规定：三端脑库已全量打通，严禁凭借 Git 提交或文件差异推测他端行为！"
             "必须先运行 `codex_archive.py` / `ag_archive.py search` 调阅第一手对话与动作记录后再交付！"
@@ -1227,7 +1227,7 @@ def check_gui_process_restart_violation(text, tool_calls, blob):
     safe_ack = re.search(r"(?:后台子进程|托盘|前台|双击|快捷方式|WinSta0|桌面图标|无法直接弹到前台|请在前台打开|防抢焦点|右下角)", text)
     if not safe_ack:
         return (
-            "[Superego 拦截 - gui-process-restart-gate] 检测到在后台命令行执行了桌面 GUI 应用（如 DSH Desktop）的杀死与重启，"
+            "[TruthGate 拦截 - gui-process-restart-gate] 检测到在后台命令行执行了桌面 GUI 应用（如 DSH Desktop）的杀死与重启，"
             "并直接断言「重启完成/已就绪/请打开窗口操作」。\n"
             "铁律 2026-09-18-I 规定：后台子进程拉起 GUI 应用受 Windows 防抢焦点与会话桌面隔离限制，"
             "窗口极易沉入托盘或后台层，绝不能凭底层服务日志假定前台视窗已就绪！\n"
@@ -1316,7 +1316,7 @@ def check_r5_deferral_violation(text, user_prompt):
 
     if matched:
         return (
-            f"[Superego 拦截 - no-nagging-gate] 🚨 触发【授权即执行 / 严禁被动推诿请示铁律】：\n"
+            f"[TruthGate 拦截 - no-nagging-gate] 🚨 触发【授权即执行 / 严禁被动推诿请示铁律】：\n"
             f"检测到回复收尾出现了向用户请示授权的句式（命中:「{matched}」）！\n"
             f"铁律规定：\n"
             f"1. 用户的意图若已表达明确，且操作完全可逆、无害、零副作用（如抓取/阅读文档、写测试、造本地工具、清洗索引等），\n"
@@ -1338,7 +1338,7 @@ def check_token_thrift_violation(tool_calls):
             url_reads += 1
     if url_reads >= 8:
         return (
-            f"[Superego 拦截 - token-thrift-gate] 🚨 触发【会话 Token 节约铁律】：\n"
+            f"[TruthGate 拦截 - token-thrift-gate] 🚨 触发【会话 Token 节约铁律】：\n"
             f"检测到当前单轮中直接发起了 {url_reads} 次 read_url_content 网页读取！\n"
             f"铁律规定：批量阅读外部文档或多网页时，严禁在 LLM 交互主循环中狂刷 URL 读取工具塞爆上下文（易导致会话记忆丢失与智商断崖）！\n"
             f"正确打法：必须自造轻量本地脚本（如 urllib+bs4），并发离线抓取并落盘到本地 Markdown/SQLite 库，零 Token 消耗完成全量抓取后做本地检索与提炼！"
@@ -1364,12 +1364,12 @@ def check_dsh_provider_violation(text, tool_calls, blob):
             continue
         if any(k in cmd for k in ("dsh_bridge", "dsh_runner", "dsh", "opencode_arena")) and DSH_CARD_RE.search(cmd):
             return (
-                "[Superego 拦截 - dsh-provider-authenticity-gate] 严禁在命令行中使用第三方包月中转卡渠道（-card / 1.19848845.xyz 等）执行评测！\n"
+                "[TruthGate 拦截 - dsh-provider-authenticity-gate] 严禁在命令行中使用第三方包月中转卡渠道（-card / 1.19848845.xyz 等）执行评测！\n"
                 "必须强制使用 Frank 指定并充值的官方付费通道 'opencode-go'！"
             )
         if name in ("run_task", "task_inbox") and DSH_CARD_RE.search(str(args)):
             return (
-                "[Superego 拦截 - dsh-provider-authenticity-gate] 严禁在 DSH 任务派发中使用第三方包月中转卡渠道！\n"
+                "[TruthGate 拦截 - dsh-provider-authenticity-gate] 严禁在 DSH 任务派发中使用第三方包月中转卡渠道！\n"
                 "必须强制使用 Frank 指定并充值的官方付费通道 'opencode-go'！"
             )
     return None
@@ -1383,7 +1383,7 @@ def check_harness_tool_integrity_violation(text, tool_calls, blob):
             content = patch_file.read_text(encoding="utf-8", errors="ignore")
             if "codegraph" not in content:
                 return (
-                    "[Superego 拦截 - harness-tool-integrity-gate] DSH Harness 缺少核心代码图谱工具 codegraph！\n"
+                    "[TruthGate 拦截 - harness-tool-integrity-gate] DSH Harness 缺少核心代码图谱工具 codegraph！\n"
                     "必须在 cordis.patch.yml 中挂载 codegraph 后方可放行！"
                 )
         except Exception:
@@ -1434,7 +1434,7 @@ def check_ghost_browser_violation(text, tool_calls, blob):
             continue
         if GHOST_BROWSER_SPAWN.search(cmd):
             return (
-                "[Superego 拦截 - ghost-browser-gate] 严禁使用隔离 Temp 目录拉起私有幽灵 Chrome/Edge 进程！\n"
+                "[TruthGate 拦截 - ghost-browser-gate] 严禁使用隔离 Temp 目录拉起私有幽灵 Chrome/Edge 进程！\n"
                 "铁律 2026-09-19-AG 规定：\n"
                 "1. 在后台使用 --user-data-dir=Temp... 启动的浏览器无前台交互主窗口，会导致用户物理屏幕完全扑空！\n"
                 "2. 打开网页必须使用系统宿主入口（open-browser.cmd 或 Start-Process https://...）；\n"
@@ -1442,7 +1442,7 @@ def check_ghost_browser_violation(text, tool_calls, blob):
             )
         if ORPHAN_CDP_SPAWN.search(cmd) and "--user-data-dir" in cmd:
             return (
-                "[Superego 拦截 - ghost-browser-gate] 检测到试图在后台拉起 9222 孤儿调试端口的临时浏览器！\n"
+                "[TruthGate 拦截 - ghost-browser-gate] 检测到试图在后台拉起 9222 孤儿调试端口的临时浏览器！\n"
                 "铁律 2026-09-19-AG 规定：严禁私自拉起无主调试进程，必须接入宿主真实浏览器！"
             )
 
@@ -1451,7 +1451,7 @@ def check_ghost_browser_violation(text, tool_calls, blob):
             has_ghost_cmd = any(GHOST_BROWSER_SPAWN.search(c) for c in cmds)
             if has_ghost_cmd:
                 return (
-                    "[Superego 拦截 - ghost-browser-gate] 严禁将后台隔离沙箱中的幽灵浏览器宣称为「已在前台打开/呈现」！\n"
+                    "[TruthGate 拦截 - ghost-browser-gate] 严禁将后台隔离沙箱中的幽灵浏览器宣称为「已在前台打开/呈现」！\n"
                     "请使用 OpenCLI 或 open-browser.cmd 接入宿主真实浏览器，并通过物理桌面全屏截屏核验置顶状态！"
                 )
     return None
@@ -1618,7 +1618,7 @@ def evaluate_all_structural_gates(text, tool_calls, blob, user_prompt="", conv_i
     try:
         dyn_vio = check_dynamic_claude_gates(text, blob, transcript_path=transcript_path, conv_id=conv_id)
         if dyn_vio:
-            m = re.search(r"\[Superego 拦截 - ([^\]]+)\]", dyn_vio)
+            m = re.search(r"\[(?:TruthGate|Superego) 拦截 - ([^\]]+)\]", dyn_vio)
             actual_gate = m.group(1) if m else "dynamic-claude-gate"
             violations.append((actual_gate, dyn_vio))
             if stop_on_first:
@@ -1683,7 +1683,7 @@ def handle_stop(payload):
                 jev_fired = list(jev_res.get("fired") or [])
                 if jev_fired:
                     fired_str = ",".join(jev_fired)
-                    violation = f"[Superego 拦截 - jev-system-one] 命中了外审规则【{fired_str}】（推诿/未查证/虚报完成/飙黑话），强制打回整改！"
+                    violation = f"[TruthGate 拦截 - jev-system-one] 命中了外审规则【{fired_str}】（推诿/未查证/虚报完成/飙黑话），强制打回整改！"
             except Exception:
                 pass
 
@@ -1730,7 +1730,7 @@ def handle_stop(payload):
             log_path = CLAUDE_DIR / "hooks" / "semantic-superego-gate.log"
             sid_short = conv_id[:8] if conv_id else "ag"
             ts_str = time.strftime("%Y-%m-%d %H:%M:%S")
-            m = re.search(r"\[Superego 拦截 - ([^\]]+)\]", violation)
+            m = re.search(r"\[(?:TruthGate|Superego) 拦截 - ([^\]]+)\]", violation)
             gate_name = m.group(1) if m else "gate"
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(f"{ts_str} [antigravity|{sid_short}] trig='{gate_name}' BLOCK\n")

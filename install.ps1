@@ -1,5 +1,5 @@
 # ==============================================================================
-# 🛡️ Superego 3.0 一键安装脚本 (Windows PowerShell)
+# 🛡️ TruthGate 1.0 一键安装脚本 (Windows PowerShell)
 # 用法: irm https://raw.githubusercontent.com/satangel2222/truthgate/main/install.ps1 | iex
 # ==============================================================================
 
@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host " 🛡️  SUPEREGO 3.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)" -ForegroundColor Cyan
+Write-Host " 🛡️  TRUTHGATE 1.0: 专治 AI 偷懒、撒谎、吹牛与越权 (One-Line Installer)" -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -31,36 +31,39 @@ if (-not $pythonCmd) {
 }
 
 # 2. 目标安装路径
-$superegoHome = Join-Path $HOME ".superego"
-Write-Host "  [✓] 目标安装目录: $superegoHome" -ForegroundColor Gray
+$truthgateHome = Join-Path $HOME ".truthgate"
+Write-Host "  [✓] 目标安装目录: $truthgateHome" -ForegroundColor Gray
 
-if (-not (Test-Path $superegoHome)) {
-    New-Item -ItemType Directory -Path $superegoHome -Force | Out-Null
+if (-not (Test-Path $truthgateHome)) {
+    New-Item -ItemType Directory -Path $truthgateHome -Force | Out-Null
 }
 
-# 3. 拉取或更新 Superego 仓库
+# 3. 拉取或更新 TruthGate 仓库
 $repoUrl = "https://github.com/satangel2222/truthgate.git"
 if (Get-Command git -ErrorAction SilentlyContinue) {
-    if (Test-Path (Join-Path $superegoHome ".git")) {
+    if (Test-Path (Join-Path $truthgateHome ".git")) {
         Write-Host "  🔄 检测到已安装，正在同步拉取最新版本..." -ForegroundColor Cyan
-        git -C $superegoHome pull --quiet
+        git -C $truthgateHome pull --quiet
     } else {
-        Write-Host "  📦 正在克隆 Superego 核心资产..." -ForegroundColor Cyan
-        git clone --depth 1 $repoUrl $superegoHome --quiet
+        Write-Host "  📦 正在克隆 TruthGate 核心资产..." -ForegroundColor Cyan
+        git clone --depth 1 $repoUrl $truthgateHome --quiet
     }
 } else {
-    Write-Host "  📦 正在下载 Superego 源码包 (ZIP)..." -ForegroundColor Cyan
+    Write-Host "  📦 正在下载 TruthGate 源码包 (ZIP)..." -ForegroundColor Cyan
     $zipUrl = "https://github.com/satangel2222/truthgate/archive/refs/heads/main.zip"
-    $zipFile = Join-Path $HOME "superego-main.zip"
+    $zipFile = Join-Path $HOME "truthgate-main.zip"
     Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
     Expand-Archive -Path $zipFile -DestinationPath $HOME -Force
-    Copy-Item -Path (Join-Path $HOME "superego-main\*") -Destination $superegoHome -Recurse -Force
-    Remove-Item -Path (Join-Path $HOME "superego-main") -Recurse -Force
+    Copy-Item -Path (Join-Path $HOME "truthgate-main\*") -Destination $truthgateHome -Recurse -Force
+    Remove-Item -Path (Join-Path $HOME "truthgate-main") -Recurse -Force
     Remove-Item -Path $zipFile -Force
 }
 
 # 4. 执行本地自适应跨四端安装器
-$installerPy = Join-Path $superegoHome "superego\installer.py"
+$installerPy = Join-Path $truthgateHome "truthgate\installer.py"
+if (-not (Test-Path $installerPy)) {
+    $installerPy = Join-Path $truthgateHome "installer.py"
+}
 if (Test-Path $installerPy) {
     Write-Host "  ⚡ 正在执行全自动平台检测与跨端挂载..." -ForegroundColor Cyan
     & $pythonCmd $installerPy install --profile vibe-boss
@@ -69,13 +72,20 @@ if (Test-Path $installerPy) {
     exit 1
 }
 
-# 5. 创建 superego 快捷命令行并注册到 PATH
-$binDir = Join-Path $superegoHome "bin"
+# 5. 创建 tg / truthgate / superego 快捷命令行并注册到 PATH
+$binDir = Join-Path $truthgateHome "bin"
 if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
-$cmdScript = "@echo off`r`n$pythonCmd `"%USERPROFILE%\.superego\superego\__main__.py`" %*"
-Set-Content -Path (Join-Path $binDir "superego.cmd") -Value $cmdScript -Encoding Ascii
-$psScript = "& python `"`$env:USERPROFILE\.superego\superego\__main__.py`" `$args"
-Set-Content -Path (Join-Path $binDir "superego.ps1") -Value $psScript -Encoding Utf8
+
+$tgCmdScript = "@echo off`r`n$pythonCmd `"%USERPROFILE%\.truthgate\truthgate\__main__.py`" %*"
+Set-Content -Path (Join-Path $binDir "tg.cmd") -Value $tgCmdScript -Encoding Ascii
+Set-Content -Path (Join-Path $binDir "truthgate.cmd") -Value $tgCmdScript -Encoding Ascii
+Set-Content -Path (Join-Path $binDir "superego.cmd") -Value $tgCmdScript -Encoding Ascii
+
+$tgPsScript = "& python `"`$env:USERPROFILE\.truthgate\truthgate\__main__.py`" `$args"
+Set-Content -Path (Join-Path $binDir "tg.ps1") -Value $tgPsScript -Encoding Utf8
+Set-Content -Path (Join-Path $binDir "truthgate.ps1") -Value $tgPsScript -Encoding Utf8
+Set-Content -Path (Join-Path $binDir "superego.ps1") -Value $tgPsScript -Encoding Utf8
+
 try {
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($userPath -notlike "*$binDir*") {
@@ -86,11 +96,12 @@ try {
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
-Write-Host " 🎉 恭喜！Superego 3.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
-Write-Host " • 切换画像: 终端运行 superego profile list / superego profile use engineer" -ForegroundColor White
-Write-Host " • 自由外审: 终端运行 superego critic show / superego critic set (支持 DeepSeek/Ollama/Jev)" -ForegroundColor White
-Write-Host " • 规则市场: 终端运行 superego rulepack list / superego rulepack test" -ForegroundColor White
-Write-Host " • 实时大盘: 终端运行 superego dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)" -ForegroundColor White
-Write-Host " • 如需一键回滚: 随时运行 superego rollback 即可 3 秒彻底复原" -ForegroundColor White
+Write-Host " 🎉 恭喜！TruthGate 1.0 已全部部署完成并开机自适应生效！" -ForegroundColor Green
+Write-Host " • 快捷命令: 终端直接使用 tg 或 truthgate" -ForegroundColor Yellow
+Write-Host " • 切换画像: 终端运行 tg profile list / tg profile use engineer" -ForegroundColor White
+Write-Host " • 自由外审: 终端运行 tg critic show / tg critic set (支持 DeepSeek/Ollama/Jev)" -ForegroundColor White
+Write-Host " • 规则市场: 终端运行 tg rulepack list / tg rulepack test" -ForegroundColor White
+Write-Host " • 实时大盘: 终端运行 tg dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)" -ForegroundColor White
+Write-Host " • 如需一键回滚: 随时运行 tg rollback 即可 3 秒彻底复原" -ForegroundColor White
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host ""

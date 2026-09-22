@@ -295,7 +295,7 @@ def check_text(text, user_prompt=""):
         r"|(?:还是|先做哪|先弄哪)[^\n]{0,40}?(?:你说一个|优先级|你挑|你选)", re.S)
     if HARD_CHOICE.search(tail):
         return (
-            "[Superego 拦截 - no-nagging-guard] ⛔ 检测到硬选择题推诿：\n"
+            "[TruthGate 拦截 - no-nagging-guard] ⛔ 检测到硬选择题推诿：\n"
             "把两件自己能做的可逆技术活摆成选择题丢给用户！\n"
             "既然都能做又可逆，正确行为是全部做完再汇报，别让零编程用户替你排优先级！"
         )
@@ -322,7 +322,7 @@ def check_text(text, user_prompt=""):
 
     snippet = real_m.group(0)
     return (
-        f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{snippet}」）！\n"
+        f"[TruthGate 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{snippet}」）！\n"
         "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
         "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
         "现在【别问废话，直接做完再汇报】！"
@@ -476,7 +476,7 @@ def check_text(text, blob=""):
             window = tail[max(0, m.start() - 40): m.end() + 40]
             if is_explicit or not should_downgrade(window, _NAG_POS, _NAG_NEG):
                 return (
-                    f"[Superego 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
+                    f"[TruthGate 拦截 - no-nagging-guard] ⛔ 检测到【请示式收尾 / 废话推诿句式】（命中: 「{m.group(0)}」）！\n"
                     "按 CLAUDE.md 授权即执行铁律：授权即执行，能 revert 的可逆技术活直接做完，严禁说「如果你需要我就做 / 要不要我做 / 只要你说一声」！\n"
                     "按 Vibe Coder 铁律：技术决策(改哪、删哪行、重建还是退役)你自己定，别甩给零编程的用户。\n"
                     "现在【别问废话，直接做完再汇报】！"
