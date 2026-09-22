@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "superego-ai"
+version = "3.0.1"
+description = "Physical Proof-of-Work & Quality Gatekeeper for AI Coding Assistants (Claude Code, Google Antigravity, OpenAI Codex, DSH)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Frank & Superego Community", email = "774frank8@gmail.com" }
+]
+keywords = [
+    "ai-safety",
+    "coding-assistant",
+    "claude-code",
+    "antigravity",
+    "mcp-server",
+    "model-context-protocol",
+    "guardrails",
+    "proof-of-work",
+    "vibe-coding",
+    "action-contract",
+    "anti-slacking",
+    "developer-tools"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/satangel2222/superego"
+Documentation = "https://github.com/satangel2222/superego#readme"
+Repository = "https://github.com/satangel2222/superego.git"
+Issues = "https://github.com/satangel2222/superego/issues"
+Changelog = "https://github.com/satangel2222/superego/releases"
+
+[project.scripts]
+superego = "superego.installer:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["superego*"]
+
+[tool.setuptools.package-data]
+superego = ["*.html", "*.md", "rulepacks/*.json", "mcp/*"]

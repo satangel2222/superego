@@ -1,0 +1,44 @@
+# Superego 3.0: Physical Proof-of-Work & Quality Gatekeeper for AI Coding Assistants
+
+> Superego (超我) 3.0 is a cross-platform, deterministic quality gatekeeper and anti-slacking operating system for AI coding assistants (Claude Code, Google Antigravity, OpenAI Codex, and DeepSeek Harness). It enforces physical proof-of-work (real exit codes, screenshot proof, git diff verification), two-stage action contracts, and 349ms TypeSafe Jev semantic blocking.
+
+## Core Capabilities
+- Physical Proof-of-Work: Blocks fake completions ("False Done") by demanding real terminal exit codes (code 0) and screenshot evidence (`superego_verify`).
+- Action Contract: Two-stage manifest state machine (`--dry-run -> .manifest.json -> --manifest`) preventing accidental mass deletions.
+- Anti-Nagging Guard: Forbids cowardly deferrals ("Should I do X for you?") on authorized tasks, enforcing proactive execution.
+- 349.7ms Latency: Ultra-low latency decision stream powered by TypeSafe Jev System One with zero local GPU/CPU resource contention.
+- 6-Layer Physical Defenses: AST syntax tree penetration, data overwrite protection, ephemeral process leak prevention, and visual proof gates.
+- Immunity Evolution: 818 battle-tested failure cases + `postmortem-to-guard` 5-step permanent immunity protocol.
+
+## Quickstart & Installation
+### Windows (PowerShell)
+```powershell
+irm https://raw.githubusercontent.com/satangel2222/superego/main/install.ps1 | iex
+```
+
+### macOS / Linux
+```bash
+curl -fsSL https://raw.githubusercontent.com/satangel2222/superego/main/install.sh | bash
+```
+
+### Python Package (CLI & Core)
+```bash
+pip install superego-ai
+```
+
+## Supported Platforms
+- Claude Code: Native PreToolUse & Stop hooks (`~/.claude/settings.json`).
+- OpenAI Codex: Native hook mirrors (`~/.codex/hooks.json`).
+- Google Antigravity: Native JSON-RPC 2.0 MCP server (`superego_verify`) + real-time active watchdog (`ag_watch.py`).
+- DeepSeek Harness (DSH): Cordis & skill distribution (`postmortem-to-guard`).
+
+## Benchmark & Comparison Summary
+- Interception Latency: 349.7ms (Superego) vs 2,000~6,000ms (open-horizon-labs / superego).
+- Verification Type: Physical execution exit code & screenshot vs text suggestion.
+- Platform Scope: Claude Code, Antigravity, Codex, DSH vs Claude Code only.
+- Operational Cost: $0 zero-token local mode vs paid API tokens per turn.
+
+## Documentation & Links
+- Repository: https://github.com/satangel2222/superego
+- Issues & Bug Reports: https://github.com/satangel2222/superego/issues
+- Releases: https://github.com/satangel2222/superego/releases
