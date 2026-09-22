@@ -239,6 +239,7 @@ def handle_pre(payload):
                         {"Content-Type": "application/json"}
                     )
                     with urllib.request.urlopen(c_req, timeout=1.0) as c_resp:
+                        c_res = json.loads(c_resp.read().decode("utf-8"))
                         # Aligned 1:1 with Claude Code dissatisfaction-postmortem.py (2026-07-23 Frank decision: only strong)
                         if c_res.get("strong"):
                             is_dissat = True
