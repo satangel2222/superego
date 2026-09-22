@@ -1,8 +1,8 @@
-# 🛡️ Superego 2.0 (超我)：专治 AI 偷懒、撒谎、吹牛、甩锅与越权
+# 🛡️ Superego 3.0 (超我)：两阶段动作契约与物理工作量证明操作系统
 
 > **“别再被你的 AI 助手给 PUA 了。”**  
-> **全球首个兼具「行为对齐 (Anti-Slacking)」与「系统硬安全 (Deep Security)」的跨四端 AI 机器紧箍咒操作系统。**  
-> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **TypeSafe Jev 驱动 349ms 毫秒级极速打手心** ｜ 🛡️ **103 道物理与强类型门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Codex · Antigravity · DSH**
+> **全球首个兼具「行为对齐 (Anti-Slacking)」、「物理硬防线 (Proof-of-Work)」与「动作契约 (Action Contract)」的跨四端 AI 机器紧箍咒操作系统。**  
+> ⏳ **23 个月 (700+ 天) 真实业务极限打磨** ｜ ⚡ **TypeSafe Jev 驱动 349ms 毫秒级极速打手心** ｜ 🛡️ **物理六重硬防线 + 103 道全生命周期门禁** ｜ 🎯 **0.00% 正常对话误伤率** ｜ 💻 **通吃 Claude Code · Codex · Antigravity · DSH**
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT"></a>
@@ -225,6 +225,14 @@ flowchart TD
 
 | 门禁代号 | 归属层级 | 拦截时机 | 物理机制 | 对你的真实价值 |
 | :--- | :--- | :--- | :--- | :--- |
+| **`no-diagnosis-guard`** | **Tier 1 (硬防线·3.0)** | 代码写入/编辑前 | **CodeGraph 诊断先行**：未对调用拓扑或符号根因展开 `codegraph_explore` / `grep` 检索，核心源码一律物理禁写！ | 彻底根治见树不见林盲补 Patch，杜绝治标不治本引发连环次生灾害 |
+| **`visual-proof-gate`** | **Tier 1 (硬防线·3.0)** | 宣称打开/交付时 | **桌面交互视窗验真**：通过 Win32 API 核验 `WinSta0\default` 真实交互视窗，拦截无头欺诈并输出 OS 级前台唤起梯子 | 彻底铲除「已在浏览器中为您打开」幽灵欺诈与无头伪证，确保画面真正呈现在用户屏幕前 |
+| **`action-contract`** | **Tier 1 (硬防线·3.0)** | 高危批删/批改前 | **两阶段清单状态机**：强制批量删除/不可逆变更遵循 `--dry-run -> .manifest.json -> --manifest` 契约 | 终结 Telegram 误删惨案与动态脚本绕过，保障全量操作具备物理清单备份 |
+| **`ast-inspector`** | **Tier 1 (硬防线·3.0)** | 工具执行前 | **AST 语法树穿透**：穿透文件写入与 `python -c` / `node -e` 单行内联高危语法树 | 阻断危险内联绕过，杜绝暗度陈仓执行恶意脚本与破坏性逻辑 |
+| **`diff-quality-guard`** | **Tier 1 (硬防线·3.0)** | 代码编辑时 | **代码防偷工减料**：拦截大段代码删减并退化为 `pass / TODO / return True` 的劣化欺诈 | 防止 AI 假装修复其实直接把核心逻辑删掉偷懒 |
+| **`env-safety-guard`** | **Tier 1 (硬防线·3.0)** | 命令执行前 | **环境依赖防踩踏**：阻断私删 `package-lock.json` 与系统全局破坏性 `pip` 安装 | 防止 AI 搞崩生产环境依赖树与系统 Python 运行时 |
+| **`burst-limiter`** | **Tier 1 (硬防线·3.0)** | 工具调用流 | **风暴熔断与死锁接管**：局内连续 3 次失败立即熔断，跨轮 2-Strike 阻断死锁循环 | 杜绝 AI 陷入死循环狂烧 Token 与磁盘 IO |
+| **`read-after-write`** | **Tier 1 (硬防线·3.0)** | 助手交卷时 | **读后写物理核销 (R3)**：动嘴不动手（0 工具调用）宣称搞定当场打回，强制比对 `git status` 与 `git diff` | 彻底消灭「我修好了」但实际一行代码没改的假完成 |
 | **`anti-prompt-injection`** | **Tier 1 (硬安全)** | 工具执行前 | 命令参数溯源比对：若目标来自不可信网页且人类未授权，**直接熔断** | 防止 AI 抓网页被黑客指令策反，偷走你的 API Key 或私钥 |
 | **`data-overwrite-guard`** | **Tier 1 (硬安全)** | 文件写入前 | 读取原文件与待写文件行数与字节比：缩水超过 20% 强制叫停 | 彻底防止 AI 把数千行核心代码或上万条数据库一键覆盖成几行空代码 |
 | **`ephemeral-process-leak`** | **Tier 1 (硬安全)** | 会话退出时 | 绑定 Windows JobObject / POSIX 进程组，一键连根斩草除根 | 告别无头浏览器、死循环 Node/Python 进程长期燃烧你几百小时 CPU |

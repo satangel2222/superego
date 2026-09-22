@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""installer.py —— Superego 2.0 跨四端通用安装引擎 (Universal Multi-Platform Installer)。
+"""installer.py —— Superego 3.0 跨四端通用安装引擎 (Universal Multi-Platform Installer)。
 支持在任意机器（Windows / macOS / Linux）上一键部署与自适应挂载：
   1. Claude Code (~/.claude)
   2. OpenAI Codex (~/.codex)
@@ -303,7 +303,7 @@ def rollback_superego() -> bool:
 def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
     """执行一键跨端安装与双核挂载"""
     print("=" * 70)
-    print("🚀 SUPEREGO 2.0 跨端通用 AI 紧箍咒一键安装器")
+    print("🚀 SUPEREGO 3.0 跨端通用 AI 紧箍咒与物理硬防线一键安装器")
     print(f"操作系统: {SYSTEM} | 用户主目录: {HOME}")
     print(f"激活模式: {profile}")
     print("=" * 70)
@@ -412,7 +412,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
 
         ag_plugin_json = {
             "name": "superego-plugin",
-            "version": "2.0.0",
+            "version": "3.0.0",
             "description": "Native Superego governance, quality gating, and toggle management plugin for Google Antigravity.",
             "author": {
                 "name": "Frank & Superego Community"
@@ -472,9 +472,9 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         print("   [✓] DeepSeek Harness (DSH) 旁路监听就绪 (零侵入模式)")
 
     print("\n" + "=" * 70)
-    print("🎉 恭喜！Superego 2.0 已成功部署至全部平台！")
+    print("🎉 恭喜！Superego 3.0 已成功部署至全部平台！")
     print("• 行为对齐 (Jev 349ms 快车道): 已就绪")
-    print("• 深度安全 (防注入/防覆写/防木马): 100% 物理硬锁生效")
+    print("• 物理六重硬防线 (CodeGraph诊断/两阶段动作契约/真实桌面视窗/AST穿透): 100% 物理硬锁生效")
     print("• 启动实时大盘: 运行 python -m superego dashboard (访问 http://127.0.0.1:17925/dashboard)")
     print("=" * 70)
     return True
