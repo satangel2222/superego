@@ -70,6 +70,16 @@ def run_tests():
     vio_1d = bridge.check_honest_scope_violation(text_1c, tc_1d, 'CommandLine: "python check.py"')
     runner.test("1D: 有物理测试命令执行 -> 放行", vio_1d is None, f"Got: {vio_1d}")
 
+    # Case 1E: Assert fictional ungrounded project -> Hard block!
+    text_1e = "我们在【shopify-clothing-store】上排查了商品变价"
+    vio_1e = bridge.check_honest_scope_violation(text_1e, [], "")
+    runner.test("1E: 凭空捏造虚构项目 -> 触发拦截", vio_1e is not None and "UNGROUNDED_PROJECT_BLOCKED" in vio_1e, f"Got: {vio_1e}")
+
+    # Case 1F: Assert real grounded project -> Pass
+    text_1f = "我们在【zimagen】上排查了充值问题"
+    vio_1f = bridge.check_honest_scope_violation(text_1f, [], "")
+    runner.test("1F: 真实工程物理锚定 -> 放行", vio_1f is None, f"Got: {vio_1f}")
+
     # -------------------------------------------------------------------------
     # Gate 2: visual-proof-gate
     # -------------------------------------------------------------------------

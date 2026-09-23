@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-"""honest_scope_gate.py —— 诚实履职与执行范围对账门禁 (Honest Scope Gate).
+r"""honest_scope_gate.py —— 诚实履职与执行范围对账门禁 (Honest Scope Gate).
 
 核心使命 (物理化 R16 / 最高第一铁律):
-  严惩「用局部抽样冒充全量穷尽」的欺诈谎言！
-  当 Agent 宣称“已逐页看完所有文档 / 全部测试全部跑通”，
-  自动对账实际工具执行流水（Execution Telemetry）。
-  若未真正穷尽，强制要求出具【定量对账单】（明确说明仅查阅了 M 篇，尚有 N 篇未读）。
+  1. 严惩「用局部抽样冒充全量穷尽」的欺诈谎言！
+     当 Agent 宣称“已逐页看完所有文档 / 全部测试全部跑通”，
+     自动对账实际工具执行流水（Execution Telemetry）。
+     若未真正穷尽，强制要求出具【定量对账单】（明确说明仅查阅了 M 篇，尚有 N 篇未读）。
+  2. 严惩「凭空捏造虚构工程」的非物理实体幻觉！
+     当 Agent 断言【项目名】或引用工程时，必须与本机物理磁盘（D:\, E:\, C:\...）及注册表对账。
+     若为虚构工程（如 shopify-clothing-store 等），直接物理拦截！
 """
 import re
+import os
+from pathlib import Path
 from typing import Tuple, Optional, List, Dict, Any
 
 EXHAUSTIVE_READ_CLAIM_RE = re.compile(
@@ -32,15 +37,133 @@ HONEST_DISCLOSURE_RE = re.compile(
 
 HISTORIC_RE = re.compile(r"(?:^#\s*教训|教训案例库|【形状 20\d\d|历史案卷|历史教训)")
 
+_CACHED_KNOWN_PROJECTS = None
+
+def get_known_project_names() -> set:
+    global _CACHED_KNOWN_PROJECTS
+    if _CACHED_KNOWN_PROJECTS is not None:
+        return _CACHED_KNOWN_PROJECTS
+        
+    known = set()
+    home = Path.home()
+    
+    # 1. 优先读取 PROJECT-OVERVIEW.md
+    overview = home / ".claude/PROJECT-OVERVIEW.md"
+    if overview.exists():
+        try:
+            text = overview.read_text(encoding="utf-8", errors="ignore")
+            matches = re.findall(r"- \*\*([^\*]+)\*\*", text)
+            for m in matches:
+                for part in re.split(r"[/、,()]", m):
+                    part = part.strip().lower()
+                    if part and len(part) >= 2:
+                        known.add(part)
+                        known.add(re.sub(r"[^a-zA-Z0-9\u4e00-\u9fa5]", "", part))
+        except Exception:
+            pass
+
+    # 2. 读取 git-projects-registry.txt
+    reg_file = home / ".claude/git-projects-registry.txt"
+    if reg_file.exists():
+        try:
+            for line in reg_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+                line = line.strip().replace('/', '\\')
+                if line:
+                    name = Path(line).name.lower()
+                    known.add(name)
+                    known.add(re.sub(r"[^a-zA-Z0-9\u4e00-\u9fa5]", "", name))
+        except Exception:
+            pass
+                
+    # 3. 本地磁盘根目录扫描 (D:\, E:\, antigravity)
+    for root in ("D:\\", "E:\\", str(home / "Documents/antigravity")):
+        p = Path(root)
+        if p.exists():
+            try:
+                for child in p.iterdir():
+                    if child.is_dir() and not child.name.startswith(('$', '.')):
+                        name = child.name.lower()
+                        if len(name) >= 3:
+                            known.add(name)
+                            known.add(re.sub(r"[^a-zA-Z0-9\u4e00-\u9fa5]", "", name))
+            except Exception:
+                pass
+                
+    _CACHED_KNOWN_PROJECTS = known
+    return known
+
+
+def check_project_grounding(text: str) -> Tuple[bool, Optional[str]]:
+    """
+    实体物理锚定门禁：审查文本中断言或引用的项目名称是否真实存在于本机。
+    严禁凭空捏造虚构工程（如 shopify-clothing-store、fake-project 等）。
+    """
+    if not text:
+        return True, None
+
+    patterns = [
+        r"【([a-zA-Z0-9_\u4e00-\u9fa5 -]{3,40})】",
+        r"(?:project|项目)[：:\s]+([a-zA-Z0-9_\u4e00-\u9fa5-]{3,40})",
+        r"\[Project Domain\][：:\s]+([a-zA-Z0-9_\u4e00-\u9fa5-]{3,40})"
+    ]
+
+    known_projects = get_known_project_names()
+
+    for pat in patterns:
+        for m in re.findall(pat, text, re.IGNORECASE):
+            raw_name = m.strip()
+            clean_name = raw_name.lower()
+            norm_name = re.sub(r"[^a-zA-Z0-9\u4e00-\u9fa5]", "", clean_name)
+
+            if len(norm_name) < 3:
+                continue
+
+            # 排除结构化标记词与通用动词/名词
+            if any(w in clean_name for w in (
+                '铁律', '准则', '规范', '总结', '报告', '规划', '计划', '说明', '背景', 
+                '分析', '对账', '门禁', '测试', '验证', '结论', '案卷', '教训', '真相', 
+                '排查', '凭据', '证据', '质检', '闭环', '自愈', '方案', '步骤', '状态', 
+                '阶段', '目标', '交付', '定性', '定量', '修复', '调阅', '核验', '自查', 
+                '副作用', '变更', '回滚', '复现', '定位', '根因', '架构', '实施', '问题', 
+                '答复', '清单', '流水', '指令', '规则', '策略', '拦截', '放行', '打回'
+            )):
+                continue
+            if re.match(r'^(?:gate|case|step|shape|rule|phase|item|task|round|第[一二三四五六七八九十0-9]+[步项条阶段轮])', clean_name):
+                continue
+
+            # 物理验证：1. 是否在已知项目库中；2. 是否在磁盘对应目录真实存在
+            in_known = (clean_name in known_projects) or (norm_name in known_projects)
+            in_disk = False
+            if not in_known:
+                home = Path.home()
+                for drive in ("D:\\", "E:\\", str(home / "Documents/antigravity")):
+                    if (Path(drive) / raw_name).exists() or (Path(drive) / clean_name).exists():
+                        in_disk = True
+                        break
+
+            if not in_known and not in_disk:
+                return False, (
+                    f"⛔ [UNGROUNDED_PROJECT_BLOCKED] 严禁凭空臆造虚构工程 (实体物理锚定铁律)！\n"
+                    f"检测到断言或引用了本机磁盘根本不存在的项目 '【{raw_name}】'！\n"
+                    f"Frank 的机器上根本没有此项目！必须严格基于真实工程（如 zimagen, airbnb ai manager, duckduckweb 等）！"
+                )
+
+    return True, None
+
 
 def check_honest_scope(
     text: str,
     tool_history: Optional[List[Dict[str, Any]]] = None,
     user_prompt: str = ""
 ) -> Tuple[bool, Optional[str]]:
-    """审查模型回复中的穷尽式声明是否与实际工具流水对账吻合"""
+    """审查模型回复中的穷尽式声明与工程实体断言是否与物理真实对账吻合"""
     if not text or HISTORIC_RE.search(text):
         return True, None
+
+    # 0. 审核工程实体真实性 (严禁凭空捏造虚构项目)
+    proj_ok, proj_err = check_project_grounding(text)
+    if not proj_ok:
+        return False, proj_err
 
     tools = tool_history or []
 

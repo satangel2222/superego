@@ -868,6 +868,17 @@ def check_honest_scope_violation(text, assistant_tool_calls, assistant_blob, use
     if re.search(r"(?:^#\s*教训|教训案例库|【形状 20\d\d|历史案卷|历史教训)", text):
         return None
 
+    # 0. 审核工程实体真实性 (严禁凭空捏造虚构项目)
+    try:
+        if str(SCRIPTS_DIR) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS_DIR))
+        from honest_scope_gate import check_project_grounding
+        ok_proj, err_proj = check_project_grounding(text)
+        if not ok_proj and err_proj:
+            return f"[TruthGate 拦截 - honest-scope-assertion-gate] {err_proj}"
+    except Exception:
+        pass
+
     blob_lower = (assistant_blob or "").lower()
 
     # 1. Audit reading claims
