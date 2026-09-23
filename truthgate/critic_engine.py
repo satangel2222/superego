@@ -148,10 +148,14 @@ def _apply_exemptions(fired: List[str], raw_text: str, audit_text: str = "") -> 
     if has_human_auth:
         fired = [r for r in fired if r not in ("R1", "ENG-02")]
 
-    # 3. 真实技术代码块交付豁免 (R3/R10/R11/R12/R20/R22/R24 被 strip 剥离成空文本后的误伤)
+    # 3. 真实技术代码块交付豁免 (R1/R3/R10/R11/R12/R20/R22/R24 被 strip 剥离成空文本后的误伤)
     has_code_block = bool(re.search(r'```[\s\S]*?```', raw_text) or re.search(r'`[^`\n]+`', raw_text))
     if has_code_block:
-        fired = [r for r in fired if r not in ("R3", "R10", "R11", "R12", "R20", "R22", "R24", "ENG-01")]
+        has_negative_claim = bool(re.search(r'(?:没有|不存在|查不到|做不到|无法|不支持|只有你|只有他|我够不到)', audit_text))
+        exempt_rules = ["R3", "R10", "R11", "R12", "R20", "R22", "R24", "ENG-01"]
+        if not has_negative_claim:
+            exempt_rules.append("R1")
+        fired = [r for r in fired if r not in exempt_rules]
 
     # 4. 客观测试/基准探测/退出码凭据豁免 (R3/R20/R22/R23/R24: 贴了真实 exit code 0 / 探针 / 压测数据等客观实测事实)
     has_test_proof = bool(re.search(
@@ -204,10 +208,10 @@ def _resolve_api_key(key_str: str) -> str:
 
     # 2. 从本地物理 .env 文件穿透查找
     search_paths = [
+        Path.home() / ".truthgate" / ".env",
         Path.home() / ".claude" / ".env",
         Path.home() / ".superego" / ".env",
-        Path.home() / ".claude" / "superego-semantic" / ".env",
-        Path(r"E:\social_media_to_tg\lm-worker\.env"),
+        Path.cwd() / ".env",
     ]
     for sp in search_paths:
         if sp.exists():

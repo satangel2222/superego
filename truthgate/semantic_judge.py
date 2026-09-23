@@ -94,7 +94,7 @@ def _key():
             if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")) else []:
         if ln.startswith("AGNES_API_KEY="):
             return ln.split("=", 1)[1].strip()
-    for p in [r"E:\social_media_to_tg\lm-worker\.env", os.path.expanduser("~/.claude/.env")]:
+    for p in [os.path.expanduser("~/.truthgate/.env"), os.path.expanduser("~/.claude/.env"), os.path.expanduser("~/.superego/.env"), os.path.join(os.getcwd(), ".env")]:
         if os.path.exists(p):
             for ln in open(p, encoding="utf-8-sig"):  # ~/.claude/.env 首行带 BOM
                 if ln.startswith("AGNES_API_KEY="):

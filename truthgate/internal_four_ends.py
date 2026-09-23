@@ -201,7 +201,7 @@ def search_local_skills_and_tools(kw: str, limit: int = 12) -> List[Dict[str, An
                 except Exception:
                     pass
 
-    # 3. 扫描 D:\revtools
+    # 3. 扫描本地逆向/分析工具库 (REVTOOLS_DIR)
     if REVTOOLS_DIR.exists():
         for item in REVTOOLS_DIR.iterdir():
             if kw_lower in item.name.lower():
@@ -209,7 +209,7 @@ def search_local_skills_and_tools(kw: str, limit: int = 12) -> List[Dict[str, An
                     "type": "revtool",
                     "name": item.name,
                     "path": str(item),
-                    "desc": "D:\\revtools 逆向工具库"
+                    "desc": f"{REVTOOLS_DIR.name} 工具库"
                 })
 
     return matches[:limit]

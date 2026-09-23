@@ -30,7 +30,13 @@ CLAUDE_DIR = Path.home() / ".claude"
 LOG_FILE = CLAUDE_DIR / "hooks" / "semantic-superego-gate.log"
 CODEX_LOG = Path.home() / ".codex" / "hooks" / "semantic-superego-gate.log"
 DSH_LOG = CLAUDE_DIR / "hooks" / "suego-dsh.log"
-SHADOW_DB = Path(r"D:\chat-archive-db\superego-shadow.db")
+_shadow_env = os.environ.get("SUPEREGO_SHADOW_DB")
+if _shadow_env:
+    SHADOW_DB = Path(_shadow_env)
+elif Path(r"D:\chat-archive-db").exists():
+    SHADOW_DB = Path(r"D:\chat-archive-db\superego-shadow.db")
+else:
+    SHADOW_DB = Path.home() / ".truthgate" / "superego-shadow.db"
 FP_FILE = CLAUDE_DIR / "hooks" / "false_positives.jsonl"
 DASHBOARD_HTML_PATH = HERE / "dashboard.html"
 

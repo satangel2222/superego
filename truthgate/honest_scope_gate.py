@@ -10,6 +10,7 @@ r"""honest_scope_gate.py —— 诚实履职与执行范围对账门禁 (Honest 
      当 Agent 断言【项目名】或引用工程时，必须与本机物理磁盘（D:\, E:\, C:\...）及注册表对账。
      若为虚构工程（如 shopify-clothing-store 等），直接物理拦截！
 """
+import sys
 import re
 import os
 from pathlib import Path
@@ -75,8 +76,13 @@ def get_known_project_names() -> set:
         except Exception:
             pass
                 
-    # 3. 本地磁盘根目录扫描 (D:\, E:\, antigravity)
-    for root in ("D:\\", "E:\\", str(home / "Documents/antigravity")):
+    # 3. 本地磁盘根目录扫描 (动态检测各平台标准工程根目录)
+    cand_roots = [str(home / "Documents" / "antigravity"), str(home / "Projects"), str(home / "workspace"), str(home)]
+    if sys.platform == "win32":
+        for d in ["D:\\", "E:\\", "C:\\Projects"]:
+            if Path(d).exists():
+                cand_roots.insert(0, d)
+    for root in cand_roots:
         p = Path(root)
         if p.exists():
             try:
@@ -136,7 +142,12 @@ def check_project_grounding(text: str) -> Tuple[bool, Optional[str]]:
             in_disk = False
             if not in_known:
                 home = Path.home()
-                for drive in ("D:\\", "E:\\", str(home / "Documents/antigravity")):
+                cand_roots = [str(home / "Documents" / "antigravity"), str(home / "Projects"), str(home / "workspace"), str(home)]
+                if sys.platform == "win32":
+                    for d in ["D:\\", "E:\\", "C:\\Projects"]:
+                        if Path(d).exists():
+                            cand_roots.insert(0, d)
+                for drive in cand_roots:
                     if (Path(drive) / raw_name).exists() or (Path(drive) / clean_name).exists():
                         in_disk = True
                         break
@@ -145,7 +156,7 @@ def check_project_grounding(text: str) -> Tuple[bool, Optional[str]]:
                 return False, (
                     f"⛔ [UNGROUNDED_PROJECT_BLOCKED] 严禁凭空臆造虚构工程 (实体物理锚定铁律)！\n"
                     f"检测到断言或引用了本机磁盘根本不存在的项目 '【{raw_name}】'！\n"
-                    f"Frank 的机器上根本没有此项目！必须严格基于真实工程（如 zimagen, airbnb ai manager, duckduckweb 等）！"
+                    f"当前主机与已知项目索引中不存在此项目，请核实真实工程名称或进行实际物理检索！"
                 )
 
     return True, None

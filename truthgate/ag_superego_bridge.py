@@ -328,11 +328,12 @@ def handle_pre(payload):
                     if tb_flag:
                         try: tb_flag.write_text(tb_fp, encoding="utf-8")
                         except Exception: pass
+                    archive_hint = "D:\\chat-archive-db\\" if Path(r"D:\chat-archive-db").exists() else "~/.truthgate/archive"
                     inject_steps.append({
                         "ephemeralMessage": (
                             "⚡【三脑协同跨端提醒 (TrinityBridge)】\n"
                             "检测到当前交互涉及 Codex / Claude / 跨项目历史事实。\n"
-                            "本机已在 `D:\\chat-archive-db\\` 沉淀了全量脑库（codex-brain.db 89MB / brain.db 874MB / ag-brain.db 41MB）。\n"
+                            f"本机已在 `{archive_hint}` 沉淀了历史研发脑库（TrinityBridge）。\n"
                             "铁律 2026-09-15-G：严禁仅翻看 Git 或凭空推测，必须优先调用 `codex_archive.py` 或 `ag_archive.py search '<关键词>' --all` 出示第一手对白与动作流！"
                         )
                     })
@@ -1199,8 +1200,8 @@ def check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt):
     if not has_queried_brain:
         return (
             "[TruthGate 拦截 - cross-brain-retrieval-gate] 检测到用户询问了 Codex / Claude / 历史既有能力（「查真相/不是本来就有吗」），\n"
-            "但本轮交互中未曾查验三端真实脑库（D:\\chat-archive-db\\ 或 ~/.codex/thread_history_1.sqlite）。\n"
-            "铁律规定：三端脑库已全量打通，严禁凭借 Git 提交或代码瞎猜推测历史事实！\n"
+            "但本轮交互中未曾查验历史真实脑库（chat-archive-db 或 ~/.codex/thread_history_1.sqlite）。\n"
+            "铁律规定：真实脑库已打通，严禁凭借 Git 提交或代码瞎猜推测历史事实！\n"
             "必须先运行 `py -3 ag_archive.py search` / `q.js` 调阅第一手对话与设计定论后再交付！"
         )
     return None

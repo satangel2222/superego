@@ -17,16 +17,22 @@ import os, sys, time, ctypes, subprocess
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+cand_dirs = [SCRIPTS_DIR, Path.home() / ".gemini" / "antigravity" / "scripts", Path.home() / ".truthgate"]
+for cd in cand_dirs:
+    if cd.exists() and str(cd) not in sys.path:
+        sys.path.insert(0, str(cd))
 
 LOG_PATH = SCRIPTS_DIR / "ag_watch.log"
 
 try:
     from ag_archive import sync_brain, AG_BRAIN_DIR, DB_PATH as AG_DB_PATH
+    AG_ENABLED = True
 except ImportError:
-    print("❌ 无法导入 ag_archive 模块，请检查脚本路径！", flush=True)
-    sys.exit(1)
+    AG_ENABLED = False
+    AG_BRAIN_DIR = Path.home() / ".gemini" / "antigravity" / "brain"
+    AG_DB_PATH = Path.home() / ".truthgate" / "archive" / "ag-brain.db"
+    def sync_brain(quiet=True):
+        return 0, 0
 
 try:
     from codex_archive import sync as sync_codex, SQLITE_SRC as CODEX_SQLITE, SESSIONS_DIR as CODEX_SESSIONS, DB_PATH as CODEX_DB_PATH
