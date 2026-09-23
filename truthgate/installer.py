@@ -394,7 +394,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
 
     print("\n⚡ [3/3] 跨端挂载安全门禁与语义引擎...")
     
-    # 核心引擎源码列表 (Superego 3.0 完整全套核心)
+    # 核心引擎源码列表 (TruthGate 1.0 / Superego 3.0 完整全套核心)
     core_files = [
         "tool_normalizer.py",
         "ast_inspector.py",
@@ -410,6 +410,12 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "security_core.py",
         "critic_engine.py",
         "jev_engine.py",
+        "semantic_judge.py",
+        "internal_four_ends.py",
+        "search_integrity_gate.py",
+        "verdict_monitor.py",
+        "postmortem_guard.py",
+        "dashboard.py",
         "config.py",
         "replay.py",
         "hook_entry.py",

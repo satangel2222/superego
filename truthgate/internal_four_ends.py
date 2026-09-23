@@ -22,15 +22,31 @@ import argparse
 from pathlib import Path
 from typing import Dict, Any, List
 
-DB_DIR = Path(r"D:\chat-archive-db")
+HOME = Path.home()
+CLAUDE_SKILLS = HOME / ".claude" / "skills"
+AG_SKILLS = HOME / ".gemini" / "config" / "skills"
+
+# 动态解析脑库目录 (支持环境变量 CHAT_ARCHIVE_DIR，默认优先 D:\chat-archive-db，备选 ~/.truthgate/archive)
+_custom_db_dir = os.environ.get("CHAT_ARCHIVE_DIR")
+if _custom_db_dir and Path(_custom_db_dir).exists():
+    DB_DIR = Path(_custom_db_dir)
+elif Path(r"D:\chat-archive-db").exists():
+    DB_DIR = Path(r"D:\chat-archive-db")
+else:
+    DB_DIR = HOME / ".truthgate" / "archive"
+
 CLAUDE_DB = DB_DIR / "brain.db"
 CODEX_DB = DB_DIR / "codex-brain.db"
 AG_DB = DB_DIR / "ag-brain.db"
 
-HOME = Path.home()
-CLAUDE_SKILLS = HOME / ".claude" / "skills"
-AG_SKILLS = HOME / ".gemini" / "config" / "skills"
-REVTOOLS_DIR = Path(r"D:\revtools")
+# 动态解析逆向/工具库目录 (支持环境变量 REVTOOLS_DIR，默认优先 D:\revtools)
+_custom_rev = os.environ.get("REVTOOLS_DIR")
+if _custom_rev and Path(_custom_rev).exists():
+    REVTOOLS_DIR = Path(_custom_rev)
+elif Path(r"D:\revtools").exists():
+    REVTOOLS_DIR = Path(r"D:\revtools")
+else:
+    REVTOOLS_DIR = HOME / "revtools"
 
 
 def search_claude_archive(kw: str, limit: int = 8) -> List[Dict[str, Any]]:

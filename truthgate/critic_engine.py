@@ -223,13 +223,29 @@ def _resolve_api_key(key_str: str) -> str:
 
 def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """向 Agnes 3.0-flash 外部独立大模型发起深度外审裁决 (Tier 3)"""
-    sem_dir = Path.home() / ".claude" / "superego-semantic"
-    if not sem_dir.exists():
-        return None
+    semantic_judge = None
     try:
-        if str(sem_dir) not in sys.path:
-            sys.path.insert(0, str(sem_dir))
-        import semantic_judge
+        import semantic_judge as sj
+        semantic_judge = sj
+    except ImportError:
+        try:
+            from truthgate import semantic_judge as sj
+            semantic_judge = sj
+        except ImportError:
+            sem_dir = Path.home() / ".claude" / "superego-semantic"
+            if sem_dir.exists():
+                if str(sem_dir) not in sys.path:
+                    sys.path.insert(0, str(sem_dir))
+                try:
+                    import semantic_judge as sj
+                    semantic_judge = sj
+                except ImportError:
+                    pass
+
+    if not semantic_judge:
+        return None
+
+    try:
         t0 = time.perf_counter()
 
         target_raw = raw_text or text
