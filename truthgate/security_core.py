@@ -49,6 +49,15 @@ _DESTRUCTIVE_OVERWRITE_PATTERNS = [
     re.compile(r"\bgit\s+reset\s+--hard\b", re.I),
 ]
 
+# 外部注入常见指令特征（当仅出现在抓取网页/工具输出中时）
+_INJECTION_TOKEN_PATTERNS = re.compile(
+    r"\[\[\s*SYSTEM\s*\]\]|\[SYSTEM\]|<\s*SYSTEM\s*>"
+    r"|ignore\s+(?:all\s+|previous\s+|prior\s+)?instructions"
+    r"|do\s+not\s+(?:tell|inform)\s+the\s+user|without\s+telling\s+the\s+user"
+    r"|(?:不要|别|不)告诉用户|瞒着用户",
+    re.I
+)
+
 _FILE_EXT_RE = re.compile(r"[\w][\w./\\-]*\.(?:py|js|mjs|cjs|ts|json|md|ps1|sh|txt|log|db|sqlite|env|key|pem)\b", re.I)
 
 
@@ -95,12 +104,23 @@ def check_anti_prompt_injection(cmd: str, transcript_messages: List[Dict[str, An
     if not cmd or not transcript_messages:
         return None
 
+    # 1. 只读探索与信息查阅类命令天然免疫注入执行，绝对放行
+    _READONLY_CMD_RE = re.compile(
+        r"^(?:head|tail|cat|grep|rg|find|which|type|more|less|bat|ls|dir|git\s+(?:status|log|diff|show)|echo|pwd)\b",
+        re.I
+    )
+    first_cmd = cmd.strip().split("|")[0].strip()
+    if _READONLY_CMD_RE.search(first_cmd) or _READONLY_CMD_RE.search(cmd.strip()):
+        # 只要不包含黑客外联反弹特征，只读命令绝对放行
+        if not re.search(r"\b(?:nc|netcat|bash\s+-i|Invoke-WebRequest|curl.*\|\s*bash)\b", cmd, re.I):
+            return None
+
     cmd_tokens = extract_file_tokens(cmd)
     if not cmd_tokens:
         return None
 
     user_tokens = set()
-    external_tool_tokens = set()
+    poisoned_tool_tokens = set()
 
     for m in transcript_messages:
         mtype = m.get("type", "")
@@ -115,7 +135,10 @@ def check_anti_prompt_injection(cmd: str, transcript_messages: List[Dict[str, An
                             user_tokens |= extract_file_tokens(item.get("text", ""))
                         elif item.get("type") == "tool_result":
                             tc = str(item.get("content") or "")
-                            external_tool_tokens |= extract_file_tokens(tc)
+                            # 核心第一性原理：只有当工具返回的内容中确实包含恶意注入指令特征时，
+                            # 从该内容中解析出的新文件/目标才被标记为受毒害的嫌疑目标！
+                            if _INJECTION_TOKEN_PATTERNS.search(tc):
+                                poisoned_tool_tokens |= extract_file_tokens(tc)
         elif mtype == "assistant":
             content = (m.get("message") or {}).get("content")
             if isinstance(content, str):
@@ -125,11 +148,11 @@ def check_anti_prompt_injection(cmd: str, transcript_messages: List[Dict[str, An
                     if isinstance(item, dict) and item.get("type") == "text":
                         user_tokens |= extract_file_tokens(item.get("text", ""))
 
-    suspect = (cmd_tokens & external_tool_tokens) - user_tokens
+    suspect = (cmd_tokens & poisoned_tool_tokens) - user_tokens
     if suspect:
         return (
             f"⛔ [PROMPT_INJECTION_BLOCKED] 反向提示词注入与越权防御：即将执行的命令中涉及的文件/目标 {sorted(suspect)} "
-            "从头到尾仅出现在外部抓取内容或工具返回中，用户从没有在对话中提出或授权过该操作。"
+            "源自包含未授权注入特征的外部抓取内容或工具返回，用户从没有在对话中提出或授权过该操作。"
             "系统已强行阻断外部文档越权操控 AI 执行本地命令的行为！"
         )
     return None
