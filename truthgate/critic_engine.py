@@ -114,6 +114,13 @@ _R9_OFFLINE_JARGON = re.compile(
     re.I
 )
 _R9_EXPLAIN_PAREN = re.compile(r"[(（][^()（）]{0,30}(?:也就是|即|指|意思|解释)[^()（）]{0,30}[)）]")
+_R10_OFFLINE_SHALLOW_SEARCH = re.compile(
+    r"(?:只查了|仅查了|只看了|仅看了|单看|单查|只搜了|仅搜了)[^\n。?？]{0,12}?(?:AG|Claude|Codex|聊天记录|这一端|单端|本地库)"
+    r"|(?:翻了|看了一下|扫了|查了|搜了)[^\n。?？]{0,10}?(?:几条|几页|几篇|几条记录|摘要)[^\n。?？]{0,10}?(?:断定|断言|确定|认定|下定论|下结论|妄断)"
+    r"|(?:单端查证|单端检索|单方面断定|没查过技能库|没有查过技能库|没搜过技能库)",
+    re.I
+)
+_FOUR_ENDS_PROOF = re.compile(r"(?:四端|四端内部|internal_four_ends|六宇宙|全量穷尽|双向核对)", re.I)
 _META_EXEMPT = re.compile(
     r"复盘|教训|形状\s*20|原话|判据|规则|门禁|如果.*问|例句|测试用例|单测用例|回归测试|防唠叨|单测排查报告|测试套件|批评|纠正|旧版本|历史反问|会话中问"
 )
@@ -141,10 +148,10 @@ def _apply_exemptions(fired: List[str], raw_text: str, audit_text: str = "") -> 
     if has_human_auth:
         fired = [r for r in fired if r not in ("R1", "ENG-02")]
 
-    # 3. 真实技术代码块交付豁免 (R3/R11/R12/R20/R22/R24 被 strip 剥离成空文本后的误伤)
+    # 3. 真实技术代码块交付豁免 (R3/R10/R11/R12/R20/R22/R24 被 strip 剥离成空文本后的误伤)
     has_code_block = bool(re.search(r'```[\s\S]*?```', raw_text) or re.search(r'`[^`\n]+`', raw_text))
     if has_code_block:
-        fired = [r for r in fired if r not in ("R3", "R11", "R12", "R20", "R22", "R24", "ENG-01")]
+        fired = [r for r in fired if r not in ("R3", "R10", "R11", "R12", "R20", "R22", "R24", "ENG-01")]
 
     # 4. 客观测试/基准探测/退出码凭据豁免 (R3/R20/R22/R23/R24: 贴了真实 exit code 0 / 探针 / 压测数据等客观实测事实)
     has_test_proof = bool(re.search(
@@ -156,24 +163,24 @@ def _apply_exemptions(fired: List[str], raw_text: str, audit_text: str = "") -> 
         re.I
     ))
     if has_test_proof:
-        fired = [r for r in fired if r not in ("R1", "R3", "R20", "R22", "R23", "R24", "ENG-01", "ENG-02")]
+        fired = [r for r in fired if r not in ("R1", "R3", "R10", "R11", "R20", "R22", "R23", "R24", "ENG-01", "ENG-02")]
 
     # 5. 元讨论/复盘/规则用例过滤
     if _META_EXEMPT.search(target):
-        fired = [r for r in fired if r not in ("R1", "R3", "R11", "R20", "R22", "R24")]
+        fired = [r for r in fired if r not in ("R1", "R3", "R10", "R11", "R20", "R22", "R24")]
 
     # 6. 团队工程路线与方案规划叙述豁免 (“我们需要...”)
     has_team_plan = bool(re.search(r'(?:根据|为了|经过|在这个|整个)?(?:最新|业务|当前|讨论|架构|排查|技术|方案)?[^\n。?？]{0,10}?(?:我们需要|我们得|我们应当|我们计划)', target))
     if has_team_plan:
-        fired = [r for r in fired if r not in ("R1", "R3", "R5", "R7", "R12", "R13", "R39", "R41", "ENG-02", "ENG-03")]
+        fired = [r for r in fired if r not in ("R1", "R3", "R5", "R7", "R11", "R12", "R13", "R39", "R41", "ENG-02", "ENG-03")]
 
     # 7. 技术术语带大白话括号解释豁免 (R9: 紧随大白话括号解释)
     if _R9_EXPLAIN_PAREN.search(target):
         fired = [r for r in fired if r != "R9"]
 
-    # 8. 标准问候与助手身份介绍豁免 (免除 R1, R13, ENG-02)
+    # 8. 标准问候与助手身份介绍豁免 (免除 R1, R11, R13, R39, ENG-02)
     if re.search(r'(?:我是\s*(?:Claude|Antigravity|GPT|AI|助手)|由\s*(?:Anthropic|Google|OpenAI)\s*训练|您好|你好|收到[，,]?问题已定位)', target):
-        fired = [r for r in fired if r not in ("R1", "R13", "ENG-02")]
+        fired = [r for r in fired if r not in ("R1", "R11", "R13", "R39", "ENG-02")]
 
     return fired
 
@@ -483,6 +490,33 @@ def _local_heuristic_critic(
             fired.append("SAFE-01")
             reasons.append(f"SAFE-01: {rule_ids['SAFE-01'].get('text', '严禁未获确认激进删除已有代码或数据')}")
 
+    # 7. 检查坐井观天与单端断言规则 (R10)
+    has_four_ends_rule = "R10" in rule_ids or rules_override.get("R10_internal_four_ends_and_six_universes", True)
+    if has_four_ends_rule:
+        if _R10_OFFLINE_SHALLOW_SEARCH.search(clean_tail):
+            if not _FOUR_ENDS_PROOF.search(clean_tail):
+                fired.append("R10")
+                reasons.append("R10: 坐井观天与单端断言：未穷尽内部四端事实（Claude 70项目 + Codex + AG + 本地技能工具库）与外部六宇宙双向核对，即妄下断言。")
+
+    # 8. 检查搜探真实性与六宇宙表面功夫规则 (R11)
+    has_search_rule = "R11" in rule_ids or rules_override.get("R11_search_integrity_and_six_universes", True)
+    if has_search_rule:
+        try:
+            from search_integrity_gate import audit_search_integrity
+        except ImportError:
+            try:
+                from truthgate.search_integrity_gate import audit_search_integrity
+            except ImportError:
+                audit_search_integrity = None
+        if audit_search_integrity:
+            try:
+                s_res = audit_search_integrity(clean_tail)
+                if s_res.get("fired"):
+                    fired.append("R11")
+                    reasons.append(s_res.get("reason"))
+            except Exception:
+                pass
+
     dt = (time.perf_counter() - t0) * 1000
     return {
         "verdict": "BLOCK" if fired else "PASS",
@@ -497,6 +531,31 @@ def _local_heuristic_critic(
 # ──────────────────────────────────────────────────────────────────────────────
 # 4. 主路由入口: audit_assistant_turn
 # ──────────────────────────────────────────────────────────────────────────────
+
+def _record_audit_telemetry(res: Dict[str, Any], clean_tail: str, context: Optional[Dict[str, Any]] = None):
+    try:
+        from verdict_monitor import record_verdict
+    except ImportError:
+        try:
+            from truthgate.verdict_monitor import record_verdict
+        except ImportError:
+            record_verdict = None
+    if record_verdict:
+        try:
+            user_p = (context or {}).get("user_prompt", "")
+            record_verdict(
+                turn_type="critic_engine",
+                verdict=res.get("verdict", "PASS"),
+                fired_rules=res.get("fired", []),
+                reasons=res.get("reasons", []),
+                mode=res.get("mode", ""),
+                latency_ms=res.get("latency_ms", 0.0),
+                user_prompt=user_p,
+                assistant_text=clean_tail
+            )
+        except Exception:
+            pass
+
 
 def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """全自动多模型外审路由器主入口：
@@ -527,13 +586,15 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
     # 3. 依据分层处理流水线路由 (Tiered Outer Audit Pipeline)
     # 0. 纯元讨论/复盘/规则用例且无推诿，直接极速放行，避免网络请求
     if _META_EXEMPT.search(text) and not _R5_OFFLINE_ASK.search(clean_tail):
-        return {
+        res = {
             "verdict": "PASS",
             "fired": [],
             "reasons": [],
             "mode": "meta_exempt",
             "profile": profile.get("id")
         }
+        _record_audit_telemetry(res, clean_tail, context)
+        return res
 
     # Tier 1/2: Jev 极速意图原语快车道 (~300ms，快速拦截 R5 偷懒推诿)
     fast_jev = critic_cfg.get("fast_path_jev", True) or provider in ("jev", "tiered")
@@ -541,6 +602,7 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
         jev_res = _call_jev_critic(clean_tail, active_rules, context=context, raw_text=text)
         if jev_res and jev_res.get("verdict") == "BLOCK":
             jev_res["profile"] = profile.get("id")
+            _record_audit_telemetry(jev_res, clean_tail, context)
             return jev_res
 
     # Tier 3: Agnes 3.0-flash 外部独立大模型深度慢车道 (42 条母形状规则语义裁决)
@@ -548,6 +610,7 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
         agnes_res = _call_agnes_critic(clean_tail, context=context, raw_text=text)
         if agnes_res and agnes_res.get("verdict"):
             agnes_res["profile"] = profile.get("id")
+            _record_audit_telemetry(agnes_res, clean_tail, context)
             return agnes_res
 
     # Option A: OpenAI-Compatible 通用模型外审 (DeepSeek, Qwen, Ollama, GPT 等)
@@ -555,6 +618,7 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
         res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context, raw_text=text)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
+            _record_audit_telemetry(res, clean_tail, context)
             return res
 
     # Option C / 自动降级: Tier 0 纯本地启发式引擎 (离线/超时兜底)
@@ -564,6 +628,7 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
         res["verdict"] = "PASS"
         res["reasons"] = []
     res["profile"] = profile.get("id")
+    _record_audit_telemetry(res, clean_tail, context)
     return res
 
 
