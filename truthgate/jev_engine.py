@@ -125,7 +125,10 @@ _R5_HARM_EXEMPT = re.compile(
     r"具体坏处\s*[:：]\s*(?!无|没有|暂无|说不出|n/?a|none|不详)[^\n]{0,60}?"
     r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
     r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
-    r"|产品决策|产品设计决策|产品形态决策|商务定价|产品方向选择|短信验证码|滑块|人机验证",
+    r"|产品决策|产品设计决策|产品形态决策|商务定价|产品方向选择|短信验证码|滑块|人机验证"
+    r"|(?:线上|生产|外部|Airbnb|OTA|Booking|携程|美团|飞猪|Agoda|后台|民宿|公寓|酒店)\s*(?:[^\n，,。?？]{0,12}?)(?:日历|房源|房态|订单|价格|库存|开房|关房|锁房|解锁|上架|下架|改房态|开回来?|关掉|放开|调价|改价|可订|不可订|退款|取消)"
+    r"|改线上正在(?:卖|采|跑)的"
+    r"|(?:花钱|充值|付费|扣款|转账|支付|退款|删库|删除生产|物理删除|改密码|换绑|注销)",
     re.I
 )
 _R3_OFFLINE_FALSE_DONE = re.compile(
@@ -271,6 +274,11 @@ def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> di
                 for r in rule_tag.split("_"):
                     if r not in fired_rules:
                         fired_rules.append(r)
+
+        # 核心业务豁免：若命中不可逆删除、真实房态、订单日历、计费定价或产品偏好，物理豁免 R5
+        if _R5_HARM_EXEMPT.search(clean_tail):
+            fired_rules = [r for r in fired_rules if r != "R5"]
+            probs.pop("R5_nagging_or_deferral", None)
 
         max_p = max(probs.values()) if probs else 0.0
         verdict = "FIRE" if (fired_rules and max_p >= 0.60) else "PASS"

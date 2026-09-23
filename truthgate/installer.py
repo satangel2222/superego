@@ -86,17 +86,9 @@ def register_claude_hooks(claude_home: Path) -> bool:
     pre_list = hooks_dict.setdefault("PreToolUse", [])
     stop_list = hooks_dict.setdefault("Stop", [])
 
-    py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
-    hook_cmd_pre = (
-        f'python "%USERPROFILE%\\.claude\\hooks\\hook_entry.py" pre'
-        if SYSTEM == "Windows"
-        else f'{py_cmd} "$HOME/.claude/hooks/hook_entry.py" pre'
-    )
-    hook_cmd_stop = (
-        f'python "%USERPROFILE%\\.claude\\hooks\\hook_entry.py" stop'
-        if SYSTEM == "Windows"
-        else f'{py_cmd} "$HOME/.claude/hooks/hook_entry.py" stop'
-    )
+    # Claude Code 无论在 Windows/Mac/Linux 均在 Bash 子环境运行钩子，必须使用 $HOME 兼容语法
+    hook_cmd_pre = 'python "$HOME/.claude/hooks/hook_entry.py" pre'
+    hook_cmd_stop = 'python "$HOME/.claude/hooks/hook_entry.py" stop'
 
     # 1. 挂载 PreToolUse
     has_pre = False
@@ -184,17 +176,10 @@ def register_codex_hooks(codex_home: Path) -> bool:
     pre_list = hooks_dict.setdefault("PreToolUse", [])
     stop_list = hooks_dict.setdefault("Stop", [])
 
-    py_cmd = "py -3" if SYSTEM == "Windows" else "python3"
-    hook_cmd_pre = (
-        f'python "%USERPROFILE%\\.codex\\hooks\\hook_entry.py" pre'
-        if SYSTEM == "Windows"
-        else f'{py_cmd} "$HOME/.codex/hooks/hook_entry.py" pre'
-    )
-    hook_cmd_stop = (
-        f'python "%USERPROFILE%\\.codex\\hooks\\hook_entry.py" stop'
-        if SYSTEM == "Windows"
-        else f'{py_cmd} "$HOME/.codex/hooks/hook_entry.py" stop'
-    )
+    py_cmd = "python" if SYSTEM == "Windows" else "python3"
+    hook_path = codex_home / "hooks" / "hook_entry.py"
+    hook_cmd_pre = f'{py_cmd} "{hook_path}" pre'
+    hook_cmd_stop = f'{py_cmd} "{hook_path}" stop'
 
     # 1. 挂载 PreToolUse
     has_pre = False
