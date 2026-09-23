@@ -1151,13 +1151,13 @@ def check_process_alias_violation(text, blob):
 
 # ── Cross-Brain Retrieval Gate ────────────────────────────────────────────────
 CROSS_BRAIN_TOPIC_RE = re.compile(
-    r"(?:codex|claude|跨项目|脑库|之前做过|以前做过|曾经做过|做过没|有没做过|历史做过|上次做过|别的项目|其他项目|他做了什么|他在做什么)",
+    r"(?:codex|claude|跨项目|脑库|之前做过|以前做过|曾经做过|做过没|有没做过|历史做过|上次做过|别的项目|其他项目|他做了什么|他在做什么|本来就有|不是本来就|chat\s*archiver?|查真相|以前不是|不是早做过|以前怎么做|历史记录)",
     re.I
 )
 
 def check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt):
     """Enforces cross-brain-retrieval-gate:
-    When user inquires about Codex, Claude, or cross-project history,
+    When user inquires about Codex, Claude, cross-project history, or prior capabilities ("不是本来就有吗"),
     assistant is strictly forbidden from guessing via git/files; it MUST query the brain databases."""
     if not user_prompt:
         return None
@@ -1171,7 +1171,8 @@ def check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt):
     brain_indicators = (
         "ag_archive", "codex_archive", "codex-brain", "ag-brain", "brain.db",
         "thread_history_1.sqlite", "thread_items", "codex_threads", "codex_messages",
-        "query_cross_projects", "dump_thread"
+        "query_cross_projects", "dump_thread", "q-sessions", "q-session", "q-frank",
+        "q-window", "q-full", "q.js", "chat-archive", "chat_archive"
     )
     if any(k in blob_lower for k in brain_indicators):
         has_queried_brain = True
@@ -1186,10 +1187,64 @@ def check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt):
 
     if not has_queried_brain:
         return (
-            "[TruthGate 拦截 - cross-brain-retrieval-gate] 检测到用户询问了 Codex / Claude / 跨项目历史事实，"
+            "[TruthGate 拦截 - cross-brain-retrieval-gate] 检测到用户询问了 Codex / Claude / 历史既有能力（「查真相/不是本来就有吗」），\n"
             "但本轮交互中未曾查验三端真实脑库（D:\\chat-archive-db\\ 或 ~/.codex/thread_history_1.sqlite）。\n"
-            "铁律 2026-09-15-G 规定：三端脑库已全量打通，严禁凭借 Git 提交或文件差异推测他端行为！"
-            "必须先运行 `codex_archive.py` / `ag_archive.py search` 调阅第一手对话与动作记录后再交付！"
+            "铁律规定：三端脑库已全量打通，严禁凭借 Git 提交或代码瞎猜推测历史事实！\n"
+            "必须先运行 `py -3 ag_archive.py search` / `q.js` 调阅第一手对话与设计定论后再交付！"
+        )
+    return None
+
+# ── CodeGraph Topology Gate ───────────────────────────────────────────────────
+INVESTIGATION_TOPIC_RE = re.compile(
+    r"(?:为什么.*(?:报错|失败|坏了|不行|异常|出问题)|排查.*(?:bug|故障|问题|报错)|查真相|双向.*codegraph|不是本来就有)",
+    re.I
+)
+CLAIM_ROOTCAUSE_OR_FIX_RE = re.compile(
+    r"(?:修复完毕|排查发现|已经修复|根因是|原来是|问题在于|经排查|经核实|已搞定|已解决|彻底解决)",
+    re.I
+)
+
+def check_codegraph_topology_violation(text, tool_calls, blob, user_prompt, cwd=None):
+    """Enforces codegraph-topology-gate:
+    When investigating bug rootcause in an indexed codebase, assistant MUST run codegraph exploration
+    to verify bidirectional callers/callees before declaring conclusions."""
+    if not user_prompt or not INVESTIGATION_TOPIC_RE.search(user_prompt):
+        return None
+    if not CLAIM_ROOTCAUSE_OR_FIX_RE.search(text or ""):
+        return None
+
+    # Check if current repo or cwd has .codegraph
+    has_codegraph = False
+    check_paths = [Path.cwd(), Path("e:/social_media_to_tg")]
+    if cwd:
+        check_paths.append(Path(cwd))
+    for p in check_paths:
+        try:
+            if (p / ".codegraph").exists():
+                has_codegraph = True
+                break
+        except Exception:
+            pass
+    if not has_codegraph:
+        return None
+
+    # Check if codegraph was queried
+    blob_lower = (blob or "").lower()
+    has_queried_cg = "codegraph" in blob_lower
+    if not has_queried_cg:
+        for tc in (tool_calls or []):
+            fn = tc.get("function", {}) if "function" in tc else tc
+            name = (fn.get("name") or "").lower()
+            args = str(fn.get("args", "") or fn.get("arguments", "")).lower()
+            if "codegraph" in name or "codegraph" in args:
+                has_queried_cg = True
+                break
+
+    if not has_queried_cg:
+        return (
+            "[TruthGate 拦截 - codegraph-topology-gate] 当前工程包含 .codegraph 索引，且正在排查既有功能故障/查真相，\n"
+            "但本轮未曾调用 `codegraph_explore` 执行双向拓扑核验（上游 Callers + 下游 Callees）！\n"
+            "铁律规定：排查既有链路必须通过 CodeGraph 双向摸清代码接线再下定论！"
         )
     return None
 
@@ -1603,6 +1658,14 @@ def evaluate_all_structural_gates(text, tool_calls, blob, user_prompt="", conv_i
         vio = check_cross_brain_retrieval_violation(text, tool_calls, blob, user_prompt)
         if vio:
             violations.append(("cross-brain-retrieval-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 14b. codegraph-topology-gate
+    if not check_is_off("codegraph-topology-gate", sid=conv_id):
+        vio = check_codegraph_topology_violation(text, tool_calls, blob, user_prompt)
+        if vio:
+            violations.append(("codegraph-topology-gate", vio))
             if stop_on_first:
                 return violations
 
