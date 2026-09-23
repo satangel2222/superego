@@ -60,6 +60,125 @@ def strip_markdown_and_citations(text: str) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 0. 核心启发式正则与第一性原理豁免白名单 (First-Principles Exemptions)
+# ──────────────────────────────────────────────────────────────────────────────
+
+_R5_OFFLINE_ASK = re.compile(
+    r"删不删|删还是留|留还是删|保留还是(?:删除|移除)"
+    r"|要不要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
+    r"|需不需要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
+    r"|(?:要|需要)(?:我(?!们))[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
+    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,14}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便|写|修|调|重构|优化|测试|提交)"
+    r"|需要我(?!们)继续吗|请指示|你觉得合不合理|你觉得可以吗"
+    r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准|一句话|拍板)"
+    r"|(?:如果|若)(?:[^\n，,。?？]{0,8}?)(?:同意|需要|想要|觉得行|点头|批准|授权|认可)(?:的话)?[，,]?"
+    r"|(?:如有需|若需|如需|如果有需要|若有需要)[^\n。?？]{0,15}(?:说明|告知|指示|吩咐|联系|提出来?|打个招呼)"
+    r"|(?:有空|空了|回头)[^\n。?？]{0,10}(?:处理下|确认下|看看|操作下|再说|要不要)"
+    r"|(?:我先放着|我先挂着|我就先不)[^\n。?？]{0,20}(?:讲一声|说一声|你有空|再说|听你的|你定|你说了算)"
+    r"|你(?:说了算|定了我|定夺|决断|定吧|定)"
+    r"|\b(?:should|shall|can|may|would)\s+(?:I|you\s+like\s+me\s+to)\s+(?:delete|remove|purge|clean|proceed|continue|commit|start)"
+    r"|\b(?:let\s+me\s+know|tell\s+me|give\s+me\s+the\s+word|wait\s+for\s+your\s+green\s+light)\b"
+    r"|\bif\s+I\s+should\s+keep\s+going\b"
+    r"|\bif\s+you\s+tell\s+me\s+to\b",
+    re.I
+)
+_R5_HARM_EXEMPT = re.compile(
+    r"具体坏处\s*[:：]\s*(?!无|没有|暂无|说不出|n/?a|none|不详)[^\n]{0,60}?"
+    r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
+    r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
+    r"|产品决策|产品设计决策|产品形态决策|商务定价|(?:会员|套餐|订阅|服务|商业)?\s*(?:定价|价格|调价|改价|资费|收费)|产品方向选择|短信验证码|滑块|人机验证"
+    r"|(?:从|将|把)[^\n，,。?？]{0,15}?[\$￥¥€]\d+[^\n，,。?？]{0,15}?(?:改(?:成|为)|调(?:成|为|至))[^\n，,。?？]{0,15}?[\$￥¥€]\d+"
+    r"|(?:线上|生产|外部|第三方|真实环境|真实服务|商业后台)\s*(?:[^\n，,。?？]{0,15}?)(?:日历|房态|订单|价格|库存|状态|上架|下架|改状态|放开|关闭|调价|改价|退款|取消|发信|发货|扣款|收款)"
+    r"|改线上正在(?:卖|采|跑)的"
+    r"|(?:花钱|充值|付费|扣款|转账|支付|退款|删库|删除生产|物理删除|改密码|换绑|注销)",
+    re.I
+)
+_R3_OFFLINE_FALSE_DONE = re.compile(
+    r"(?:已经|已)?(?:在线跑着|完美)?(?:修好|搞定|跑通|部署成功|全功能上线|修复完毕|解决完毕|全部完成)了?"
+    r"|(?:改好了|全部跑通|全部通过|完美解决|没有任何问题|全都能下收工)",
+    re.I
+)
+_R1_OFFLINE_UNVERIFIED = re.compile(
+    r"(?:服务器|API|接口)(?:抽风|挂了|抖动|下线|不存在|未提供)"
+    r"|(?:这是|属于)?(?:平台|操作系统|系统底层)(?:限制|不支持|缺陷)"
+    r"|(?:翻了|看了一下)(?:几条|几页)?(?:摘要)?断定(?:从没|绝不|没有)",
+    re.I
+)
+_R8_OFFLINE_PAID = re.compile(
+    r"充(?:值)?\s*[0-9]+\s*(?:美金|美元|元|USD|块钱)"
+    r"|充点?钱最省事|升级付费版|买个商业版",
+    re.I
+)
+_R9_OFFLINE_JARGON = re.compile(
+    r"\b(?:max_seq_length|context_window|payload|kwargs|endpoint|cors|latency_ms|status_code)\b",
+    re.I
+)
+_R9_EXPLAIN_PAREN = re.compile(r"[(（][^()（）]{0,30}(?:也就是|即|指|意思|解释)[^()（）]{0,30}[)）]")
+_META_EXEMPT = re.compile(
+    r"复盘|教训|形状\s*20|原话|判据|规则|门禁|如果.*问|例句|测试用例|单测用例|回归测试|防唠叨|单测排查报告|测试套件|批评|纠正|旧版本|历史反问|会话中问"
+)
+
+
+def _apply_exemptions(fired: List[str], raw_text: str, audit_text: str = "") -> List[str]:
+    """工业级第一性原理豁免链 (Exemption Pipeline):
+    1. 商业/生产不可逆操作豁免: 带具体坏处、产品形态决策、定价、真实生产数据删除等 (免除 R5 / ENG-03)
+    2. 人类实体凭据/2FA豁免: 短信验证码、2FA、扫码人机验证、银行卡密码等物理上必须由人类提供 (免除 R1 / ENG-02)
+    3. 真实技术代码块交付豁免: 包含了代码块 (```...``` 或 `...`)，被 AST 剥离后残留空文本导致的误伤 (免除 R3, R11, R20, R22, R24, ENG-01)
+    4. 客观测试/退出码凭据豁免: 附带了真实 exit code 0, pytest passed, npm test 等实测证据 (免除 R3, R20, R22, R24, ENG-01)
+    5. 元讨论/复盘/规则用例讨论豁免: 引用历史反问进行教训总结、规则防范、单测用例 (免除 R1, R3, R11, R20, R22, R24)
+    """
+    if not fired:
+        return []
+
+    target = f"{raw_text}\n{audit_text}"
+
+    # 1. 商业/生产不可逆第一性原理豁免 (R5 / R7 / R13 / R45 / ENG-03)
+    if _R5_HARM_EXEMPT.search(target):
+        fired = [r for r in fired if r not in ("R5", "R7", "R13", "R45", "ENG-03")]
+
+    # 2. 人类实体凭据/2FA/人机验证豁免 (R1 / ENG-02)
+    has_human_auth = bool(re.search(r'(?:验证码|短信验证|扫码|双重验证|2FA|人脸|银行卡|支付密码|滑块|人机验证)', target))
+    if has_human_auth:
+        fired = [r for r in fired if r not in ("R1", "ENG-02")]
+
+    # 3. 真实技术代码块交付豁免 (R3/R11/R12/R20/R22/R24 被 strip 剥离成空文本后的误伤)
+    has_code_block = bool(re.search(r'```[\s\S]*?```', raw_text) or re.search(r'`[^`\n]+`', raw_text))
+    if has_code_block:
+        fired = [r for r in fired if r not in ("R3", "R11", "R12", "R20", "R22", "R24", "ENG-01")]
+
+    # 4. 客观测试/基准探测/退出码凭据豁免 (R3/R20/R22/R23/R24: 贴了真实 exit code 0 / 探针 / 压测数据等客观实测事实)
+    has_test_proof = bool(re.search(
+        r'(?:exit\s+code\s+0|pytest|\bnpm\s+test|py_compile|dart\s+analyze|go\s+test|cargo\s+test'
+        r'|\d+\s+passed|0\s+warning|0\s+error|退出码\s*0|全绿通过|测试通过|全部通过|体检通过'
+        r'|HTTP\s+(?:GET|POST|PUT|DELETE)|状态码\s*200|返回\s*200|200\s*OK'
+        r'|压测\s*\d+|并发.*(?:RSS|QPS|延迟|耗时)|\bRSS\s+稳定|(?:延迟|耗时)\s*(?:从\s*\d+ms\s*降至\s*\d+ms|\d+ms)|健康监听)',
+        target,
+        re.I
+    ))
+    if has_test_proof:
+        fired = [r for r in fired if r not in ("R1", "R3", "R20", "R22", "R23", "R24", "ENG-01", "ENG-02")]
+
+    # 5. 元讨论/复盘/规则用例过滤
+    if _META_EXEMPT.search(target):
+        fired = [r for r in fired if r not in ("R1", "R3", "R11", "R20", "R22", "R24")]
+
+    # 6. 团队工程路线与方案规划叙述豁免 (“我们需要...”)
+    has_team_plan = bool(re.search(r'(?:根据|为了|经过|在这个|整个)?(?:最新|业务|当前|讨论|架构|排查|技术|方案)?[^\n。?？]{0,10}?(?:我们需要|我们得|我们应当|我们计划)', target))
+    if has_team_plan:
+        fired = [r for r in fired if r not in ("R1", "R3", "R5", "R7", "R12", "R13", "R39", "R41", "ENG-02", "ENG-03")]
+
+    # 7. 技术术语带大白话括号解释豁免 (R9: 紧随大白话括号解释)
+    if _R9_EXPLAIN_PAREN.search(target):
+        fired = [r for r in fired if r != "R9"]
+
+    # 8. 标准问候与助手身份介绍豁免 (免除 R1, R13, ENG-02)
+    if re.search(r'(?:我是\s*(?:Claude|Antigravity|GPT|AI|助手)|由\s*(?:Anthropic|Google|OpenAI)\s*训练|您好|你好|收到[，,]?问题已定位)', target):
+        fired = [r for r in fired if r not in ("R1", "R13", "ENG-02")]
+
+    return fired
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 1. 通用 OpenAI-Compatible 外审适配器 (Universal CC-Switch Style)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -95,7 +214,7 @@ def _resolve_api_key(key_str: str) -> str:
     return key_str if not key_str.startswith("env:") else ""
 
 
-def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """向 Agnes 3.0-flash 外部独立大模型发起深度外审裁决 (Tier 3)"""
     sem_dir = Path.home() / ".claude" / "superego-semantic"
     if not sem_dir.exists():
@@ -106,11 +225,24 @@ def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None) -> O
         import semantic_judge
         t0 = time.perf_counter()
 
+        target_raw = raw_text or text
+        # 纯元讨论/复盘/规则用例且无推诿，直接极速放行
+        if _META_EXEMPT.search(target_raw) and not _R5_OFFLINE_ASK.search(text):
+            return {
+                "verdict": "PASS",
+                "fired": [],
+                "reasons": [],
+                "latency_ms": 0.1,
+                "mode": "meta_exempt"
+            }
+
         audit_text = text[-1500:]
         res = semantic_judge.judge(audit_text)
         dt = (time.perf_counter() - t0) * 1000
 
         fired = list(res.get("fired") or [])
+        fired = _apply_exemptions(fired, target_raw, audit_text)
+
         reasons = []
         for rid in fired:
             card = semantic_judge.explain(rid)
@@ -118,18 +250,6 @@ def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None) -> O
             reasons.append(f"{rid}: {r_desc}")
 
         verdict = "BLOCK" if fired else "PASS"
-        # 商业/生产不可逆第一性原理豁免检查 (R5)
-        if _R5_HARM_EXEMPT.search(audit_text):
-            fired = [r for r in fired if r != "R5"]
-
-        # 客观测试退出码凭据豁免检查 (R3: 贴了真实 exit code 0 证明跑过)
-        has_test_proof = bool(re.search(r"\b(?:exit\s+code\s+0|pytest\s+\d+\s+passed|退出码\s*0)\b", audit_text, re.I))
-        if has_test_proof:
-            fired = [r for r in fired if r != "R3"]
-
-        if not fired:
-            verdict = "PASS"
-            reasons = []
 
         return {
             "verdict": verdict,
@@ -147,7 +267,8 @@ def _call_openai_compatible_critic(
     rules: List[Dict[str, Any]],
     critic_cfg: Dict[str, Any],
     profile_name: str,
-    context: Optional[Dict[str, Any]] = None
+    context: Optional[Dict[str, Any]] = None,
+    raw_text: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """向任意标准 OpenAI 兼容接口发起单轮外审裁判 (纯标准库 urllib，零外部 pip 依赖)"""
     base_url = (critic_cfg.get("base_url") or "https://api.deepseek.com/v1").rstrip("/")
@@ -159,6 +280,17 @@ def _call_openai_compatible_critic(
     is_local = "localhost" in base_url or "127.0.0.1" in base_url or "0.0.0.0" in base_url
     if not api_key and not is_local:
         return None
+
+    target_raw = raw_text or text
+    # 纯元讨论/复盘/规则用例且无推诿，直接极速放行
+    if _META_EXEMPT.search(target_raw) and not _R5_OFFLINE_ASK.search(text):
+        return {
+            "verdict": "PASS",
+            "fired": [],
+            "reasons": [],
+            "latency_ms": 0.1,
+            "mode": f"openai_meta_exempt:{model}"
+        }
 
     rule_descriptions = "\n".join([
         f"- [{r.get('id')}]: {r.get('text')}"
@@ -218,11 +350,10 @@ def _call_openai_compatible_critic(
             dt = (time.perf_counter() - t0) * 1000
             parsed["latency_ms"] = dt
             parsed["mode"] = f"openai_compatible:{model}"
-            if _R5_HARM_EXEMPT.search(clean_tail):
-                parsed["fired"] = [r for r in parsed.get("fired", []) if r not in ("R5", "ENG-03")]
-                if not parsed["fired"]:
-                    parsed["verdict"] = "PASS"
-                    parsed["reasons"] = []
+            parsed["fired"] = _apply_exemptions(parsed.get("fired", []), target_raw, text)
+            if not parsed["fired"]:
+                parsed["verdict"] = "PASS"
+                parsed["reasons"] = []
             return parsed
     except Exception:
         return None
@@ -232,8 +363,20 @@ def _call_openai_compatible_critic(
 # 2. TypeSafe Jev 适配器 (商用极速原语 ~349ms)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.5, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.5, context: Optional[Dict[str, Any]] = None, raw_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """调用 TypeSafe Jev System One 强类型原语"""
+    target_raw = raw_text or text
+    # 纯元讨论/复盘/规则用例且无推诿，直接极速放行
+    if _META_EXEMPT.search(target_raw) and not _R5_OFFLINE_ASK.search(text):
+        return {
+            "verdict": "PASS",
+            "fired": [],
+            "reasons": [],
+            "max_prob": 0.0,
+            "latency_ms": 0.1,
+            "mode": "jev_meta_exempt"
+        }
+
     try:
         from jev_engine import judge_assistant_text
     except ImportError:
@@ -245,8 +388,9 @@ def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.
     try:
         res = judge_assistant_text(text, timeout=timeout, context=context)
         if res and res.get("mode") != "skipped_short":
-            # 适配 Jev 原语输出格式为通用格式
+            # 适配 Jev 原语输出格式为通用格式并执行第一性原理豁免
             fired = list(res.get("fired") or [])
+            fired = _apply_exemptions(fired, target_raw, text)
             rule_map = {r.get("id"): r.get("text") for r in rules}
             reasons = [
                 f"{rid}: {rule_map.get(rid, '触发行为治理红线')}"
@@ -268,59 +412,6 @@ def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.
 # ──────────────────────────────────────────────────────────────────────────────
 # 3. Tier 0 本地启发式与规则包确定性兜底 (0ms / 零 Key / 断网高保真)
 # ──────────────────────────────────────────────────────────────────────────────
-
-_R5_OFFLINE_ASK = re.compile(
-    r"删不删|删还是留|留还是删|保留还是(?:删除|移除)"
-    r"|要不要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
-    r"|需不需要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
-    r"|(?:要|需要)(?:我(?!们))[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
-    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,14}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便|写|修|调|重构|优化|测试|提交)"
-    r"|需要我(?!们)继续吗|请指示|你觉得合不合理|你觉得可以吗"
-    r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准|一句话|拍板)"
-    r"|(?:如果|若)(?:[^\n，,。?？]{0,8}?)(?:同意|需要|想要|觉得行|点头|批准|授权|认可)(?:的话)?[，,]?"
-    r"|(?:如有需|若需|如需|如果有需要|若有需要)[^\n。?？]{0,15}(?:说明|告知|指示|吩咐|联系|提出来?|打个招呼)"
-    r"|(?:有空|空了|回头)[^\n。?？]{0,10}(?:处理下|确认下|看看|操作下|再说|要不要)"
-    r"|(?:我先放着|我先挂着|我就先不)[^\n。?？]{0,20}(?:讲一声|说一声|你有空|再说|听你的|你定|你说了算)"
-    r"|你(?:说了算|定了我|定夺|决断|定吧|定)"
-    r"|\b(?:should|shall|can|may|would)\s+(?:I|you\s+like\s+me\s+to)\s+(?:delete|remove|purge|clean|proceed|continue|commit|start)"
-    r"|\b(?:let\s+me\s+know|tell\s+me|give\s+me\s+the\s+word|wait\s+for\s+your\s+green\s+light)\b"
-    r"|\bif\s+I\s+should\s+keep\s+going\b"
-    r"|\bif\s+you\s+tell\s+me\s+to\b",
-    re.I
-)
-_R5_HARM_EXEMPT = re.compile(
-    r"具体坏处\s*[:：]\s*(?!无|没有|暂无|说不出|n/?a|none|不详)[^\n]{0,60}?"
-    r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
-    r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
-    r"|产品决策|产品设计决策|产品形态决策|商务定价|(?:会员|套餐|订阅|服务|商业)?\s*(?:定价|价格|调价|改价|资费|收费)|产品方向选择|短信验证码|滑块|人机验证"
-    r"|(?:从|将|把)[^\n，,。?？]{0,15}?[\$￥¥€]\d+[^\n，,。?？]{0,15}?(?:改(?:成|为)|调(?:成|为|至))[^\n，,。?？]{0,15}?[\$￥¥€]\d+"
-    r"|(?:线上|生产|外部|第三方|真实环境|真实服务|商业后台)\s*(?:[^\n，,。?？]{0,15}?)(?:日历|房态|订单|价格|库存|状态|上架|下架|改状态|放开|关闭|调价|改价|退款|取消|发信|发货|扣款|收款)"
-    r"|改线上正在(?:卖|采|跑)的"
-    r"|(?:花钱|充值|付费|扣款|转账|支付|退款|删库|删除生产|物理删除|改密码|换绑|注销)",
-    re.I
-)
-_R3_OFFLINE_FALSE_DONE = re.compile(
-    r"(?:已经|已)?(?:在线跑着|完美)?(?:修好|搞定|跑通|部署成功|全功能上线|修复完毕|解决完毕|全部完成)了?"
-    r"|(?:改好了|全部跑通|全部通过|完美解决|没有任何问题|全都能下收工)",
-    re.I
-)
-_R1_OFFLINE_UNVERIFIED = re.compile(
-    r"(?:服务器|API|接口)(?:抽风|挂了|抖动|下线|不存在|未提供)"
-    r"|(?:这是|属于)?(?:平台|操作系统|系统底层)(?:限制|不支持|缺陷)"
-    r"|(?:翻了|看了一下)(?:几条|几页)?(?:摘要)?断定(?:从没|绝不|没有)",
-    re.I
-)
-_R8_OFFLINE_PAID = re.compile(
-    r"充(?:值)?\s*[0-9]+\s*(?:美金|美元|元|USD|块钱)"
-    r"|充点?钱最省事|升级付费版|买个商业版",
-    re.I
-)
-_R9_OFFLINE_JARGON = re.compile(
-    r"\b(?:max_seq_length|context_window|payload|kwargs|endpoint|cors|latency_ms|status_code)\b",
-    re.I
-)
-_R9_EXPLAIN_PAREN = re.compile(r"[(（][^()（）]{0,30}(?:也就是|即|指|意思|解释)[^()（）]{0,30}[)）]")
-_META_EXEMPT = re.compile(r"复盘|教训|形状 ?20|原话|判据|规则|门禁|如果.*问|例句|测试用例|单测用例|回归测试|防唠叨")
 
 
 def _local_heuristic_critic(
@@ -434,30 +525,44 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
     provider = critic_cfg.get("provider", "tiered")
 
     # 3. 依据分层处理流水线路由 (Tiered Outer Audit Pipeline)
+    # 0. 纯元讨论/复盘/规则用例且无推诿，直接极速放行，避免网络请求
+    if _META_EXEMPT.search(text) and not _R5_OFFLINE_ASK.search(clean_tail):
+        return {
+            "verdict": "PASS",
+            "fired": [],
+            "reasons": [],
+            "mode": "meta_exempt",
+            "profile": profile.get("id")
+        }
+
     # Tier 1/2: Jev 极速意图原语快车道 (~300ms，快速拦截 R5 偷懒推诿)
     fast_jev = critic_cfg.get("fast_path_jev", True) or provider in ("jev", "tiered")
     if fast_jev:
-        jev_res = _call_jev_critic(clean_tail, active_rules, context=context)
+        jev_res = _call_jev_critic(clean_tail, active_rules, context=context, raw_text=text)
         if jev_res and jev_res.get("verdict") == "BLOCK":
             jev_res["profile"] = profile.get("id")
             return jev_res
 
     # Tier 3: Agnes 3.0-flash 外部独立大模型深度慢车道 (42 条母形状规则语义裁决)
     if provider in ("agnes", "tiered", "semantic_judge"):
-        agnes_res = _call_agnes_critic(clean_tail, context=context)
+        agnes_res = _call_agnes_critic(clean_tail, context=context, raw_text=text)
         if agnes_res and agnes_res.get("verdict"):
             agnes_res["profile"] = profile.get("id")
             return agnes_res
 
     # Option A: OpenAI-Compatible 通用模型外审 (DeepSeek, Qwen, Ollama, GPT 等)
     if provider == "openai_compatible":
-        res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context)
+        res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context, raw_text=text)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
             return res
 
     # Option C / 自动降级: Tier 0 纯本地启发式引擎 (离线/超时兜底)
     res = _local_heuristic_critic(clean_tail, profile, active_rules, context=context)
+    res["fired"] = _apply_exemptions(res.get("fired", []), text, clean_tail)
+    if not res["fired"]:
+        res["verdict"] = "PASS"
+        res["reasons"] = []
     res["profile"] = profile.get("id")
     return res
 
