@@ -111,11 +111,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "process_leak_guard": True
     },
     "critic": {
-        "provider": "local_heuristic",  # "openai_compatible" | "jev" | "local_heuristic"
-        "base_url": "https://api.deepseek.com/v1",
-        "model": "deepseek-chat",
-        "api_key": "env:CRITIC_API_KEY",
-        "timeout": 3.5
+        "provider": "tiered",  # "tiered" | "agnes" | "jev" | "openai_compatible" | "local_heuristic"
+        "base_url": "https://apihub.agnes-ai.com/v1",
+        "model": "agnes-3.0-flash",
+        "api_key": "env:AGNES_API_KEY",
+        "timeout": 4.0
     },
     "engine": {
         "fast_path_jev": True,

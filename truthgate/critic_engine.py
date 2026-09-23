@@ -64,13 +64,82 @@ def strip_markdown_and_citations(text: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _resolve_api_key(key_str: str) -> str:
-    """解析 API Key，支持 env:VAR_NAME 动态引用"""
+    """解析 API Key，支持 env:VAR_NAME 动态引用，并自动穿透本地物理文件查找"""
     if not key_str:
         return ""
+    var_name = key_str
     if key_str.startswith("env:"):
         var_name = key_str.split(":", 1)[1].strip()
-        return os.environ.get(var_name, "")
-    return key_str
+
+    # 1. 优先读取系统环境变量
+    val = os.environ.get(var_name, "")
+    if val:
+        return val
+
+    # 2. 从本地物理 .env 文件穿透查找
+    search_paths = [
+        Path.home() / ".claude" / ".env",
+        Path.home() / ".superego" / ".env",
+        Path.home() / ".claude" / "superego-semantic" / ".env",
+        Path(r"E:\social_media_to_tg\lm-worker\.env"),
+    ]
+    for sp in search_paths:
+        if sp.exists():
+            try:
+                for line in sp.read_text(encoding="utf-8-sig", errors="ignore").splitlines():
+                    if line.startswith(f"{var_name}="):
+                        return line.split("=", 1)[1].strip()
+            except Exception:
+                pass
+
+    return key_str if not key_str.startswith("env:") else ""
+
+
+def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """向 Agnes 3.0-flash 外部独立大模型发起深度外审裁决 (Tier 3)"""
+    sem_dir = Path.home() / ".claude" / "superego-semantic"
+    if not sem_dir.exists():
+        return None
+    try:
+        if str(sem_dir) not in sys.path:
+            sys.path.insert(0, str(sem_dir))
+        import semantic_judge
+        t0 = time.perf_counter()
+
+        audit_text = text[-1500:]
+        res = semantic_judge.judge(audit_text)
+        dt = (time.perf_counter() - t0) * 1000
+
+        fired = list(res.get("fired") or [])
+        reasons = []
+        for rid in fired:
+            card = semantic_judge.explain(rid)
+            r_desc = card.get("text") or semantic_judge.RULES.get(rid, rid)
+            reasons.append(f"{rid}: {r_desc}")
+
+        verdict = "BLOCK" if fired else "PASS"
+        # 商业/生产不可逆第一性原理豁免检查 (R5)
+        if _R5_HARM_EXEMPT.search(audit_text):
+            fired = [r for r in fired if r != "R5"]
+
+        # 客观测试退出码凭据豁免检查 (R3: 贴了真实 exit code 0 证明跑过)
+        has_test_proof = bool(re.search(r"\b(?:exit\s+code\s+0|pytest\s+\d+\s+passed|退出码\s*0)\b", audit_text, re.I))
+        if has_test_proof:
+            fired = [r for r in fired if r != "R3"]
+
+        if not fired:
+            verdict = "PASS"
+            reasons = []
+
+        return {
+            "verdict": verdict,
+            "fired": fired,
+            "reasons": reasons,
+            "latency_ms": dt,
+            "mode": f"agnes_external:{semantic_judge.MODEL}"
+        }
+    except Exception:
+        return None
 
 
 def _call_openai_compatible_critic(
@@ -362,9 +431,24 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
     profile = get_active_profile()
     active_rules = resolve_profile_rules()
     critic_cfg = get_critic_config()
-    provider = critic_cfg.get("provider", "local_heuristic")
+    provider = critic_cfg.get("provider", "tiered")
 
-    # 3. 依据选型路由
+    # 3. 依据分层处理流水线路由 (Tiered Outer Audit Pipeline)
+    # Tier 1/2: Jev 极速意图原语快车道 (~300ms，快速拦截 R5 偷懒推诿)
+    fast_jev = critic_cfg.get("fast_path_jev", True) or provider in ("jev", "tiered")
+    if fast_jev:
+        jev_res = _call_jev_critic(clean_tail, active_rules, context=context)
+        if jev_res and jev_res.get("verdict") == "BLOCK":
+            jev_res["profile"] = profile.get("id")
+            return jev_res
+
+    # Tier 3: Agnes 3.0-flash 外部独立大模型深度慢车道 (42 条母形状规则语义裁决)
+    if provider in ("agnes", "tiered", "semantic_judge"):
+        agnes_res = _call_agnes_critic(clean_tail, context=context)
+        if agnes_res and agnes_res.get("verdict"):
+            agnes_res["profile"] = profile.get("id")
+            return agnes_res
+
     # Option A: OpenAI-Compatible 通用模型外审 (DeepSeek, Qwen, Ollama, GPT 等)
     if provider == "openai_compatible":
         res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context)
@@ -372,14 +456,7 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
             res["profile"] = profile.get("id")
             return res
 
-    # Option B: TypeSafe Jev 原语外审
-    if provider == "jev":
-        res = _call_jev_critic(clean_tail, active_rules, context=context)
-        if res and res.get("verdict"):
-            res["profile"] = profile.get("id")
-            return res
-
-    # Option C / 自动降级: Tier 0 纯本地启发式引擎
+    # Option C / 自动降级: Tier 0 纯本地启发式引擎 (离线/超时兜底)
     res = _local_heuristic_critic(clean_tail, profile, active_rules, context=context)
     res["profile"] = profile.get("id")
     return res
