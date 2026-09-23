@@ -216,6 +216,17 @@ def run_tests():
     vio_12b = bridge.check_cross_brain_retrieval_violation(text_12a, tc_12b, "codex_archive.py", prompt_12a)
     runner.test("12B: 真实调用 codex_archive.py 调阅历史 -> 放行", vio_12b is None, f"Got: {vio_12b}")
 
+    # Case 12C: 用户原话质询既有能力与 chat archiver，未调阅三端脑库 -> 拦截
+    prompt_12c = "MTProto 我不是本来都有了吗？你到底有先去看完所有claude之前的chat archiver吗？查真相"
+    text_12c = "经检查代码，好像之前没有配置过 MTProto。"
+    vio_12c = bridge.check_cross_brain_retrieval_violation(text_12c, [], "", prompt_12c)
+    runner.test("12C: 质询既有能力/chat archiver/查真相却未调阅脑库 -> 触发拦截", vio_12c is not None and "cross-brain-retrieval-gate" in vio_12c, f"Got: {vio_12c}")
+
+    # Case 12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行
+    tc_12d = [{"function": {"name": "run_command", "args": {"CommandLine": "py -3 C:/Users/Casp/.gemini/antigravity/scripts/ag_archive.py search 'MTProto' --all"}}}]
+    vio_12d = bridge.check_cross_brain_retrieval_violation(text_12c, tc_12d, "ag_archive.py search 'MTProto'", prompt_12c)
+    runner.test("12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行", vio_12d is None, f"Got: {vio_12d}")
+
     # -------------------------------------------------------------------------
     # Gate 13: gui-process-restart-gate
     # -------------------------------------------------------------------------
@@ -230,6 +241,29 @@ def run_tests():
     runner.test("13B: 明确告知前台窗口隔离与托盘启动路径 -> 放行", vio_13b is None, f"Got: {vio_13b}")
 
     # -------------------------------------------------------------------------
+    # Gate 14B: codegraph-topology-gate (Bidirectional CodeGraph Verification)
+    # -------------------------------------------------------------------------
+    print("\n[Gate 14B] codegraph-topology-gate (Bidirectional CodeGraph Verification)")
+    prompt_14b_1 = "为什么现在放视频会报错了？"
+    text_14b_1 = "经排查发现根因是 sidecar 挂了，已经修复完毕。"
+    vio_14b_1 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd="e:/social_media_to_tg")
+    runner.test("14B-1: 排查报错宣称定位根因但未调用 CodeGraph -> 触发拦截", vio_14b_1 is not None and "codegraph-topology-gate" in vio_14b_1, f"Got: {vio_14b_1}")
+
+    tc_14b_2 = [{"function": {"name": "codegraph_explore", "args": {"query": "sidecar processVideoForward"}}}]
+    vio_14b_2 = bridge.check_codegraph_topology_violation(text_14b_1, tc_14b_2, "codegraph_explore", prompt_14b_1, cwd="e:/social_media_to_tg")
+    runner.test("14B-2: 执行了 codegraph_explore 双向拓扑分析 -> 放行", vio_14b_2 is None, f"Got: {vio_14b_2}")
+
+    prompt_14b_3 = "请帮我格式化这个 JSON 字符串"
+    text_14b_3 = "格式化完成。"
+    vio_14b_3 = bridge.check_codegraph_topology_violation(text_14b_3, [], "", prompt_14b_3, cwd="e:/social_media_to_tg")
+    runner.test("14B-3: 非排查故障/非定位根因请求 -> 放行 (防误杀)", vio_14b_3 is None, f"Got: {vio_14b_3}")
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as td_non_cg:
+        vio_14b_4 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd=td_non_cg)
+        runner.test("14B-4: 无 .codegraph 索引的工程 -> 放行 (防误杀)", vio_14b_4 is None, f"Got: {vio_14b_4}")
+
+    # -------------------------------------------------------------------------
     # Gate 14 & 15: Unified Evaluation Pipeline Test (evaluate_all_structural_gates)
     # -------------------------------------------------------------------------
     print("\n[Gate 14 & 15] evaluate_all_structural_gates 集成流水线验证")
@@ -240,6 +274,16 @@ def run_tests():
     runner.test("集成测试: 单轮回调能够同时捕获多个违规门禁", len(gates_fired) >= 2, f"Fired: {gates_fired}")
     runner.test("集成测试: 命中 honest-scope-assertion-gate", "honest-scope-assertion-gate" in gates_fired, f"Fired: {gates_fired}")
     runner.test("集成测试: 命中 no-nagging-guard", "no-nagging-guard" in gates_fired, f"Fired: {gates_fired}")
+
+    # 集成测试：流水线自动命中 cross-brain-retrieval-gate
+    vios_pipeline = bridge.evaluate_all_structural_gates("经检查代码，好像没有。", [], "", user_prompt=prompt_12c, stop_on_first=False)
+    gates_fired_pipeline = [g for g, _ in vios_pipeline]
+    runner.test("集成测试: 流水线自动命中 cross-brain-retrieval-gate", "cross-brain-retrieval-gate" in gates_fired_pipeline, f"Fired: {gates_fired_pipeline}")
+
+    # 集成测试：流水线自动命中 codegraph-topology-gate
+    vios_pipeline_cg = bridge.evaluate_all_structural_gates("经排查已经修复，根因是端口不对。", [], "", user_prompt=prompt_14b_1, stop_on_first=False)
+    gates_fired_pipeline_cg = [g for g, _ in vios_pipeline_cg]
+    runner.test("集成测试: 流水线自动命中 codegraph-topology-gate", "codegraph-topology-gate" in gates_fired_pipeline_cg, f"Fired: {gates_fired_pipeline_cg}")
 
     # -------------------------------------------------------------------------
     # Gate 16: run_worker End-to-End Live Evaluation

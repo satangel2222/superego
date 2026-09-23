@@ -1215,9 +1215,10 @@ def check_codegraph_topology_violation(text, tool_calls, blob, user_prompt, cwd=
 
     # Check if current repo or cwd has .codegraph
     has_codegraph = False
-    check_paths = [Path.cwd(), Path("e:/social_media_to_tg")]
     if cwd:
-        check_paths.append(Path(cwd))
+        check_paths = [Path(cwd)]
+    else:
+        check_paths = [Path.cwd(), Path("e:/social_media_to_tg")]
     for p in check_paths:
         try:
             if (p / ".codegraph").exists():

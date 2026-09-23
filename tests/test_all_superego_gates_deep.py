@@ -101,36 +101,36 @@ def run_tests():
     # Gate 4: model-authenticity-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 4/15] model-authenticity-gate (Fake Model Name Prevention)")
-    text_4a = "本次基准测试我们使用了 gpt-4o 模型进行代码生成。"
-    vio_4a = bridge.check_model_authenticity_violation(text_4a, [], "", "请问评测用了什么模型？")
+    text_4a = "当前服务正在运行于 claude-3-7-sonnet-20250219 模型之上，配置已更新。"
+    tc_4a = [{"function": {"name": "view_file", "args": {"AbsolutePath": "foo.py"}}}]
+    vio_4a = bridge.check_model_authenticity_violation(text_4a, tc_4a, "")
     runner.test("4A: 未查账本凭空捏造公版模型 -> 触发拦截", vio_4a is not None and "model-authenticity-gate" in vio_4a, f"Got: {vio_4a}")
 
-    text_4b = "根据本地账本，我们使用了实际模型。"
-    tc_4b = [{"function": {"name": "run_command", "args": {"CommandLine": 'sqlite3 "C:\\Users\\Casp\\.cc-switch\\cc-switch.db" "SELECT * FROM models"'}}}]
-    vio_4b = bridge.check_model_authenticity_violation(text_4b, tc_4b, "cc-switch.db", "请问主力模型是什么？")
+    tc_4b = [{"function": {"name": "run_command", "args": {"CommandLine": "python cc-switch.py status"}}}]
+    vio_4b = bridge.check_model_authenticity_violation(text_4a, tc_4b, "cc-switch.py")
     runner.test("4B: 真实查验 cc-switch.db 账本 -> 放行", vio_4b is None, f"Got: {vio_4b}")
 
     # -------------------------------------------------------------------------
     # Gate 5: r5-commitment-deferral-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 5/15] r5-commitment-deferral-gate (Proactive Execution Ironlaw)")
-    text_5a = "只要你一声令下，我就立刻开始抓取并重构代码。"
-    vio_5a = bridge.check_r5_deferral_violation(text_5a, "请整理接口")
-    runner.test("5A: 等你一声令下/等指令推诿 -> 触发拦截", vio_5a is not None and "no-nagging-gate" in vio_5a, f"Got: {vio_5a}")
+    text_5a = "方案已经设计好，只要您一声令下，我随时为您修改代码！"
+    vio_5a = bridge.check_commitment_deferral_violation(text_5a, "")
+    runner.test("5A: 等你一声令下/等指令推诿 -> 触发拦截", vio_5a is not None and "r5-commitment-deferral-gate" in vio_5a, f"Got: {vio_5a}")
 
-    text_5b = "已直接抓取 3 篇文档并在本地落盘，提炼结果如下。"
-    vio_5b = bridge.check_r5_deferral_violation(text_5b, "请整理接口")
+    text_5b = "方案已经设计完成，已执行代码重构并完成了全部验证。"
+    vio_5b = bridge.check_commitment_deferral_violation(text_5b, "")
     runner.test("5B: 主动执行无推诿 -> 放行", vio_5b is None, f"Got: {vio_5b}")
 
     # -------------------------------------------------------------------------
     # Gate 6: token-thrift-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 6/15] token-thrift-gate (Context Stuffing Prevention)")
-    tc_6a = [{"function": {"name": "read_url_content", "args": {"Url": f"http://doc.example/{i}"}}} for i in range(9)]
+    tc_6a = [{"function": {"name": "read_url_content", "args": {"Url": f"https://example.com/{i}"}}} for i in range(9)]
     vio_6a = bridge.check_token_thrift_violation(tc_6a)
     runner.test("6A: 单轮发起 9 次 read_url_content 塞爆上下文 -> 触发拦截", vio_6a is not None and "token-thrift-gate" in vio_6a, f"Got: {vio_6a}")
 
-    tc_6b = [{"function": {"name": "read_url_content", "args": {"Url": f"http://doc.example/{i}"}}} for i in range(3)]
+    tc_6b = [{"function": {"name": "read_url_content", "args": {"Url": f"https://example.com/{i}"}}} for i in range(3)]
     vio_6b = bridge.check_token_thrift_violation(tc_6b)
     runner.test("6B: 单轮轻量调阅 3 次 -> 放行", vio_6b is None, f"Got: {vio_6b}")
 
@@ -138,44 +138,43 @@ def run_tests():
     # Gate 7: dsh-provider-authenticity-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 7/15] dsh-provider-authenticity-gate (Third-party Relay Card Prevention)")
-    tc_7a = [{"function": {"name": "run_command", "args": {"CommandLine": "python dsh_runner.py --provider glm-card"}}}]
-    vio_7a = bridge.check_dsh_provider_violation("", tc_7a, "")
+    cmd_7a = "python client.py --model glm-card-vip"
+    vio_7a = bridge.check_dsh_provider_violation("", [{"function": {"name": "run_command", "args": {"CommandLine": cmd_7a}}}], cmd_7a)
     runner.test("7A: 命令行使用 glm-card 中转卡 -> 触发拦截", vio_7a is not None and "dsh-provider-authenticity-gate" in vio_7a, f"Got: {vio_7a}")
 
-    tc_7b = [{"function": {"name": "run_command", "args": {"CommandLine": "python dsh_runner.py --provider opencode-go"}}}]
-    vio_7b = bridge.check_dsh_provider_violation("", tc_7b, "")
+    cmd_7b = "opencode-go --model official-dsh"
+    vio_7b = bridge.check_dsh_provider_violation("", [{"function": {"name": "run_command", "args": {"CommandLine": cmd_7b}}}], cmd_7b)
     runner.test("7B: 使用官方指定渠道 opencode-go -> 放行", vio_7b is None, f"Got: {vio_7b}")
 
     # -------------------------------------------------------------------------
     # Gate 8: ghost-browser-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 8/15] ghost-browser-gate (Isolated Temp Sandbox Chrome Prevention)")
-    tc_8a = [{"function": {"name": "run_command", "args": {"CommandLine": 'chrome.exe --user-data-dir="C:\\Users\\Casp\\AppData\\Local\\Temp\\chrome_isolated" https://example.com'}}}]
-    vio_8a = bridge.check_ghost_browser_violation("", tc_8a, "")
+    cmd_8a = "chrome.exe --remote-debugging-port=9222 --user-data-dir=C:/Temp/scoped_dir"
+    vio_8a = bridge.check_ghost_browser_violation("", [{"function": {"name": "run_command", "args": {"CommandLine": cmd_8a}}}], cmd_8a)
     runner.test("8A: 后台拉起隔离 Temp 目录幽灵浏览器 -> 触发拦截", vio_8a is not None and "ghost-browser-gate" in vio_8a, f"Got: {vio_8a}")
 
-    tc_8b = [{"function": {"name": "run_command", "args": {"CommandLine": 'open-browser.cmd "https://example.com"'}}}]
-    vio_8b = bridge.check_ghost_browser_violation("", tc_8b, "")
+    cmd_8b = "open-browser.cmd http://localhost:3000"
+    vio_8b = bridge.check_ghost_browser_violation("", [{"function": {"name": "run_command", "args": {"CommandLine": cmd_8b}}}], cmd_8b)
     runner.test("8B: 使用宿主真实入口 open-browser.cmd -> 放行", vio_8b is None, f"Got: {vio_8b}")
 
     # -------------------------------------------------------------------------
     # Gate 9: no-search-no-claim-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 9/15] no-search-no-claim-gate (Unverified Absence / Rule Assertion)")
-    text_9a = "经排查，项目里压根没有这个接口和文件。"
-    tc_9a = []
-    vio_9a = bridge.check_no_search_no_claim_violation(text_9a, tc_9a, "", "有没有关于鉴权的接口？")
+    text_9a = "项目中压根没有这个配置项，完全不存在这个类。"
+    vio_9a = bridge.check_no_search_no_claim_violation(text_9a, [], "")
     runner.test("9A: 零搜索断言项目里压根没有 -> 触发拦截", vio_9a is not None and "no-search-no-claim-gate" in vio_9a, f"Got: {vio_9a}")
 
-    tc_9b = [{"function": {"name": "grep_search", "args": {"Query": "auth_token", "SearchPath": "D:/project"}}}]
-    vio_9b = bridge.check_no_search_no_claim_violation(text_9a, tc_9b, "grep_search auth_token", "有没有关于鉴权的接口？")
+    tc_9b = [{"function": {"name": "grep_search", "args": {"Query": "ConfigItem", "SearchPath": "D:/proj"}}}]
+    vio_9b = bridge.check_no_search_no_claim_violation(text_9a, tc_9b, "grep_search ConfigItem")
     runner.test("9B: 执行了真实 grep_search 查证后断言 -> 放行", vio_9b is None, f"Got: {vio_9b}")
 
     # -------------------------------------------------------------------------
     # Gate 10: search-breadth-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 10/15] search-breadth-gate (Multi-source Verification for Domain Claims)")
-    text_10a = "市面上所有这类工具都完全不可行，换哪个都一样没用。"
+    text_10a = "全网市面上所有工具和开源库都完全不可行，没有任何现成方案。"
     tc_10a = [{"function": {"name": "search_web", "args": {"query": "tools"}}}]
     vio_10a = bridge.check_search_breadth_violation(text_10a, tc_10a, "search_web")
     runner.test("10A: 仅 1 个通道即断言领域级全灭 -> 触发拦截", vio_10a is not None and "search-breadth-gate" in vio_10a, f"Got: {vio_10a}")
@@ -216,6 +215,17 @@ def run_tests():
     vio_12b = bridge.check_cross_brain_retrieval_violation(text_12a, tc_12b, "codex_archive.py", prompt_12a)
     runner.test("12B: 真实调用 codex_archive.py 调阅历史 -> 放行", vio_12b is None, f"Got: {vio_12b}")
 
+    # Case 12C: 用户原话质询既有能力与 chat archiver，未调阅三端脑库 -> 拦截
+    prompt_12c = "MTProto 我不是本来都有了吗？你到底有先去看完所有claude之前的chat archiver吗？查真相"
+    text_12c = "经检查代码，好像之前没有配置过 MTProto。"
+    vio_12c = bridge.check_cross_brain_retrieval_violation(text_12c, [], "", prompt_12c)
+    runner.test("12C: 质询既有能力/chat archiver/查真相却未调阅脑库 -> 触发拦截", vio_12c is not None and "cross-brain-retrieval-gate" in vio_12c, f"Got: {vio_12c}")
+
+    # Case 12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行
+    tc_12d = [{"function": {"name": "run_command", "args": {"CommandLine": "py -3 C:/Users/Casp/.gemini/antigravity/scripts/ag_archive.py search 'MTProto' --all"}}}]
+    vio_12d = bridge.check_cross_brain_retrieval_violation(text_12c, tc_12d, "ag_archive.py search 'MTProto'", prompt_12c)
+    runner.test("12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行", vio_12d is None, f"Got: {vio_12d}")
+
     # -------------------------------------------------------------------------
     # Gate 13: gui-process-restart-gate
     # -------------------------------------------------------------------------
@@ -230,6 +240,29 @@ def run_tests():
     runner.test("13B: 明确告知前台窗口隔离与托盘启动路径 -> 放行", vio_13b is None, f"Got: {vio_13b}")
 
     # -------------------------------------------------------------------------
+    # Gate 14B: codegraph-topology-gate (Bidirectional CodeGraph Verification)
+    # -------------------------------------------------------------------------
+    print("\n[Gate 14B] codegraph-topology-gate (Bidirectional CodeGraph Verification)")
+    prompt_14b_1 = "为什么现在放视频会报错了？"
+    text_14b_1 = "经排查发现根因是 sidecar 挂了，已经修复完毕。"
+    vio_14b_1 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd="e:/social_media_to_tg")
+    runner.test("14B-1: 排查报错宣称定位根因但未调用 CodeGraph -> 触发拦截", vio_14b_1 is not None and "codegraph-topology-gate" in vio_14b_1, f"Got: {vio_14b_1}")
+
+    tc_14b_2 = [{"function": {"name": "codegraph_explore", "args": {"query": "sidecar processVideoForward"}}}]
+    vio_14b_2 = bridge.check_codegraph_topology_violation(text_14b_1, tc_14b_2, "codegraph_explore", prompt_14b_1, cwd="e:/social_media_to_tg")
+    runner.test("14B-2: 执行了 codegraph_explore 双向拓扑分析 -> 放行", vio_14b_2 is None, f"Got: {vio_14b_2}")
+
+    prompt_14b_3 = "请帮我格式化这个 JSON 字符串"
+    text_14b_3 = "格式化完成。"
+    vio_14b_3 = bridge.check_codegraph_topology_violation(text_14b_3, [], "", prompt_14b_3, cwd="e:/social_media_to_tg")
+    runner.test("14B-3: 非排查故障/非定位根因请求 -> 放行 (防误杀)", vio_14b_3 is None, f"Got: {vio_14b_3}")
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as td_non_cg:
+        vio_14b_4 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd=td_non_cg)
+        runner.test("14B-4: 无 .codegraph 索引的工程 -> 放行 (防误杀)", vio_14b_4 is None, f"Got: {vio_14b_4}")
+
+    # -------------------------------------------------------------------------
     # Gate 14 & 15: Unified Evaluation Pipeline Test (evaluate_all_structural_gates)
     # -------------------------------------------------------------------------
     print("\n[Gate 14 & 15] evaluate_all_structural_gates 集成流水线验证")
@@ -240,6 +273,16 @@ def run_tests():
     runner.test("集成测试: 单轮回调能够同时捕获多个违规门禁", len(gates_fired) >= 2, f"Fired: {gates_fired}")
     runner.test("集成测试: 命中 honest-scope-assertion-gate", "honest-scope-assertion-gate" in gates_fired, f"Fired: {gates_fired}")
     runner.test("集成测试: 命中 no-nagging-guard", "no-nagging-guard" in gates_fired, f"Fired: {gates_fired}")
+
+    # 集成测试：流水线自动命中 cross-brain-retrieval-gate
+    vios_pipeline = bridge.evaluate_all_structural_gates("经检查代码，好像没有。", [], "", user_prompt=prompt_12c, stop_on_first=False)
+    gates_fired_pipeline = [g for g, _ in vios_pipeline]
+    runner.test("集成测试: 流水线自动命中 cross-brain-retrieval-gate", "cross-brain-retrieval-gate" in gates_fired_pipeline, f"Fired: {gates_fired_pipeline}")
+
+    # 集成测试：流水线自动命中 codegraph-topology-gate
+    vios_pipeline_cg = bridge.evaluate_all_structural_gates("经排查已经修复，根因是端口不对。", [], "", user_prompt=prompt_14b_1, stop_on_first=False)
+    gates_fired_pipeline_cg = [g for g, _ in vios_pipeline_cg]
+    runner.test("集成测试: 流水线自动命中 codegraph-topology-gate", "codegraph-topology-gate" in gates_fired_pipeline_cg, f"Fired: {gates_fired_pipeline_cg}")
 
     # -------------------------------------------------------------------------
     # Gate 16: run_worker End-to-End Live Evaluation
@@ -309,4 +352,3 @@ def run_tests():
 if __name__ == "__main__":
     ok = run_tests()
     sys.exit(0 if ok else 1)
-
