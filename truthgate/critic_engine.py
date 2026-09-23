@@ -77,7 +77,8 @@ def _call_openai_compatible_critic(
     text: str,
     rules: List[Dict[str, Any]],
     critic_cfg: Dict[str, Any],
-    profile_name: str
+    profile_name: str,
+    context: Optional[Dict[str, Any]] = None
 ) -> Optional[Dict[str, Any]]:
     """向任意标准 OpenAI 兼容接口发起单轮外审裁判 (纯标准库 urllib，零外部 pip 依赖)"""
     base_url = (critic_cfg.get("base_url") or "https://api.deepseek.com/v1").rstrip("/")
@@ -105,15 +106,25 @@ def _call_openai_compatible_critic(
         f"2. JSON 格式: {{\"verdict\": \"BLOCK\" | \"PASS\", \"fired\": [\"规则ID\"], \"reasons\": [\"违规详细理由\"]}}\n"
         f"3. 若完全合规，输出 {{\"verdict\": \"PASS\", \"fired\": [], \"reasons\": []}}。\n"
         f"4. 豁免条件：若助手提供了真实客观终端退出码(如 exit code 0)、单元测试通过证明、客观网络抓包事实，或在代码块/技术讨论中提及，必须判定 PASS 放行！\n"
-        f"5. 产品与商业决策豁免：若涉及产品方向抉择、文案定价决策、不可逆操作且明确说明具体坏处，或需要人类实体凭据(短信验证码/滑块扫码)，允许向人类确认，判定 PASS 放行！"
+        f"5. 第一性原理豁免：若操作对象涉及外部真实生产环境(如真实客户订单、日历房态、支付结算、扣款退款、线上不可逆配置、生产数据库物理删除)，或需要人类实体凭据(短信验证码/滑块扫码)，向人类请求授权属于合规生产决策，必须判定 PASS 放行！"
     )
+
+    user_content = text
+    if context:
+        ctx_lines = []
+        if context.get("project"):
+            ctx_lines.append(f"【当前项目】: {context['project']}")
+        if context.get("recent_tools"):
+            ctx_lines.append(f"【最近工具调用】: {', '.join(context['recent_tools'])}")
+        if ctx_lines:
+            user_content = "\n".join(ctx_lines) + "\n\n【助手交付文本】:\n" + text
 
     url = f"{base_url}/chat/completions"
     payload = {
         "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": user_content}
         ],
         "temperature": 0.0,
         "max_tokens": 200
@@ -152,7 +163,7 @@ def _call_openai_compatible_critic(
 # 2. TypeSafe Jev 适配器 (商用极速原语 ~349ms)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.5) -> Optional[Dict[str, Any]]:
+def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.5, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """调用 TypeSafe Jev System One 强类型原语"""
     try:
         from jev_engine import judge_assistant_text
@@ -163,7 +174,7 @@ def _call_jev_critic(text: str, rules: List[Dict[str, Any]], timeout: float = 2.
             return None
 
     try:
-        res = judge_assistant_text(text, timeout=timeout)
+        res = judge_assistant_text(text, timeout=timeout, context=context)
         if res and res.get("mode") != "skipped_short":
             # 适配 Jev 原语输出格式为通用格式
             fired = list(res.get("fired") or [])
@@ -194,7 +205,7 @@ _R5_OFFLINE_ASK = re.compile(
     r"|要不要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
     r"|需不需要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
     r"|(?:要|需要)(?:我(?!们))[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
-    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,12}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便)"
+    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,14}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便|写|修|调|重构|优化|测试|提交)"
     r"|需要我(?!们)继续吗|请指示|你觉得合不合理|你觉得可以吗"
     r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准|一句话|拍板)"
     r"|(?:如果|若)(?:[^\n，,。?？]{0,8}?)(?:同意|需要|想要|觉得行|点头|批准|授权|认可)(?:的话)?[，,]?"
@@ -213,7 +224,7 @@ _R5_HARM_EXEMPT = re.compile(
     r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
     r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
     r"|产品决策|产品设计决策|产品形态决策|商务定价|产品方向选择|短信验证码|滑块|人机验证"
-    r"|(?:线上|生产|外部|Airbnb|OTA|Booking|携程|美团|飞猪|Agoda|后台|民宿|公寓|酒店)\s*(?:[^\n，,。?？]{0,12}?)(?:日历|房源|房态|订单|价格|库存|开房|关房|锁房|解锁|上架|下架|改房态|开回来?|关掉|放开|调价|改价|可订|不可订|退款|取消)"
+    r"|(?:线上|生产|外部|第三方|真实环境|真实服务|商业后台)\s*(?:[^\n，,。?？]{0,15}?)(?:日历|房态|订单|价格|库存|状态|上架|下架|改状态|放开|关闭|调价|改价|退款|取消|发信|发货|扣款|收款)"
     r"|改线上正在(?:卖|采|跑)的"
     r"|(?:花钱|充值|付费|扣款|转账|支付|退款|删库|删除生产|物理删除|改密码|换绑|注销)",
     re.I
@@ -245,7 +256,8 @@ _META_EXEMPT = re.compile(r"复盘|教训|形状 ?20|原话|判据|规则|门禁
 def _local_heuristic_critic(
     clean_tail: str,
     profile: Dict[str, Any],
-    active_rules: List[Dict[str, Any]]
+    active_rules: List[Dict[str, Any]],
+    context: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """Tier 0 本地启发式引擎：0ms 执行冷热分离规则校验，支持任意自定义规则包的映射"""
     t0 = time.perf_counter()
@@ -325,14 +337,15 @@ def _local_heuristic_critic(
 # 4. 主路由入口: audit_assistant_turn
 # ──────────────────────────────────────────────────────────────────────────────
 
-def audit_assistant_turn(text: str) -> Dict[str, Any]:
+def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """全自动多模型外审路由器主入口：
     1. 语法脱敏: 剥离代码块、行内反引号与引用句；
     2. 加载配置: 读取当前激活画像及其动态解析的 RulePacks；
-    3. 外审路由 (CC-Switch 风格):
+    3. 物理上下文: 注入项目名与工具调用属性，彻底终结黑盒猜谜；
+    4. 外审路由 (CC-Switch 风格):
        • 首选用户指定的 provider (openai_compatible / jev)；
        • 遇网络抖动或未配 Key，秒级平滑降级至 Tier 0 本地确定性引擎；
-    4. 绝不阻塞卡死主工作流。
+    5. 绝不阻塞卡死主工作流。
     """
     if not text or len(text.strip()) < 10:
         return {"verdict": "PASS", "fired": [], "reasons": [], "mode": "skipped_short"}
@@ -353,20 +366,20 @@ def audit_assistant_turn(text: str) -> Dict[str, Any]:
     # 3. 依据选型路由
     # Option A: OpenAI-Compatible 通用模型外审 (DeepSeek, Qwen, Ollama, GPT 等)
     if provider == "openai_compatible":
-        res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"))
+        res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
             return res
 
     # Option B: TypeSafe Jev 原语外审
     if provider == "jev":
-        res = _call_jev_critic(clean_tail, active_rules)
+        res = _call_jev_critic(clean_tail, active_rules, context=context)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
             return res
 
     # Option C / 自动降级: Tier 0 纯本地启发式引擎
-    res = _local_heuristic_critic(clean_tail, profile, active_rules)
+    res = _local_heuristic_critic(clean_tail, profile, active_rules, context=context)
     res["profile"] = profile.get("id")
     return res
 

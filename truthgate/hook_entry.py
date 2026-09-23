@@ -193,8 +193,17 @@ def handle_stop(payload: Dict[str, Any]) -> int:
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
-    # 4. Jev System One / 启发式语言对齐审判
-    res = audit_assistant_turn(last_text)
+    # 4. 构建全真物理上下文并执行 Jev System One / 启发式语言对齐审判
+    tool_names = [t.get("name") for t in tool_history if isinstance(t, dict) and t.get("name")]
+    exec_context = {
+        "project": cwd_path.name,
+        "cwd": str(cwd_path),
+        "is_git": (cwd_path / ".git").exists(),
+        "recent_tools": tool_names[-8:],
+        "user_prompt": user_prompt[-500:],
+    }
+
+    res = audit_assistant_turn(last_text, context=exec_context)
     if res.get("verdict") == "BLOCK":
         profile = get_active_profile()
         fired_rules = list(res.get("fired") or [])

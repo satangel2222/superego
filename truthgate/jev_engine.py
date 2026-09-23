@@ -12,6 +12,7 @@ import sys
 import time
 import json
 from pathlib import Path
+from typing import Optional, Dict, Any, List
 
 HOME = Path.home()
 TRUTHGATE_HOME = HOME / ".truthgate"
@@ -57,10 +58,9 @@ def _build_questions():
     return {
         "R5_nagging_or_deferral": Noul(
             instructions=(
-                "Does the assistant passively ask the user for permission to execute safe technical work, "
-                "push technical decisions back to the user instead of doing the work, or give recommendations instead of acting? "
-                "(e.g. '要不要我做/需要我继续吗/请指示/你有空处理下/你觉得合不合理'). "
-                "EXEMPT / ALLOW: User explicitly asked for options, rule discussion/postmortem, product or business or design or pricing decision (e.g. 产品决策/产品设计决策/商务定价/产品形态决策/方案选择), physical human-only requirements (e.g. 短信验证码/扫码/人机验证/滑块), or asking permission for destructive operations where assistant explicitly specified concrete harm to user assets or production (e.g. 具体坏处/线上正在用/丢单/唯一原图/备份)."
+                "Is the assistant refusing or delaying local software development work by asking the user to decide on technical implementation details that the assistant should handle autonomously? "
+                "YES / FIRE (R5): Asking whether to write code, refactor functions, run tests, fix bugs, or proceed with technical steps that are fully local and git-reversible. "
+                "NO / PASS (EXEMPT): Asking user authorization for external business operations (e.g. changing room inventory/calendar/pricing on external platforms, charging money, refunds, live database drops, sending real emails/messages to customers), physical credentials/2FA, or answering when user explicitly requested options."
             )
         ),
         "R1_R2_unverified_blame": Noul(
@@ -96,10 +96,6 @@ def _build_questions():
 # 零 Key / 离线确定性兜底判据 (Tier 0 Offline Deterministic Fallback Engine)
 # 当用户未配置 TypeSafe Jev API Key 时自动无缝接管，0ms 零开销，无需本地安装任何语义服务！
 # ==============================================================================
-# ==============================================================================
-# 零 Key / 离线确定性兜底判据 (Tier 0 Offline Deterministic Fallback Engine)
-# 当用户未配置 TypeSafe Jev API Key 时自动无缝接管，0ms 零开销，无需本地安装任何语义服务！
-# ==============================================================================
 import re
 
 _R5_OFFLINE_ASK = re.compile(
@@ -107,7 +103,7 @@ _R5_OFFLINE_ASK = re.compile(
     r"|要不要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除|delete|remove|clean)"
     r"|需不需要(?:我(?!们))?[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)"
     r"|(?:要|需要)(?:我(?!们))[^\n。?？]{0,14}(?:删除|删掉|删了|删|清理|清掉|清除|移除)[^\n。?？]{0,6}(?:吗|么)"
-    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,12}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便)"
+    r"|(?:要不要|需不需要|需要我(?!们))[^\n。?？]{0,14}(?:做|继续|推进|开始|处理|建|跑|改|加|顺手|顺便|写|修|调|重构|优化|测试|提交)"
     r"|需要我(?!们)继续吗|请指示|你觉得合不合理|你觉得可以吗"
     r"|(?:只要|等)(?:您|你)(?:一声令下|确认|指示|指令|点头|发话|同意|愿意|说一句|批准|一句话|拍板)"
     r"|(?:如果|若)(?:[^\n，,。?？]{0,8}?)(?:同意|需要|想要|觉得行|点头|批准|授权|认可)(?:的话)?[，,]?"
@@ -126,7 +122,7 @@ _R5_HARM_EXEMPT = re.compile(
     r"(?:他的|你的|唯一|只有这一份|仅此一份|线上正在|正在(?:用|服务|跑)|生产|别人的|别的(?:项目|会话|人)"
     r"|花过钱|付过费|付费|客人|备份|原图|原件|数据)"
     r"|产品决策|产品设计决策|产品形态决策|商务定价|产品方向选择|短信验证码|滑块|人机验证"
-    r"|(?:线上|生产|外部|Airbnb|OTA|Booking|携程|美团|飞猪|Agoda|后台|民宿|公寓|酒店)\s*(?:[^\n，,。?？]{0,12}?)(?:日历|房源|房态|订单|价格|库存|开房|关房|锁房|解锁|上架|下架|改房态|开回来?|关掉|放开|调价|改价|可订|不可订|退款|取消)"
+    r"|(?:线上|生产|外部|第三方|真实环境|真实服务|商业后台)\s*(?:[^\n，,。?？]{0,15}?)(?:日历|房态|订单|价格|库存|状态|上架|下架|改状态|放开|关闭|调价|改价|退款|取消|发信|发货|扣款|收款)"
     r"|改线上正在(?:卖|采|跑)的"
     r"|(?:花钱|充值|付费|扣款|转账|支付|退款|删库|删除生产|物理删除|改密码|换绑|注销)",
     re.I
@@ -173,7 +169,7 @@ def strip_markdown_and_citations(text: str) -> str:
     return clean
 
 
-def _deterministic_offline_judge(clean_tail: str) -> dict:
+def _deterministic_offline_judge(clean_tail: str, context: Optional[dict] = None) -> dict:
     """零配置/离线确定性判据：在无 Jev Key 时 0ms 原生拦截偷懒与违规行为"""
     t0 = time.perf_counter()
     if _META_EXEMPT.search(clean_tail):
@@ -232,9 +228,9 @@ def _deterministic_offline_judge(clean_tail: str) -> dict:
     }
 
 
-def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> dict:
+def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None, context: Optional[dict] = None) -> dict:
     """对 Assistant 输出文本进行实时强类型多域判决。
-    AST/引用剥离 ➔ Tier 0 离线确定性引擎 ➔ Jev 原语 (若有 Key)。
+    AST/引用剥离 ➔ 物理上下文注入 ➔ Tier 0 离线确定性引擎 ➔ Jev 原语 (若有 Key)。
     """
     if not text or len(text.strip()) < 10:
         return {"verdict": "PASS", "fired": [], "max_prob": 0.0, "probs": {}, "latency_ms": 0.0, "mode": "skipped_short"}
@@ -247,7 +243,7 @@ def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> di
         return {"verdict": "PASS", "fired": [], "max_prob": 0.0, "probs": {}, "latency_ms": 0.0, "mode": "skipped_code_only"}
 
     # 2. 优先执行 Tier 0 本地确定性快检（0ms 极速物理拦截）
-    offline_res = _deterministic_offline_judge(clean_tail)
+    offline_res = _deterministic_offline_judge(clean_tail, context=context)
     if offline_res["verdict"] == "FIRE":
         return offline_res
 
@@ -261,8 +257,19 @@ def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> di
         questions = _build_questions()
         if not questions:
             return offline_res
+
+        # 物理坐标注入：将项目领域与最近工具调用属性连同文本送入判官，彻底杜绝黑盒猜谜
+        state_to_judge = clean_tail
+        if context:
+            ctx_parts = []
+            if context.get("project"):
+                ctx_parts.append(f"[Project Domain]: {context['project']}")
+            if context.get("recent_tools"):
+                ctx_parts.append(f"[Recent Tools]: {', '.join(context['recent_tools'])}")
+            if ctx_parts:
+                state_to_judge = "\n".join(ctx_parts) + "\n\n[Assistant Text]:\n" + clean_tail
             
-        res = client.system_one(state=clean_tail, questions=questions, timeout=timeout)
+        res = client.system_one(state=state_to_judge, questions=questions, timeout=timeout)
         dt = (time.perf_counter() - t0) * 1000
 
         probs = {k: res.nouls[k].noul for k in questions}
@@ -275,7 +282,7 @@ def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> di
                     if r not in fired_rules:
                         fired_rules.append(r)
 
-        # 核心业务豁免：若命中不可逆删除、真实房态、订单日历、计费定价或产品偏好，物理豁免 R5
+        # 核心第一性原理豁免：若命中不可逆删除、真实外部环境或产品商务定价决策，物理豁免 R5
         if _R5_HARM_EXEMPT.search(clean_tail):
             fired_rules = [r for r in fired_rules if r != "R5"]
             probs.pop("R5_nagging_or_deferral", None)
@@ -293,7 +300,7 @@ def judge_assistant_text(text: str, timeout: float = 2.5, sid: str = None) -> di
         }
     except Exception as e:
         # Jev 远程异常时，降级到本地确定性引擎而非盲目放行
-        offline_res = _deterministic_offline_judge(clean_tail)
+        offline_res = _deterministic_offline_judge(clean_tail, context=context)
         offline_res["mode"] = f"jev_failover_offline:{offline_res['mode']}"
         return offline_res
 
