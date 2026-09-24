@@ -1102,6 +1102,25 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps(shadow, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/lessons":
+            lessons = []
+            try:
+                lessons_candidates = [
+                    Path.home() / ".truthgate" / "lessons.json",
+                    Path.home() / ".superego" / "lessons.json",
+                    Path.home() / ".claude" / "lessons.json",
+                    Path(__file__).resolve().parent / "lessons.json"
+                ]
+                for p in lessons_candidates:
+                    if p.exists():
+                        lessons = json.loads(p.read_text(encoding="utf-8"))
+                        break
+            except Exception:
+                pass
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(lessons, ensure_ascii=False).encode("utf-8"))
         elif path == "/health":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
