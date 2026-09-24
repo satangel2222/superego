@@ -29,6 +29,18 @@ def test_api_critic_test_endpoints():
             "expect_model": "local_ast_tier0"
         },
         {
+            "name": "Agnes AI (自动凭据与真实网关直连)",
+            "payload": {"provider": "agnes", "base_url": "", "model": "", "api_key": ""},
+            "expect_ok": True,
+            "expect_model": "agnes-3.0-flash"
+        },
+        {
+            "name": "TypeSafe Jev (毫秒意图快车道)",
+            "payload": {"provider": "typesafe", "base_url": "", "model": "", "api_key": ""},
+            "expect_ok": True,
+            "expect_model": "typesafe_ai/jev-preview"
+        },
+        {
             "name": "Google Gemini (官方 OpenAI 端点测试)",
             "payload": {"provider": "gemini", "base_url": "", "model": "", "api_key": "AIzaSyTestInvalidMockKey"},
             "expect_ok": False, # 无效 Key 真实返回上游 400 报错，诚实拒绝假绿
@@ -109,11 +121,21 @@ def test_api_config_save_flow():
         assert critic_cfg.get("api_key") == "AIzaSyTestUserKeyFromPanel", "api_key 未正确保存"
         print("    ✅ 智能默认值归一化验证通过！未被 'auto' 字符串污染")
 
+def test_doctor_endpoint():
+    print("\n[4] 测试仪表盘 /api/doctor 全系统体检端点...")
+    req = urllib.request.Request(f"{BASE_URL}/api/doctor")
+    with urllib.request.urlopen(req, timeout=10.0) as resp:
+        assert resp.status == 200, f"预期 HTTP 200，实际: {resp.status}"
+        data = json.loads(resp.read().decode("utf-8"))
+        assert data.get("overall_status") in ("HEALTHY", "WARNING"), f"体检状态异常: {data}"
+        print(f"    ✅ 体检端点正常响应！状态: {data.get('overall_status')} · 评分: {data.get('overall_score')}/100")
+
 if __name__ == "__main__":
     try:
         test_panel_html_contains_critic()
         test_api_critic_test_endpoints()
         test_api_config_save_flow()
+        test_doctor_endpoint()
         print("\n🎉 全部用户面板模拟测试 100% 成功通过！")
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")

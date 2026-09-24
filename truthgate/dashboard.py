@@ -1178,6 +1178,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/doctor":
+            try:
+                from truthgate.doctor import run_doctor
+            except ImportError:
+                try:
+                    from doctor import run_doctor
+                except ImportError:
+                    from superego.doctor import run_doctor
+            data = run_doctor(probe_network=True)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
         elif path == "/api/health-check":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1273,19 +1286,47 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 provider = data.get("provider", "tiered")
                 base_url = (data.get("base_url") or "").strip()
                 model = (data.get("model") or "").strip()
-                api_key = (data.get("api_key") or "").strip()
+                raw_key = (data.get("api_key") or "").strip()
 
                 if base_url in ("", "auto"):
                     base_url = ""
                 if model in ("", "auto"):
                     model = ""
-                if api_key in ("", "auto"):
-                    api_key = ""
 
-                if api_key.startswith("env:"):
-                    api_key = os.environ.get(api_key[4:], "")
+                # 自动从环境、.env 或 config 解析对应供应商 API Key
+                def _res_key(p, k):
+                    if p in ("local_heuristic", "tiered"):
+                        return ""
+                    if p == "ollama":
+                        return k.strip() if k else "ollama"
+                    if k and not k.startswith("env:") and k not in ("auto", ""):
+                        return k.strip()
+                    cand = [k[4:].strip()] if k.startswith("env:") else (
+                        ["AGNES_API_KEY", "CRITIC_API_KEY"] if p == "agnes" else
+                        ["TYPESAFE_API_KEY", "JEV_API_KEY"] if p == "typesafe" else
+                        ["GEMINI_API_KEY", "GOOGLE_API_KEY", "CRITIC_API_KEY"] if p == "gemini" else
+                        ["ZHIPUAI_API_KEY", "GLM_API_KEY", "CRITIC_API_KEY"] if p in ("glm", "zhipu") else
+                        ["DEEPSEEK_API_KEY", "CRITIC_API_KEY"] if p == "deepseek" else
+                        ["OPENAI_API_KEY", "CRITIC_API_KEY"] if p == "openai" else
+                        ["CRITIC_API_KEY", "AGNES_API_KEY", "GEMINI_API_KEY"]
+                    )
+                    for vk in cand:
+                        v = os.environ.get(vk)
+                        if v and v.strip(): return v.strip()
+                    for f in [Path.home()/".truthgate"/".env", Path.home()/".claude"/".env", Path.home()/".superego"/".env"]:
+                        if f.exists():
+                            try:
+                                for ln in f.read_text(encoding="utf-8-sig", errors="ignore").splitlines():
+                                    for vk in cand:
+                                        if ln.strip().startswith(f"{vk}="):
+                                            vv = ln.strip().split("=", 1)[1].strip().strip('"').strip("'")
+                                            if vv: return vv
+                            except Exception: pass
+                    return ""
 
-                if provider in ("local_heuristic", "tiered") and not api_key:
+                api_key = _res_key(provider, raw_key)
+
+                if provider in ("local_heuristic", "tiered"):
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json; charset=utf-8")
                     self.end_headers()
@@ -1316,9 +1357,64 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     elif provider == "agnes":
                         base_url = "https://apihub.agnes-ai.com/v1"
                         model = model or "agnes-3.0-flash"
+                    elif provider == "typesafe":
+                        base_url = "https://api.typesafe.ai/v1"
+                        model = model or "typesafe_ai/jev-preview"
+
+                if not base_url and provider != "local_heuristic":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "ok": False,
+                        "error": "缺少 Base URL",
+                        "message": "连接失败: 缺少 API 端点地址，请填写 Base URL 或选择预设供应商"
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
+
+                if provider not in ("ollama", "local_heuristic") and not api_key:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "ok": False,
+                        "error": f"未检测到 {provider} 的有效 API Key",
+                        "message": f"连接失败: 未检测到 {provider} 的有效 API Key。请在设置框输入 Key，或在 ~/.truthgate/.env 中配置"
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
 
                 import time, urllib.request
                 t0 = time.time()
+
+                if provider == "typesafe":
+                    try:
+                        for pth in [str(Path.home() / ".truthgate"), str(Path.home() / ".superego")]:
+                            if pth not in sys.path: sys.path.insert(0, pth)
+                        import jev_engine
+                        j_res = jev_engine.judge_assistant_text("测试探针：请问需要我执行吗？", timeout=4.0)
+                        latency = round((time.time() - t0) * 1000, 1)
+                        mode = j_res.get("mode", "jev_system_one")
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json; charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({
+                            "ok": True,
+                            "latency_ms": latency,
+                            "model": "typesafe_ai/jev-preview",
+                            "message": f"连通成功！TypeSafe Jev 毫秒意图快车道正常 (延迟: {latency}ms · 模式: {mode})"
+                        }, ensure_ascii=False).encode("utf-8"))
+                        return
+                    except Exception as je:
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json; charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({
+                            "ok": False,
+                            "error": str(je),
+                            "message": f"TypeSafe 原语探测异常: {je}"
+                        }, ensure_ascii=False).encode("utf-8"))
+                        return
+
                 req_url = base_url.rstrip("/")
                 is_anthropic_relay = "1.19848845.xyz" in req_url or req_url.endswith("/messages")
 
