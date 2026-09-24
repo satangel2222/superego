@@ -25,10 +25,21 @@ def _get_api_key():
         for d in [TRUTHGATE_HOME, SUPEREGO_HOME]:
             env_file = d / ".env"
             if env_file.exists():
-                for ln in open(env_file, encoding="utf-8-sig"):
-                    if ln.strip().startswith("TYPESAFE_API_KEY="):
-                        api_key = ln.split("=", 1)[1].strip()
-                        break
+                try:
+                    for ln in open(env_file, encoding="utf-8-sig"):
+                        if ln.strip().startswith("TYPESAFE_API_KEY="):
+                            api_key = ln.split("=", 1)[1].strip()
+                            break
+                except Exception:
+                    pass
+            if not api_key:
+                cfg_file = d / "config.json"
+                if cfg_file.exists():
+                    try:
+                        cfg_data = json.loads(cfg_file.read_text(encoding="utf-8"))
+                        api_key = cfg_data.get("typesafe_api_key") or cfg_data.get("jev_api_key")
+                    except Exception:
+                        pass
             if api_key:
                 break
     return api_key

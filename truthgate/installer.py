@@ -15,6 +15,7 @@ import platform
 import argparse
 from pathlib import Path
 from datetime import datetime
+from typing import Dict, Any, List, Optional, Tuple
 
 HOME = Path.home()
 SYSTEM = platform.system()
@@ -421,6 +422,8 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "hook_entry.py",
         "no-nagging-guard.py",
         "parity_auditor.py",
+        "deep_parity_auditor.py",
+        "blood_doctor.py",
         "doctor.py"
     ]
 
@@ -848,20 +851,342 @@ def handle_critic_cli(args: list):
         sys.exit(1)
 
 
+def get_daemon_pid(port: int = 17911) -> Optional[int]:
+    """获取占用指定端口的进程 PID"""
+    if SYSTEM == "Windows":
+        try:
+            import subprocess
+            out = subprocess.check_output(f'netstat -ano -p tcp | findstr :{port}', shell=True, text=True, errors="ignore")
+            for line in out.strip().splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5 and "LISTENING" in parts[3].upper():
+                    return int(parts[4])
+        except Exception:
+            pass
+    else:
+        try:
+            import subprocess
+            out = subprocess.check_output(f'lsof -ti tcp:{port}', shell=True, text=True, errors="ignore")
+            if out.strip():
+                return int(out.strip().split()[0])
+        except Exception:
+            pass
+    return None
+
+
+def service_status(port: int = 17911) -> dict:
+    """获取后台守护进程健康状态与 PID"""
+    import urllib.request
+    code = 0
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
+            code = resp.status
+    except Exception:
+        try:
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/dashboard")
+            with urllib.request.urlopen(req, timeout=0.8) as resp:
+                code = resp.status
+        except Exception:
+            code = 0
+
+    pid = get_daemon_pid(port)
+    is_running = code == 200 or pid is not None
+    return {
+        "running": is_running,
+        "port": port,
+        "pid": pid,
+        "http_code": code,
+        "dashboard_url": f"http://127.0.0.1:{port}/dashboard"
+    }
+
+
+def service_stop(port: int = 17911) -> bool:
+    """终止常驻守护进程"""
+    pid = get_daemon_pid(port)
+    if pid:
+        try:
+            if SYSTEM == "Windows":
+                import subprocess
+                subprocess.run(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                import os, signal
+                os.kill(pid, signal.SIGTERM)
+            time.sleep(0.5)
+            print(f"🛑 已停止 17911 守护进程 (PID: {pid})")
+            return True
+        except Exception as e:
+            print(f"⚠️ 停止守护进程失败: {e}")
+            return False
+    print("ℹ️ 未发现正在运行的 17911 守护进程")
+    return True
+
+
+def service_start(port: int = 17911, open_browser: Optional[bool] = None) -> bool:
+    """拉起后台守护进程 (严格静默无打字干扰)"""
+    st = service_status(port)
+    if st["running"] and st["http_code"] == 200:
+        print(f"ℹ️ 17911 司法守护进程已在运行中 (PID: {st['pid']})")
+        if open_browser:
+            import webbrowser
+            webbrowser.open(st["dashboard_url"])
+        return True
+
+    print(f"🚀 正在拉起 17911 常驻司法守护进程...")
+    dissat_svc = HOME / ".claude" / "dissat-classifier" / "service.py"
+    if dissat_svc.exists():
+        cmd = [sys.executable, str(dissat_svc)]
+    else:
+        cmd = [sys.executable, "-m", "truthgate", "dashboard", "--port", str(port)]
+
+    log_dir = HOME / ".truthgate" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "service.log"
+
+    import subprocess
+    flags = 0x00000008 | 0x08000000 if SYSTEM == "Windows" else 0
+    with open(log_file, "a", encoding="utf-8") as f:
+        subprocess.Popen(
+            cmd,
+            stdout=f,
+            stderr=f,
+            creationflags=flags,
+            close_fds=True
+        )
+
+    for _ in range(15):
+        time.sleep(0.2)
+        st = service_status(port)
+        if st["http_code"] == 200:
+            print(f"✅ 17911 司法守护进程拉起成功 (PID: {st['pid']})！")
+            if open_browser:
+                import webbrowser
+                print("🖥️ 正在自动为您打开 17911 审判大盘...")
+                webbrowser.open(st["dashboard_url"])
+            return True
+
+    print("⚠️ 守护进程已发起，端口仍在加载预热中...")
+    return True
+
+
+def service_restart(port: int = 17911, open_browser: Optional[bool] = None) -> bool:
+    """重启常驻守护进程"""
+    print(f"🔄 正在重启 17911 守护进程...")
+    service_stop(port)
+    time.sleep(0.5)
+    return service_start(port, open_browser=open_browser)
+
+
+def handle_service_cli(args: list):
+    sub = args[0] if args else "status"
+    port = 17911
+    if "--port" in args:
+        idx = args.index("--port")
+        if idx + 1 < len(args):
+            port = int(args[idx + 1])
+
+    if sub == "status":
+        st = service_status(port)
+        if st["running"]:
+            print(f"🟢 TruthGate 守护进程正常监听: 端口 {st['port']} | PID {st['pid']} | HTTP {st['http_code']}")
+            print(f"   大盘地址: {st['dashboard_url']}")
+        else:
+            print(f"🔴 TruthGate 守护进程未运行 (端口 {port} 离线)")
+            print("   启动命令: tg service start")
+    elif sub == "start":
+        service_start(port, open_browser=False)
+    elif sub == "stop":
+        service_stop(port)
+    elif sub == "restart":
+        service_restart(port, open_browser=False)
+    else:
+        print("❌ 未知 service 指令。支持: status, start, stop, restart")
+        sys.exit(1)
+
+
+def handle_setup_cli(args: list):
+    """TruthGate 1.0 满血版向导：确保 CodeGraph, Jev, Critic, Daemon 均设置就绪"""
+    parser = argparse.ArgumentParser(prog="tg setup", description="TruthGate 1.0 满血版向导")
+    parser.add_argument("--typesafe-key", dest="typesafe_key", help="TypeSafe Jev API Key")
+    parser.add_argument("--critic-provider", dest="critic_provider", default="openai_compatible", choices=["openai_compatible", "jev", "local_heuristic"], help="外审模型服务类型")
+    parser.add_argument("--critic-key", dest="critic_key", help="外审模型 API Key (如 DeepSeek/Agnes/Gemini)")
+    parser.add_argument("--critic-url", dest="critic_url", default="https://api.deepseek.com/v1", help="外审 API 端点")
+    parser.add_argument("--critic-model", dest="critic_model", default="deepseek-chat", help="外审模型名称")
+    parser.add_argument("--profile", default="vibe-boss", help="默认画像")
+    parser.add_argument("--auto-open", dest="auto_open", choices=["y", "n", "true", "false"], help="是否在启动时自动打开大盘")
+    parser.add_argument("--non-interactive", "-y", action="store_true", help="非交互式静默配置")
+    parsed, _ = parser.parse_known_args(args)
+
+    print("=" * 76)
+    print("🩸 TRUTHGATE 1.0 满血版配置向导 (Full-Blood Setup Wizard)")
+    print("目标：100% 激活 Jev 快车道、CodeGraph 拓扑核验、外审模型与 17911 守护大盘")
+    print("=" * 76)
+
+    try:
+        from blood_doctor import get_blood_status, print_blood_report, check_organ_codegraph
+        from config import load_config, save_config, set_auto_open_dashboard, set_typesafe_key, set_critic_config
+    except ImportError:
+        from truthgate.blood_doctor import get_blood_status, print_blood_report, check_organ_codegraph
+        from truthgate.config import load_config, save_config, set_auto_open_dashboard, set_typesafe_key, set_critic_config
+
+    cfg = load_config()
+
+    # 1. 配置 TypeSafe Jev
+    typesafe_key = parsed.typesafe_key
+    if not typesafe_key and not parsed.non_interactive:
+        curr_key = os.environ.get("TYPESAFE_API_KEY") or cfg.get("typesafe_api_key") or ""
+        if curr_key:
+            print(f"\n🔑 [1/4] TypeSafe Jev: 已检测到现有密钥 ({curr_key[:4]}****{curr_key[-3:] if len(curr_key)>7 else ''})")
+        else:
+            print("\n🔑 [1/4] 配置 TypeSafe Jev 意图快车道 (System-1 Fast Intent Guard):")
+            print("   Jev 在 349ms 内阻断 AI 甩锅、反问、飙代码黑话，提供强类型第一道物理门禁。")
+            print("   获取地址: https://typesafe.ai")
+            val = input("   请输入 TYPESAFE_API_KEY [直接回车跳过]: ").strip()
+            if val:
+                typesafe_key = val
+
+    if typesafe_key:
+        set_typesafe_key(typesafe_key)
+        print("   [✓] TypeSafe Jev 密钥已保存并写入 ~/.truthgate/config.json")
+
+    # 2. 检查 CodeGraph
+    print("\n🔍 [2/4] 核查 CodeGraph 拓扑图谱引擎:")
+    cg = check_organ_codegraph()
+    if cg["healthy"]:
+        print(f"   [✓] 发现 CodeGraph: {cg['detail']}")
+    else:
+        print("   ⚠️ 未在系统 PATH 中找到 codegraph CLI！")
+        print("   强烈建议安装命令: npm install -g @codegraph/cli")
+        print("   (安装后可阻断治标不治本盲改，排查报错必须双向 Callers/Callees 核验)")
+
+    # 3. 配置外审模型
+    critic_key = parsed.critic_key
+    if not critic_key and not parsed.non_interactive:
+        curr_c_cfg = cfg.get("critic", {})
+        c_key = curr_c_cfg.get("api_key", "")
+        if c_key and not c_key.startswith("env:"):
+            print(f"\n🔬 [3/4] 外审模型: 已配置 ({curr_c_cfg.get('provider')} / {curr_c_cfg.get('model')})")
+        else:
+            print("\n🔬 [3/4] 配置外审模型裁判 (Outer Critic Engine):")
+            print("   支持 DeepSeek、Agnes、Qwen、本地 Ollama 等。")
+            c_val = input("   请输入外审 API Key (如 DeepSeek/Agnes API Key) [回车使用已有/跳过]: ").strip()
+            if c_val:
+                critic_key = c_val
+
+    if critic_key:
+        set_critic_config(
+            provider=parsed.critic_provider,
+            base_url=parsed.critic_url,
+            model=parsed.critic_model,
+            api_key=critic_key
+        )
+        print(f"   [✓] 外审模型已配置: {parsed.critic_provider} ({parsed.critic_model})")
+
+    # 4. 自动弹出浏览器设置
+    auto_open = None
+    if parsed.auto_open:
+        auto_open = parsed.auto_open in ("y", "true")
+    elif not parsed.non_interactive:
+        cur_ao = cfg.get("ui", {}).get("auto_open_dashboard", True)
+        ans = input(f"\n🖥️ [4/4] 启动时是否自动在默认浏览器中打开 17911 审判大盘？ [{'Y/n' if cur_ao else 'y/N'}]: ").strip().lower()
+        if ans in ("y", "yes"):
+            auto_open = True
+        elif ans in ("n", "no"):
+            auto_open = False
+        else:
+            auto_open = cur_ao
+
+    if auto_open is not None:
+        set_auto_open_dashboard(auto_open)
+        print(f"   [✓] 自动弹窗大盘已设置为: {auto_open}")
+
+    # 5. 执行跨端挂载
+    print("\n⚡ [5/6] 跨端挂载安全门禁与看门狗...")
+    install_superego(profile=parsed.profile)
+
+    # 6. 拉起后台 17911 守护
+    cur_auto_open = cfg.get("ui", {}).get("auto_open_dashboard", True) if auto_open is None else auto_open
+    print("\n🚀 [6/6] 启动后台常驻 17911 守护进程...")
+    service_start(port=17911, open_browser=cur_auto_open)
+
+    # 打印最终满血度卡片
+    print_blood_report()
+
+
+def handle_upgrade_cli(args: list):
+    """一键平滑热升级与自愈重载 (One-Click Hot Upgrade & Reload)."""
+    print("=" * 76)
+    print("🚀 TRUTHGATE 1.0 一键平滑热升级与自愈重载 (Hot Upgrade & Reload)")
+    print("=" * 76)
+
+    # 1. 尝试 git pull 或检查
+    is_git_repo = (HERE.parent / ".git").exists() or (TRUTHGATE_HOME / ".git").exists()
+    git_dir = HERE.parent if (HERE.parent / ".git").exists() else TRUTHGATE_HOME
+    if is_git_repo:
+        try:
+            import subprocess
+            print("📦 [1/4] 正在拉取远程最新代码 (git pull --rebase)...")
+            res = subprocess.run(["git", "-C", str(git_dir), "pull", "--rebase"], capture_output=True, text=True)
+            print(f"   {res.stdout.strip() or res.stderr.strip() or '已是最新版本'}")
+        except Exception as e:
+            print(f"   ⚠️ git pull 异常: {e} (继续进行本地重载)")
+    else:
+        print("📦 [1/4] 正在检查最新代码包...")
+
+    # 2. 重新挂载所有门禁到 Claude / Codex / Antigravity
+    print("\n🛡️ [2/4] 重新同步与挂载四端门禁核心...")
+    install_superego(profile="vibe-boss")
+
+    # 3. 热重启 17911 守护进程
+    try:
+        from config import get_auto_open_dashboard
+    except ImportError:
+        from truthgate.config import get_auto_open_dashboard
+    auto_open = get_auto_open_dashboard()
+
+    print("\n🔄 [3/4] 热重启 17911 司法守护进程...")
+    service_restart(port=17911, open_browser=auto_open)
+
+    # 4. 满血度诊断体检
+    print("\n🩺 [4/4] 运行满血度诊断体检...")
+    try:
+        from blood_doctor import print_blood_report
+    except ImportError:
+        from truthgate.blood_doctor import print_blood_report
+    print_blood_report()
+
+
 def main():
     if len(sys.argv) > 1:
-        if sys.argv[1] == "profile":
+        cmd = sys.argv[1]
+        if cmd == "profile":
             handle_profile_cli(sys.argv[2:])
             return
-        elif sys.argv[1] == "rulepack":
+        elif cmd == "rulepack":
             handle_rulepack_cli(sys.argv[2:])
             return
-        elif sys.argv[1] == "critic":
+        elif cmd == "critic":
             handle_critic_cli(sys.argv[2:])
+            return
+        elif cmd == "service":
+            handle_service_cli(sys.argv[2:])
+            return
+        elif cmd == "setup":
+            handle_setup_cli(sys.argv[2:])
+            return
+        elif cmd == "upgrade":
+            handle_upgrade_cli(sys.argv[2:])
+            return
+        elif cmd in ("blood", "check"):
+            try:
+                from blood_doctor import print_blood_report
+            except ImportError:
+                from truthgate.blood_doctor import print_blood_report
+            print_blood_report()
             return
 
     parser = argparse.ArgumentParser(description="TruthGate: Deterministic Physical Gatekeeper and Jev System-1 Fast Intent Guard for AI Coding Agents")
-    parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
+    parser.add_argument("action", choices=["install", "setup", "upgrade", "blood", "check", "service", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", default="vibe-boss", help="Profile mask to apply")
     parser.add_argument("--port", type=int, default=17911, help="Port to bind dashboard server (default: 17911)")
@@ -869,9 +1194,21 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output doctor diagnostics as raw JSON")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
-    if args.action == "detect":
+    if args.action == "setup":
+        handle_setup_cli(sys.argv[2:])
+    elif args.action == "upgrade":
+        handle_upgrade_cli(sys.argv[2:])
+    elif args.action == "service":
+        handle_service_cli(sys.argv[2:])
+    elif args.action in ("blood", "check"):
+        try:
+            from blood_doctor import print_blood_report
+        except ImportError:
+            from truthgate.blood_doctor import print_blood_report
+        print_blood_report()
+    elif args.action == "detect":
         d = detect_installed_platforms()
         print(json.dumps({k: str(v["home"]) for k, v in d.items()}, indent=2))
     elif args.action == "status":

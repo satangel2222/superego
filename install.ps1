@@ -101,7 +101,7 @@ Write-Host " • 快捷命令: 终端直接使用 tg 或 truthgate" -ForegroundC
 Write-Host " • 切换画像: 终端运行 tg profile list / tg profile use engineer" -ForegroundColor White
 Write-Host " • 自由外审: 终端运行 tg critic show / tg critic set (支持 DeepSeek/Ollama/Jev)" -ForegroundColor White
 Write-Host " • 规则市场: 终端运行 tg rulepack list / tg rulepack test" -ForegroundColor White
-Write-Host " • 实时大盘: 终端运行 tg dashboard (在浏览器访问 http://127.0.0.1:17925/dashboard)" -ForegroundColor White
+Write-Host " • 实时大盘: 终端运行 tg dashboard (在浏览器访问 http://127.0.0.1:17911/dashboard)" -ForegroundColor White
 Write-Host " • 如需一键回滚: 随时运行 tg rollback 即可 3 秒彻底复原" -ForegroundColor White
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host ""

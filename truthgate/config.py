@@ -121,6 +121,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "fast_path_jev": True,
         "async_deep_judge": True,
         "max_fast_latency_ms": 600
+    },
+    "ui": {
+        "auto_open_dashboard": True
     }
 }
 
@@ -137,21 +140,65 @@ def load_config() -> dict:
                     cfg["critic"].update(user_cfg["critic"])
                 if "security" in user_cfg and isinstance(user_cfg["security"], dict):
                     cfg["security"].update(user_cfg["security"])
+                if "ui" in user_cfg and isinstance(user_cfg["ui"], dict):
+                    cfg["ui"].update(user_cfg["ui"])
         except Exception:
             pass
     return cfg
 
 
 def save_config(cfg: dict) -> bool:
-    """持久化保存配置到 ~/.superego/config.json"""
+    """持久化保存配置到 ~/.truthgate/config.json 并兼容写入 ~/.superego/config.json"""
     try:
-        SUPEREGO_HOME.mkdir(parents=True, exist_ok=True)
+        APP_HOME.mkdir(parents=True, exist_ok=True)
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
+        # 兼容性镜像写入
+        alt_home = SUPEREGO_HOME if APP_HOME == TRUTHGATE_HOME else TRUTHGATE_HOME
+        try:
+            alt_home.mkdir(parents=True, exist_ok=True)
+            with open(alt_home / "config.json", "w", encoding="utf-8") as f:
+                json.dump(cfg, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
         return True
     except Exception as e:
-        sys.stderr.write(f"[superego_config] 保存配置失败: {e}\n")
+        sys.stderr.write(f"[truthgate_config] 保存配置失败: {e}\n")
         return False
+
+
+def get_auto_open_dashboard() -> bool:
+    """获取启动时是否自动弹出浏览器大盘"""
+    cfg = load_config()
+    return cfg.get("ui", {}).get("auto_open_dashboard", True)
+
+
+def set_auto_open_dashboard(enabled: bool) -> bool:
+    """设置启动时是否自动弹出浏览器大盘"""
+    cfg = load_config()
+    ui = cfg.setdefault("ui", {})
+    ui["auto_open_dashboard"] = bool(enabled)
+    return save_config(cfg)
+
+
+def set_typesafe_key(api_key: str) -> bool:
+    """配置并保存 TypeSafe Jev API Key"""
+    cfg = load_config()
+    cfg["typesafe_api_key"] = api_key.strip()
+    cfg["jev_api_key"] = api_key.strip()
+    # 同时写入 .env 文件
+    for d in [TRUTHGATE_HOME, SUPEREGO_HOME]:
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+            env_file = d / ".env"
+            lines = []
+            if env_file.exists():
+                lines = [ln for ln in env_file.read_text(encoding="utf-8-sig").splitlines() if not ln.startswith("TYPESAFE_API_KEY=")]
+            lines.append(f"TYPESAFE_API_KEY={api_key.strip()}")
+            env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        except Exception:
+            pass
+    return save_config(cfg)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

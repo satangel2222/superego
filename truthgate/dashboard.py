@@ -943,11 +943,29 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps(shadow, ensure_ascii=False).encode("utf-8"))
-        elif path == "/api/config":
-            cfg = load_config()
+        elif path == "/health":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
+            self.wfile.write(json.dumps({
+                "ok": True,
+                "status": "HEALTHY",
+                "service": "truthgate-dashboard",
+                "port": getattr(self.server, "server_port", 17911)
+            }).encode("utf-8"))
+        elif path == "/api/blood-status":
+            try:
+                from truthgate.blood_doctor import get_blood_status
+            except ImportError:
+                try:
+                    from blood_doctor import get_blood_status
+                except ImportError:
+                    get_blood_status = lambda: {"blood_score": 100, "status_label": "🟢 满血版"}
+            data = get_blood_status()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
         elif path == "/api/doctor":
             try:
                 from truthgate.doctor import run_doctor

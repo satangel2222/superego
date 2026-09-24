@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TruthGate 外审判官 · 全屏高密行为治理监控台</title>
+  <title>Superego 外审判官 · 全屏高密行为治理监控台</title>
   <style>
     :root {
       --bg-main: #070a11;
@@ -1043,7 +1043,7 @@
       <div class="brand-section">
         <div class="brand-logo">⚖️</div>
         <div class="brand-text">
-          <h1>TruthGate 判官网络 <span class="brand-tag">全屏高密沉浸大屏</span></h1>
+          <h1>Superego 判官网络 <span class="brand-tag">全屏高密沉浸大屏</span></h1>
           <p>零编程友好 · 四脑全景协同闭环 (Claude Code · OpenAI Codex · Antigravity · DeepSeek Harness) · 物理隔离与 14 天 Cut-off 影子大盘</p>
         </div>
       </div>
@@ -1053,6 +1053,11 @@
           <button class="font-btn" data-scale="font-compact">标准 A</button>
           <button class="font-btn active" data-scale="font-comfort">舒适 A+</button>
           <button class="font-btn" data-scale="font-large">特大 A++</button>
+        </div>
+        <!-- 满血度诊断体检徽章 (点击打开 6 大核心器官满血诊断) -->
+        <div id="blood-status-badge" class="supervisor-status" onclick="openBloodModal()" style="display:flex; align-items:center; gap:6px; background:rgba(239, 68, 68, 0.15); border:1px solid #dc2626; padding:5px 14px; border-radius:20px; font-size:12px; color:#fca5a5; font-weight:600; cursor:pointer; transition:all 0.2s;" title="点击查看满血度 6 大核心器官状态与一键修复">
+          <span id="blood-badge-icon">🩸</span>
+          <span id="blood-badge-text">满血度诊断中...</span>
         </div>
         <!-- 全景系统体检与自愈监察徽章 (点击打开 5 大支柱体检报告) -->
         <div id="doctor-status-badge" class="supervisor-status" onclick="openDoctorModal()" style="display:flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.15); border:1px solid #059669; padding:5px 14px; border-radius:20px; font-size:12px; color:#10b981; font-weight:600; cursor:pointer; transition:all 0.2s;" title="点击查看全系统 5 大支柱健康体检诊断与自愈中心">
@@ -1575,6 +1580,16 @@
             <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; background: rgba(59, 130, 246, 0.08); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--brand);">
               💡 <b>三重自适应降级</b>: 填了 Jev 享受 350ms 极速；没填 Jev 走通用大模型；完全零 Key 则由本地原生纯代码硬拦截兜底。
             </p>
+          </div>
+        <!-- 实时大盘与自动化偏好 -->
+        <div class="settings-card">
+          <div class="settings-card-title">🖥️ 实时大盘与自动化偏好 (Web Dashboard & Automation)</div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-name">启动时自动弹出浏览器面板 (Auto-open Dashboard on Launch)</div>
+              <div class="setting-sub">当运行 tg setup / tg upgrade / 司法守护拉起时，自动在默认浏览器中秒开 17911 审判大盘</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="ui-auto-open" checked onchange="toggleAutoOpen(this.checked)"><span class="slider"></span></label>
           </div>
         </div>
 
@@ -2977,10 +2992,196 @@
       }
     }
 
-    // 页面加载后立即拉取体检结果，并每 15 秒自动巡检一次
+    // -------------------------------------------------------------
+    // 满血度诊断中心 (Blood Doctor & 6 Vital Organs)
+    // -------------------------------------------------------------
+    let currentBloodData = null;
+
+    async function loadBloodData(showToast = false) {
+      try {
+        const res = await fetch('/api/blood-status');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        currentBloodData = data;
+        updateBloodUI(data);
+        if (showToast) {
+          showSettingsToast('🩸 满血度诊断更新：' + data.blood_score + '/100 (' + (data.is_full_blooded ? '满血旗舰版' : '残血保底版') + ')');
+        }
+      } catch (err) {
+        console.warn('[Blood] loadBloodData failed:', err);
+      }
+    }
+
+    function updateBloodUI(data) {
+      const badge = document.getElementById('blood-status-badge');
+      const text = document.getElementById('blood-badge-text');
+      const icon = document.getElementById('blood-badge-icon');
+      if (!badge || !text) return;
+
+      const score = data.blood_score || 0;
+      if (data.is_full_blooded) {
+        badge.style.background = 'rgba(16, 185, 129, 0.18)';
+        badge.style.borderColor = '#059669';
+        badge.style.color = '#10b981';
+        if (icon) icon.textContent = '🩸';
+        text.textContent = '满血版 100% · 全器官就绪';
+        badge.title = 'TruthGate 100% 满血版运行中（Jev/CodeGraph/外审模型/17911中枢均在线）';
+      } else {
+        badge.style.background = 'rgba(239, 68, 68, 0.2)';
+        badge.style.borderColor = '#ef4444';
+        badge.style.color = '#fca5a5';
+        if (icon) icon.textContent = '⚠️';
+        const missing = (data.missing_organs && data.missing_organs.length) ? data.missing_organs.slice(0, 2).join('、') : '部分器官缺失';
+        text.textContent = `残血版 ${score}% (缺少: ${missing})`;
+        badge.title = `系统处于残血降级模式！点击查看 6 大核心器官状态与修复指引`;
+      }
+
+      const overlay = document.getElementById('blood-modal-overlay');
+      if (overlay && overlay.style.display !== 'none') {
+        renderBloodModalContent(data);
+      }
+    }
+
+    function openBloodModal() {
+      const overlay = document.getElementById('blood-modal-overlay');
+      if (!overlay) return;
+      overlay.style.display = 'flex';
+      setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+      if (currentBloodData) {
+        renderBloodModalContent(currentBloodData);
+      }
+      loadBloodData();
+    }
+
+    function closeBloodModal(e) {
+      if (e && e.target && e.target.id !== 'blood-modal-overlay' && !e.target.closest('button')) return;
+      const overlay = document.getElementById('blood-modal-overlay');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+      }
+    }
+
+    function renderBloodModalContent(data) {
+      if (!data) return;
+      const pill = document.getElementById('blood-modal-pill');
+      const title = document.getElementById('blood-modal-title');
+      const desc = document.getElementById('blood-modal-desc');
+      const banner = document.getElementById('blood-modal-banner');
+      const grid = document.getElementById('blood-organs-grid');
+
+      const isFull = data.is_full_blooded;
+      const score = data.blood_score || 0;
+
+      if (pill) {
+        pill.textContent = `${score} / 100 ${isFull ? '满血旗舰版' : '残血保底版'}`;
+        pill.style.background = isFull ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+        pill.style.color = isFull ? '#34d399' : '#fca5a5';
+        pill.style.borderColor = isFull ? '#10b981' : '#ef4444';
+      }
+
+      if (banner && title && desc) {
+        if (isFull) {
+          banner.style.background = 'rgba(16, 185, 129, 0.1)';
+          banner.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          title.style.color = '#6ee7b7';
+          title.textContent = '🎉 恭喜！全系统 6 大核心器官处于 100% 满血就绪状态';
+          desc.textContent = 'Jev 349ms 结构化极速快车道、CodeGraph 双向拓扑分析、外部多模型裁判与常驻守护全部激活，拥有最严密的紧箍咒与自愈防御。';
+        } else {
+          banner.style.background = 'rgba(239, 68, 68, 0.1)';
+          banner.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          title.style.color = '#fecaca';
+          title.textContent = `⚠️ 当前处于残血降级模式 (缺失 ${data.missing_organs ? data.missing_organs.length : 0} 个核心器官)`;
+          desc.textContent = '缺少核心器官时，系统静默降级到离线正则保底。在代码比赛或工程落地中，易因缺少 CodeGraph/Jev 发生见树不见林盲改或向用户推诿反问！';
+        }
+      }
+
+      if (grid && data.organs) {
+        grid.innerHTML = '';
+        const order = ['jev', 'critic', 'codegraph', 'daemon', 'hooks', 'monitor'];
+        order.forEach((key, idx) => {
+          const o = data.organs[key];
+          if (!o) return;
+          const ok = o.healthy;
+          const card = document.createElement('div');
+          card.style.background = 'var(--bg-subtle)';
+          card.style.border = ok ? '1px solid var(--border-color)' : '1px solid rgba(239, 68, 68, 0.4)';
+          card.style.borderRadius = '12px';
+          card.style.padding = '16px';
+          card.style.display = 'flex';
+          card.style.flexDirection = 'column';
+          card.style.gap = '8px';
+
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-weight:700; font-size:14px; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                <span>${ok ? '🟢' : '🔴'}</span> 【器官 ${idx+1}】${o.name}
+              </div>
+              <span class="status-badge ${ok ? 'badge-pass' : 'badge-block'}">${ok ? 'HEALTHY' : 'MISSING'} (${o.score}/${o.weight}分)</span>
+            </div>
+            <div style="font-size:13px; color:${ok ? 'var(--text-secondary)' : '#fca5a5'}; line-height:1.5;">
+              ${o.detail}
+            </div>
+            ${!ok ? `<div style="background:#0f172a; padding:6px 10px; border-radius:6px; font-family:monospace; font-size:12px; color:#6ee7b7; display:flex; justify-content:space-between; align-items:center;">
+              <span>${o.fix_cmd}</span>
+              <button onclick="navigator.clipboard.writeText('${o.fix_cmd}'); showSettingsToast('已复制: ${o.fix_cmd}');" style="background:rgba(255,255,255,0.1); border:none; color:#fff; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px;">复制</button>
+            </div>` : ''}
+          `;
+          grid.appendChild(card);
+        });
+      }
+    }
+
+    // 页面加载后立即拉取体检结果与满血度，并每 15 秒自动巡检一次
     loadDoctorData();
+    loadBloodData();
     setInterval(loadDoctorData, 15000);
+    setInterval(loadBloodData, 15000);
   </script>
+
+  <!-- TruthGate 1.0 满血度 6 大核心器官体检与配置向导弹窗 (Blood Diagnostic Modal) -->
+  <div id="blood-modal-overlay" class="drawer-overlay" onclick="closeBloodModal(event)" style="display:none; justify-content:center; align-items:center;">
+    <div class="doctor-modal-card" onclick="event.stopPropagation()" style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:16px; width:860px; max-width:96vw; max-height:90vh; overflow-y:auto; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,0.8); position:relative;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="font-size:32px; background:linear-gradient(135deg, #ef4444, #8b5cf6); width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(239,68,68,0.3);">🩸</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <h2 style="font-size:20px; font-weight:800; color:var(--text-main); margin:0;">TruthGate 1.0 满血度诊断体检中心</h2>
+              <span id="blood-modal-pill" style="padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444;">100 / 100 满血版</span>
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0 0;">6 大核心器官物理存活性诊断 · 严防静默降级假健康 · 1 键拉满血条指令</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="pill-btn" onclick="loadBloodData(true)" style="padding:8px 14px;">🔄 刷新诊断</button>
+          <button onclick="closeBloodModal()" style="background:none; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; padding:0 6px;">✕</button>
+        </div>
+      </div>
+
+      <!-- 满血度横幅提示 -->
+      <div id="blood-modal-banner" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:14px 18px; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <strong id="blood-modal-title" style="color:#fecaca; font-size:15px;">⚠️ 当前系统处于残血保底模式</strong>
+          <span style="font-size:13px; color:var(--text-muted);">一键升级命令: <code style="color:#6ee7b7; background:#0f172a; padding:2px 8px; border-radius:4px; font-weight:700;">tg setup</code> 或 <code style="color:#6ee7b7; background:#0f172a; padding:2px 8px; border-radius:4px; font-weight:700;">tg upgrade</code></span>
+        </div>
+        <div id="blood-modal-desc" style="font-size:13px; color:#cbd5e1; line-height:1.6;">
+          缺少核心器官时，系统仅依赖脆弱的纯文本正则兜底，AI 会产生反问、甩锅或盲目见树不见林修改代码。
+        </div>
+      </div>
+
+      <!-- 6 大核心器官 Grid -->
+      <div id="blood-organs-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <!-- Injected dynamically by renderBloodModalContent -->
+      </div>
+
+      <!-- 底部操作提示 -->
+      <div style="background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:10px; padding:14px 18px; font-size:13px; color:var(--text-secondary); display:flex; justify-content:space-between; align-items:center;">
+        <div>💡 提示：在终端直接运行 <strong><code>tg setup</code></strong> 即可通过交互向导 1 分钟补齐全部缺失器官。</div>
+        <button class="pill-btn" onclick="navigator.clipboard.writeText('tg setup'); showSettingsToast('已复制修复命令: tg setup');" style="background:linear-gradient(135deg, #3b82f6, #8b5cf6); color:#fff; border:none; padding:6px 14px; font-weight:700;">📋 复制修复命令</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 全景系统体检与自愈中心 (Doctor Diagnostic Modal) -->
   <div id="doctor-modal-overlay" class="drawer-overlay" onclick="closeDoctorModal(event)" style="display:none; justify-content:center; align-items:center;">
@@ -2990,7 +3191,7 @@
           <div style="font-size:32px; background:linear-gradient(135deg, #10b981, #06b6d4); width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(16,185,129,0.3);">🩺</div>
           <div>
             <div style="display:flex; align-items:center; gap:12px;">
-              <h2 style="font-size:20px; font-weight:800; color:var(--text-main); margin:0;">TruthGate 全景系统体检中心</h2>
+              <h2 style="font-size:20px; font-weight:800; color:var(--text-main); margin:0;">Superego 全景系统体检中心</h2>
               <span id="doc-modal-overall-pill" style="padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;">100 / 100 满血在线</span>
             </div>
             <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0 0;">全链路 5 大核心支柱自动健康侦测 · TypeSafe 故障自动熔断降级 · 一键无感自愈</p>
