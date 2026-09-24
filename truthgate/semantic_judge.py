@@ -158,7 +158,7 @@ def get_critic_endpoint():
             elif cfg_provider in ("glm", "zhipu"):
                 cfg_model = "glm-4-flash"
             elif cfg_provider == "openai":
-                cfg_model = "gpt-4o-mini"
+                cfg_model = "gpt-5.6-sol"
             elif cfg_provider == "ollama":
                 cfg_model = "qwen2.5:7b"
             elif cfg_provider == "agnes":
@@ -226,7 +226,7 @@ def get_critic_endpoint():
     # 4. OpenAI (OPENAI_API_KEY)
     _, o_val = _find_env_key("OPENAI_API_KEY")
     if o_val:
-        model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        model = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
         return {
             "provider": "openai",
             "url": "https://api.openai.com/v1/chat/completions",

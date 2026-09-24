@@ -745,7 +745,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <option value="gemini">🌟 Google Gemini (官方推荐 · 免费高速)</option>
             <option value="glm">🇨🇳 智谱 GLM (官方开放平台 / 个人月卡中转)</option>
             <option value="deepseek">🚀 DeepSeek (性价比之王 · deepseek-chat)</option>
-            <option value="openai">🤖 OpenAI (官方 gpt-4o-mini)</option>
+            <option value="openai">🤖 OpenAI (官方 gpt-5.6-sol · 真实调用)</option>
             <option value="openai_compatible">🌐 自定义 OpenAI 兼容中转 (包月卡 / OneAPI)</option>
             <option value="ollama">💻 本地 Ollama (http://localhost:11434 · 0成本免Key)</option>
             <option value="local_heuristic">🛡️ Tier 0 本地确定性引擎 (免Key · 纯离线保底)</option>
@@ -889,7 +889,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       } else if (p === 'openai') {
         bEl.placeholder = 'https://api.openai.com/v1';
         bEl.value = 'https://api.openai.com/v1';
-        mEl.value = 'gpt-4o-mini';
+        mEl.value = 'gpt-5.6-sol';
         kEl.placeholder = 'sk-... (OpenAI API Key)';
       } else if (p === 'ollama') {
         bEl.value = 'http://localhost:11434/v1';
@@ -1309,7 +1309,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         model = model or "deepseek-chat"
                     elif provider == "openai":
                         base_url = "https://api.openai.com/v1"
-                        model = model or "gpt-4o-mini"
+                        model = model or "gpt-5.6-sol"
                     elif provider == "ollama":
                         base_url = "http://localhost:11434/v1"
                         model = model or "qwen2.5:7b"

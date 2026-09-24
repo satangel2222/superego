@@ -418,7 +418,7 @@ def set_critic_config(
             if not base_url:
                 critic["base_url"] = "https://api.openai.com/v1"
             if not model:
-                critic["model"] = "gpt-4o-mini"
+                critic["model"] = "gpt-5.6-sol"
         elif p_lower == "ollama":
             if not base_url:
                 critic["base_url"] = "http://localhost:11434/v1"

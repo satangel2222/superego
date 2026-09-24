@@ -1577,7 +1577,7 @@
                 <option value="gemini">🌟 Google Gemini (官方推荐 · gemini-3.8-flash)</option>
                 <option value="glm">🇨🇳 智谱 GLM (官方开放平台 / 个人月卡中转)</option>
                 <option value="deepseek">🚀 DeepSeek (性价比之王 · deepseek-chat)</option>
-                <option value="openai">🤖 OpenAI (官方 gpt-4o-mini)</option>
+                <option value="openai">🤖 OpenAI (官方 gpt-5.6-sol · 真实调用)</option>
                 <option value="openai_compatible">🌐 自定义 OpenAI 兼容中转 (包月卡 / OneAPI)</option>
                 <option value="ollama">💻 本地 Ollama (http://localhost:11434 · 0成本免Key)</option>
                 <option value="local_heuristic">🛡️ Tier 0 本地确定性引擎 (免Key · 纯离线保底)</option>
@@ -2959,12 +2959,12 @@
         },
         openai: {
           base: 'https://api.openai.com/v1',
-          model: 'gpt-4o-mini',
+          model: 'gpt-5.6-sol',
           keyPlaceholder: 'sk-...'
         },
         openai_compatible: {
           base: 'https://your-relay.com/v1',
-          model: 'gpt-4o-mini',
+          model: 'gpt-5.6-sol',
           keyPlaceholder: 'sk-...'
         },
         ollama: {
@@ -2988,7 +2988,7 @@
       }
       if (modelEl) {
         modelEl.placeholder = cfg.model;
-        if (resetDefaults && (!modelEl.value || modelEl.value.includes('gemini') || modelEl.value.includes('glm') || modelEl.value.includes('deepseek') || modelEl.value.includes('gpt-4o') || modelEl.value.includes('qwen') || modelEl.value === 'local_ast_tier0')) {
+        if (resetDefaults && (!modelEl.value || modelEl.value.includes('gemini') || modelEl.value.includes('glm') || modelEl.value.includes('deepseek') || modelEl.value.includes('gpt-5.6') || modelEl.value.includes('qwen') || modelEl.value === 'local_ast_tier0')) {
           modelEl.value = cfg.model;
         }
       }
