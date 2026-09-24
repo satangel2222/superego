@@ -157,7 +157,7 @@ def check_local_daemons():
             rules_cnt = len(svc_mod.RULES) if svc_mod.RULES else 0
             anchors_cnt = len(svc_mod.ANCHOR_EMB) if getattr(svc_mod, "ANCHOR_EMB", None) is not None else 0
             s17911 = {
-                "name": "17911 司法裁决与大盘中枢",
+                "name": "17911 本地语义分类裁决引擎",
                 "port": 17911,
                 "status": "HEALTHY",
                 "latency_ms": 0.1,
@@ -172,7 +172,7 @@ def check_local_daemons():
     if not is_self:
         code, lat, err = _probe_url("http://127.0.0.1:17911/health", timeout=1.0)
         s17911 = {
-            "name": "17911 司法裁决与大盘中枢",
+            "name": "17911 本地语义分类裁决引擎",
             "port": 17911,
             "status": "HEALTHY" if code == 200 else "DOWN",
             "latency_ms": lat,
@@ -221,6 +221,17 @@ def check_local_daemons():
         watch["status"] = "WARN"
         watch["detail"] = f"进程检查受限: {e}"
     daemons.append(watch)
+
+    # 3. 17925 实时可视化 Web 大盘 (TruthGate Dashboard)
+    d_code, d_lat, _ = _probe_url("http://127.0.0.1:17925/dashboard", timeout=0.5)
+    s17925 = {
+        "name": "17925 实时可视化 Web 大盘",
+        "port": 17925,
+        "status": "HEALTHY" if d_code == 200 else "STANDBY",
+        "latency_ms": d_lat if d_code == 200 else 0.0,
+        "detail": "在线监听中 (http://127.0.0.1:17925/dashboard)" if d_code == 200 else "待命中 (终端运行 tg dashboard 即开)"
+    }
+    daemons.append(s17925)
 
     return daemons
 
@@ -414,7 +425,7 @@ def run_doctor(cached=True):
         issues.append("Agnes 外部深审通道异常")
 
     for d in daemons_info:
-        if d["status"] != "HEALTHY":
+        if d["status"] not in ("HEALTHY", "STANDBY"):
             score -= 25
             issues.append(f"{d['name']} 未正常运行")
 
