@@ -389,6 +389,14 @@ def set_critic_config(
         "tiered", "gemini", "glm", "zhipu", "deepseek", "openai", "agnes", "ollama",
         "openai_compatible", "jev", "local_heuristic"
     ]
+    # 归一化：若传入 "auto" 或空字符串，视同 None 触发厂商智能默认值
+    if base_url in ("", "auto"):
+        base_url = None
+    if model in ("", "auto"):
+        model = None
+    if api_key in ("", "auto"):
+        api_key = None
+
     if provider is not None:
         p_lower = provider.lower()
         if p_lower not in valid_providers:
@@ -428,6 +436,10 @@ def set_critic_config(
                 critic["base_url"] = "https://apihub.agnes-ai.com/v1"
             if not model:
                 critic["model"] = "agnes-3.0-flash"
+        elif p_lower == "local_heuristic":
+            critic["base_url"] = "local"
+            critic["model"] = "local_heuristic"
+            critic["api_key"] = "local"
 
     if base_url is not None:
         critic["base_url"] = base_url

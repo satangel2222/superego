@@ -106,15 +106,16 @@ def _find_env_key(key_names):
     for p in candidate_paths:
         if os.path.exists(p):
             try:
-                for ln in open(p, encoding="utf-8-sig"):
-                    ln = ln.strip()
-                    if not ln or ln.startswith("#") or "=" not in ln:
-                        continue
-                    parts = ln.split("=", 1)
-                    k = parts[0].strip().lstrip("\ufeff")
-                    val = parts[1].strip()
-                    if k in key_names and val:
-                        return k, val
+                with open(p, encoding="utf-8-sig") as f:
+                    for ln in f:
+                        ln = ln.strip()
+                        if not ln or ln.startswith("#") or "=" not in ln:
+                            continue
+                        parts = ln.split("=", 1)
+                        k = parts[0].strip().lstrip("\ufeff")
+                        val = parts[1].strip()
+                        if k in key_names and val:
+                            return k, val
             except Exception:
                 pass
     return None, None
@@ -148,13 +149,41 @@ def get_critic_endpoint():
     elif cfg_key_spec and cfg_key_spec != "auto":
         cfg_key = cfg_key_spec
 
-    # 若用户在 config 中显式配置了第三方 endpoint
+    # 若用户在 config 中显式配置了第三方 endpoint 或指定了 provider
     if cfg_base and cfg_base != "auto" and "apihub.agnes-ai.com" not in cfg_base:
         url = cfg_base.rstrip("/") + "/chat/completions" if not cfg_base.endswith("/chat/completions") else cfg_base
+        if not cfg_model or cfg_model == "auto":
+            if cfg_provider == "gemini":
+                cfg_model = "gemini-2.5-flash"
+            elif cfg_provider in ("glm", "zhipu"):
+                cfg_model = "glm-4-flash"
+            elif cfg_provider == "openai":
+                cfg_model = "gpt-4o-mini"
+            elif cfg_provider == "ollama":
+                cfg_model = "qwen2.5:7b"
+            elif cfg_provider == "agnes":
+                cfg_model = "agnes-3.0-flash"
+            else:
+                cfg_model = "deepseek-chat"
+
+        if not cfg_key and cfg_key_spec in ("", "auto", None):
+            if cfg_provider == "gemini":
+                _, cfg_key = _find_env_key(["GEMINI_API_KEY", "GOOGLE_API_KEY", "CRITIC_API_KEY"])
+            elif cfg_provider in ("glm", "zhipu"):
+                _, cfg_key = _find_env_key(["GLM_API_KEY", "ZHIPU_API_KEY", "CRITIC_API_KEY"])
+            elif cfg_provider == "deepseek":
+                _, cfg_key = _find_env_key(["DEEPSEEK_API_KEY", "CRITIC_API_KEY"])
+            elif cfg_provider == "openai":
+                _, cfg_key = _find_env_key(["OPENAI_API_KEY", "CRITIC_API_KEY"])
+            elif cfg_provider == "agnes":
+                _, cfg_key = _find_env_key(["AGNES_API_KEY", "CRITIC_API_KEY"])
+            else:
+                _, cfg_key = _find_env_key("CRITIC_API_KEY")
+
         return {
             "provider": cfg_provider if cfg_provider != "tiered" else "openai_compatible",
             "url": url,
-            "model": cfg_model or "deepseek-chat",
+            "model": cfg_model,
             "api_key": cfg_key or "",
             "timeout": float(cfg.get("timeout", 25.0))
         }
@@ -261,35 +290,98 @@ def _key():
     return ep["api_key"] if ep else ""
 
 
+LAST_CRITIC_STATUS = {
+    "provider": None,
+    "ok": True,
+    "last_error": None,
+    "last_check_ts": 0.0,
+    "latency_ms": 0.0
+}
+
+def get_last_critic_status():
+    return dict(LAST_CRITIC_STATUS)
+
+
 def _ask(prompt, max_tokens=6000):
+    global LAST_CRITIC_STATUS
     import time
     ep = get_critic_endpoint()
     if not ep:
-        # 无外部大模型 Key 时，平滑返回空字符串，由本地 Tier 0 确定性引擎接管
+        LAST_CRITIC_STATUS = {
+            "provider": "none",
+            "ok": True,
+            "last_error": "未配置外审提供商 (当前由本地 Tier 0 确定性引擎 100% 离线硬生效)",
+            "last_check_ts": time.time(),
+            "latency_ms": 0.0
+        }
         return ""
 
-    url = ep["url"]
-    model = ep["model"]
-    key = ep["api_key"]
-    timeout = ep.get("timeout", 25.0)
+    provider = ep.get("provider", "unknown")
+    url = ep.get("url", "")
+    model = ep.get("model", "")
+    key = (ep.get("api_key") or "").strip()
+    timeout = float(ep.get("timeout", 25.0))
+
+    if key.startswith("env:"):
+        _, env_k = _find_env_key(key[4:])
+        key = (env_k or "").strip()
+
+    is_local = "localhost" in url or "127.0.0.1" in url or provider in ("ollama", "local_heuristic")
+    if not key and not is_local:
+        err_msg = f"外审模型 [{provider}] 未配置有效 API Key，已安全降级至 Tier 0 本地确定性引擎"
+        LAST_CRITIC_STATUS = {
+            "provider": provider,
+            "ok": False,
+            "last_error": err_msg,
+            "last_check_ts": time.time(),
+            "latency_ms": 0.0
+        }
+        return ""
 
     headers = {"Content-Type": "application/json"}
     if key and key != "ollama":
         headers["Authorization"] = f"Bearer {key}"
+        if provider == "gemini":
+            headers["x-goog-api-key"] = key
 
-    payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens,
-        "temperature": 0
-    }
+    is_anthropic = "1.19848845.xyz" in url or url.endswith("/messages")
+    if is_anthropic:
+        endpoint = url if url.endswith("/messages") else f"{url.rstrip('/')}/v1/messages"
+        headers["x-api-key"] = key
+        headers["anthropic-version"] = "2023-06-01"
+        payload = {
+            "model": model or "glm-5.3-flash",
+            "max_tokens": min(max_tokens, 4000),
+            "messages": [{"role": "user", "content": prompt}]
+        }
+    else:
+        endpoint = url
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": 0
+        }
 
     last_err = None
+    t0 = time.time()
     for attempt in range(2):
         try:
-            r = _sess().post(url, headers=headers, json=payload, timeout=timeout)
+            r = _sess().post(endpoint, headers=headers, json=payload, timeout=timeout)
             if r.status_code == 200:
                 data = r.json()
+                lat = round((time.time() - t0) * 1000, 1)
+                LAST_CRITIC_STATUS = {
+                    "provider": provider,
+                    "ok": True,
+                    "last_error": None,
+                    "last_check_ts": time.time(),
+                    "latency_ms": lat
+                }
+                if is_anthropic:
+                    content_blocks = data.get("content", [])
+                    if isinstance(content_blocks, list):
+                        return "".join([b.get("text", "") for b in content_blocks if b.get("type") == "text"])
                 choices = data.get("choices", [])
                 if choices:
                     m = choices[0].get("message", {})
@@ -299,10 +391,17 @@ def _ask(prompt, max_tokens=6000):
         except Exception as e:
             last_err = e
         if attempt == 0:
-            time.sleep(1)
+            time.sleep(0.5)
             continue
 
-    sys.stderr.write(f"[truthgate:semantic_judge] 外部裁判请求异常 ({ep.get('provider')}): {last_err}\\n")
+    LAST_CRITIC_STATUS = {
+        "provider": provider,
+        "ok": False,
+        "last_error": str(last_err),
+        "last_check_ts": time.time(),
+        "latency_ms": round((time.time() - t0) * 1000, 1)
+    }
+    sys.stderr.write(f"[truthgate:semantic_judge] 外部裁判请求异常 ({provider}): {last_err}\n")
     return ""
 
 

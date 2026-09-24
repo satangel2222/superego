@@ -113,9 +113,9 @@ def check_typesafe_jev():
     return res
 
 def check_agnes():
-    """Checks outer critic deep audit API (Gemini / DeepSeek / OpenAI / Agnes / Ollama)."""
+    """Checks outer critic deep audit API (Gemini / GLM / DeepSeek / OpenAI / Agnes / Ollama)."""
     res = {
-        "name": "外审模型深度裁判 (Tier 3 异步全局深审)",
+        "name": "外审模型裁判 (Outer Critic Engine)",
         "status": "UNKNOWN",
         "latency_ms": 0.0,
         "detail": ""
@@ -125,10 +125,10 @@ def check_agnes():
         if str(sem_dir) not in sys.path:
             sys.path.insert(0, str(sem_dir))
         try:
-            import semantic_judge
+            from truthgate import semantic_judge
         except ImportError:
             try:
-                from truthgate import semantic_judge
+                import semantic_judge
             except ImportError:
                 semantic_judge = None
 
@@ -139,35 +139,67 @@ def check_agnes():
 
         ep = getattr(semantic_judge, "get_critic_endpoint", lambda: None)()
         if not ep:
-            res["status"] = "UNCONFIGURED"
-            res["detail"] = "未配置外审 API Key (支持 Gemini / DeepSeek / OpenAI / Ollama / Agnes)，已由本地 Tier 0 确定性引擎接管"
+            res["status"] = "HEALTHY"
+            res["detail"] = "未配置外审大模型，当前由本地 Tier 0 确定性引擎 100% 离线硬防线安全保底"
             return res
 
         provider = ep.get("provider", "unknown")
         model = ep.get("model", "unknown")
         url = ep.get("url", "")
-        k = ep.get("api_key", "")
+        k = (ep.get("api_key") or "").strip()
+        if k.startswith("env:"):
+            _, resolved_k = getattr(semantic_judge, "_find_env_key", lambda x: (None, None))(k[4:])
+            k = (resolved_k or "").strip()
 
-        res["name"] = f"外审裁判 [{provider}] (Tier 3 异步深审)"
+        res["name"] = f"外审裁判 [{provider}] ({model})"
 
-        if provider == "gemini":
+        if provider == "local_heuristic":
             res["status"] = "HEALTHY"
-            res["detail"] = f"在线就绪 (端点: Google GenerativeLanguage, 模型: {model})"
+            res["detail"] = "纯离线 AST / 正则确定性硬安全引擎 (免Key · 0ms 延迟)"
             return res
 
-        probe_url = url.replace("/chat/completions", "/models") if "/chat/completions" in url else url
-        headers = {}
-        if k and k != "ollama":
-            headers["Authorization"] = f"Bearer {k}"
+        is_local = "localhost" in url or "127.0.0.1" in url or provider == "ollama"
+        if not k and not is_local:
+            res["status"] = "WARNING"
+            res["detail"] = f"提供商设置为 {provider}，但未配置有效 API Key！当前已降级为 Tier 0 本地硬防线"
+            return res
 
-        code, lat, err = _probe_url(probe_url, timeout=3.0, headers=headers)
-        res["latency_ms"] = lat
-        if code in (200, 404, 405):  # Endpoint reachable
-            res["status"] = "HEALTHY"
-            res["detail"] = f"在线连通 ({lat}ms, 模型: {model})"
+        # 检查最新运行状态是否有失败记录
+        status_info = getattr(semantic_judge, "get_last_critic_status", lambda: {})()
+        if status_info.get("last_error") and not status_info.get("ok"):
+            res["status"] = "DEGRADED"
+            res["detail"] = f"连通异常 ({status_info.get('last_error')[:100]})，已自动降级至 Tier 0"
+            res["latency_ms"] = status_info.get("latency_ms", 0.0)
+            return res
+
+        # 执行真实轻量级探针 (5-token ping)
+        import time, urllib.request
+        t0 = time.time()
+        is_anthropic = "1.19848845.xyz" in url or url.endswith("/messages")
+        headers = {"Content-Type": "application/json"}
+        if is_anthropic:
+            endpoint = url if url.endswith("/messages") else f"{url.rstrip('/')}/v1/messages"
+            headers["x-api-key"] = k
+            headers["anthropic-version"] = "2023-06-01"
+            payload = {"model": model or "glm-5.3-flash", "max_tokens": 5, "messages": [{"role": "user", "content": "ping"}]}
         else:
-            res["status"] = "HEALTHY"
-            res["detail"] = f"已就绪 (模型: {model})"
+            endpoint = url
+            if k and k != "ollama":
+                headers["Authorization"] = f"Bearer {k}"
+                if provider == "gemini":
+                    headers["x-goog-api-key"] = k
+            payload = {"model": model, "max_tokens": 5, "messages": [{"role": "user", "content": "ping"}]}
+
+        try:
+            req = urllib.request.Request(endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            with urllib.request.urlopen(req, timeout=4.0) as resp:
+                lat = round((time.time() - t0) * 1000, 1)
+                res["status"] = "HEALTHY"
+                res["latency_ms"] = lat
+                res["detail"] = f"真实连通正常 ({lat}ms · HTTP 200 OK · 模型: {model})"
+        except Exception as probe_err:
+            res["status"] = "DEGRADED"
+            res["detail"] = f"端点探测失败 ({str(probe_err)[:80]})，已安全降级为 Tier 0 本地硬防线"
     except Exception as e:
         res["status"] = "ERROR"
         res["detail"] = str(e)

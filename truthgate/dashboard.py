@@ -1275,6 +1275,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 model = (data.get("model") or "").strip()
                 api_key = (data.get("api_key") or "").strip()
 
+                if base_url in ("", "auto"):
+                    base_url = ""
+                if model in ("", "auto"):
+                    model = ""
+                if api_key in ("", "auto"):
+                    api_key = ""
+
                 if api_key.startswith("env:"):
                     api_key = os.environ.get(api_key[4:], "")
 
@@ -1332,6 +1339,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     headers = {"Content-Type": "application/json"}
                     if api_key and api_key != "ollama":
                         headers["Authorization"] = f"Bearer {api_key}"
+                    if provider == "gemini" and api_key and api_key != "ollama":
+                        headers["x-goog-api-key"] = api_key
                     payload = {
                         "model": model or "gemini-2.5-flash",
                         "max_tokens": 15,
@@ -1370,10 +1379,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
                 if c_provider or c_key or c_base or c_model:
                     try:
-                        from config import set_critic_config
+                        from config import set_critic_config, get_critic_config
                     except ImportError:
                         try:
-                            from truthgate.config import set_critic_config
+                            from truthgate.config import set_critic_config, get_critic_config
                         except ImportError:
                             set_critic_config = None
                     if set_critic_config:
@@ -1383,6 +1392,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                             model=c_model,
                             api_key=c_key if c_key else None
                         )
+                        try:
+                            new_cfg["critic"] = get_critic_config()
+                        except Exception:
+                            pass
                 cfg = load_config()
                 cfg.update(new_cfg)
                 save_config(cfg)

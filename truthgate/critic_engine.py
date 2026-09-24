@@ -654,31 +654,32 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
             _record_audit_telemetry(jev_res, clean_tail, context)
             return jev_res
 
-    # Tier 3: 通用外部大模型深度慢车道 (Gemini / DeepSeek / OpenAI / Agnes / Ollama，42 条母形状规则语义裁决)
-    if provider in ("tiered", "gemini", "deepseek", "openai", "agnes", "semantic_judge", "ollama"):
+    # Tier 3: 通用外部大模型深度慢车道 (Gemini / GLM / DeepSeek / OpenAI / Agnes / Ollama，42 条母形状规则语义裁决)
+    if provider in ("tiered", "gemini", "glm", "zhipu", "deepseek", "openai", "agnes", "semantic_judge", "ollama"):
         crit_res = _call_universal_critic(clean_tail, context=context, raw_text=text)
         if crit_res and crit_res.get("verdict"):
             crit_res["profile"] = profile.get("id")
             _record_audit_telemetry(crit_res, clean_tail, context)
             return crit_res
 
-    # Option A: OpenAI-Compatible 通用模型外审 (显式配置或备用路由)
-    if provider in ("openai_compatible", "tiered"):
+    # Option A: OpenAI-Compatible 通用模型外审 (显式配置或备用路由，包含 GLM 兼容端点)
+    if provider in ("openai_compatible", "glm", "zhipu", "tiered"):
         res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context, raw_text=text)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
             _record_audit_telemetry(res, clean_tail, context)
             return res
 
-    # Option C / 自动降级: Tier 0 纯本地启发式引擎 (离线/超时兜底)
-    res = _local_heuristic_critic(clean_tail, profile, active_rules, context=context)
-    res["fired"] = _apply_exemptions(res.get("fired", []), text, clean_tail)
-    if not res["fired"]:
-        res["verdict"] = "PASS"
-        res["reasons"] = []
-    res["profile"] = profile.get("id")
-    _record_audit_telemetry(res, clean_tail, context)
-    return res
+    # Option C / 显式指定或自动降级: Tier 0 纯本地启发式引擎 (离线/超时兜底)
+    if provider == "local_heuristic" or True:
+        res = _local_heuristic_critic(clean_tail, profile, active_rules, context=context)
+        res["fired"] = _apply_exemptions(res.get("fired", []), text, clean_tail)
+        if not res["fired"]:
+            res["verdict"] = "PASS"
+            res["reasons"] = []
+        res["profile"] = profile.get("id")
+        _record_audit_telemetry(res, clean_tail, context)
+        return res
 
 
 if __name__ == "__main__":
