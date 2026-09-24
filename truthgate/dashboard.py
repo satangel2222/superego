@@ -1100,7 +1100,7 @@ class DashboardServer(HTTPServer):
     daemon_threads = True
 
 
-def run_dashboard(port: int = 17925, open_browser: bool = True):
+def run_dashboard(port: int = 17911, open_browser: bool = True):
     """启动本地 Web 仪表盘"""
     server_address = ("127.0.0.1", port)
     for _ in range(5):

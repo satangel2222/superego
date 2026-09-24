@@ -19,33 +19,72 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 _REPRIMAND_TRIGGERS = re.compile(
-    r"(?:表面功夫|我不相信你|你在骗我|你又错了|根本没查|没查过|没做吗|做完对的步骤了吗"
-    r"|坐井观天|闭门造车|为何superego没拦|为何现在完全没做|根因"
-    r"|糊弄|骗我|幻觉了|头脑不清醒|又犯了|又在吹|偷工减料|假单测)",
+    r"(?:表面功夫|我不相信你|你在骗我|你骗我|骗人|你又错了|又错了|你错了|根本没查|没查过|没做吗|做完对的步骤了吗"
+    r"|坐井观天|闭门造车|为何superego没拦|为何没拦|为什么没拦截|为何现在完全没做|根因是什么|根因"
+    r"|糊弄|忽悠|敷衍|幻觉了|头脑不清醒|又犯了|又在吹|偷工减料|假单测|没搞懂|还没搞懂"
+    r"|修好了吗|搞错了什么|哪个才是最完整正确的|既然我随便都找到有问题|你却看不到有问题"
+    r"|用错方法|凡事我有再次提醒|gate没开火|审查自动Monitor|盲人摸象|头疼医头|根治了吗|彻底了吗"
+    r"|说了多少次|讲了多少次|又没做|还没好|还是错的|还是有问题)",
     re.I
 )
 
 # 5步自愈必须包含的结构要素（至少包含形状归纳与机器防御）
 _SHAPE_PATTERN = re.compile(
-    r"(?:形状\s*[:：]|归纳形状|错误形状|Coverage Bluff|Toy Test Fallacy|Inference as Fact|Silent Stubbing|Phantom Delivery|表面功夫|窄道假搜索)",
+    r"(?:形状\s*[:：]|归纳形状|错误形状|Coverage Bluff|Toy Test Fallacy|Inference as Fact|Silent Stubbing|Phantom Delivery|表面功夫|窄道假搜索|False Negative|Toy Comparison)",
     re.I
 )
 
 _MACHINE_GUARD_PATTERN = re.compile(
-    r"(?:机器能否防御|物理落地|落地门禁|编写单测|编写测试|断言|门禁代码|lessons_add|永久防御)",
+    r"(?:机器能否防御|物理落地|落地门禁|编写单测|编写测试|断言|门禁代码|lessons_add|永久防御|assert|test_)",
     re.I
 )
 
 
 def detect_reprimand(user_prompt: str) -> Optional[Dict[str, Any]]:
-    """检测用户输入是否构成针对 Agent 行为的人类纠错与严厉指正"""
+    """检测用户输入是否构成针对 Agent 行为的人类纠错与严厉指正。
+    双模态：语义分类器 (17911 /classify) + 高置信度正则规则。
+    命中时自动对账将上一轮标记为 False Negative。
+    """
     if not user_prompt:
         return None
+
+    trigger_word = None
+    # 1. 优先正则嗅探
     m = _REPRIMAND_TRIGGERS.search(user_prompt)
     if m:
+        trigger_word = m.group(0)
+
+    # 2. 次选 17911 语义分类服务嗅探
+    if not trigger_word:
+        try:
+            import urllib.request, json
+            c_body = json.dumps({"text": user_prompt}).encode("utf-8")
+            c_req = urllib.request.Request(
+                "http://127.0.0.1:17911/classify",
+                c_body,
+                {"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(c_req, timeout=0.8) as c_resp:
+                c_res = json.loads(c_resp.read().decode("utf-8"))
+                if c_res.get("strong"):
+                    trigger_word = f"semantic_strong({c_res.get('score', 1.0)})"
+        except Exception:
+            pass
+
+    if trigger_word:
+        # 自动触发上轮 False Negative 溯源对账
+        try:
+            try:
+                from truthgate.verdict_monitor import check_user_reprimand_and_record_false_negative
+            except ImportError:
+                from verdict_monitor import check_user_reprimand_and_record_false_negative
+            check_user_reprimand_and_record_false_negative(user_prompt)
+        except Exception:
+            pass
+
         return {
             "is_reprimand": True,
-            "trigger_word": m.group(0),
+            "trigger_word": trigger_word,
             "user_prompt_snippet": user_prompt[:200]
         }
     return None

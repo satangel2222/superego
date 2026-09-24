@@ -537,6 +537,27 @@ def _local_heuristic_critic(
             except Exception:
                 pass
 
+    # 9. 检查人类纠错自愈合规规则 (R12 / POSTMORTEM)
+    user_prompt = context.get("user_prompt") or ""
+    if user_prompt:
+        try:
+            from postmortem_guard import detect_reprimand, audit_postmortem_compliance
+        except ImportError:
+            try:
+                from truthgate.postmortem_guard import detect_reprimand, audit_postmortem_compliance
+            except ImportError:
+                detect_reprimand = None
+        if detect_reprimand:
+            try:
+                rep_info = detect_reprimand(user_prompt)
+                if rep_info:
+                    p_res = audit_postmortem_compliance(clean_tail, rep_info)
+                    if p_res.get("fired"):
+                        fired.append("POSTMORTEM_AUTO_GUARD")
+                        reasons.append(p_res.get("reason"))
+            except Exception:
+                pass
+
     dt = (time.perf_counter() - t0) * 1000
     return {
         "verdict": "BLOCK" if fired else "PASS",

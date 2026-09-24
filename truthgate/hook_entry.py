@@ -178,15 +178,35 @@ def handle_stop(payload: Dict[str, Any]) -> int:
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
-    # 2. 诚实履职对账门禁 (R16 / 严禁抽样冒充全量穷尽)
+    # 2. 人类纠错自愈门禁 (postmortem_guard / 遇批评必须执行5步自愈，严禁口头安抚)
     user_prompt = payload.get("user_prompt") or ""
+    try:
+        from postmortem_guard import detect_reprimand, audit_postmortem_compliance
+    except ImportError:
+        try:
+            from truthgate.postmortem_guard import detect_reprimand, audit_postmortem_compliance
+        except ImportError:
+            detect_reprimand = None
+    if detect_reprimand and user_prompt:
+        try:
+            rep_info = detect_reprimand(user_prompt)
+            if rep_info:
+                compliance = audit_postmortem_compliance(last_text, rep_info)
+                if compliance.get("fired"):
+                    resp = {"decision": "block", "reason": compliance.get("reason")}
+                    print(json.dumps(resp, ensure_ascii=False))
+                    return 0
+        except Exception:
+            pass
+
+    # 3. 诚实履职对账门禁 (R16 / 严禁抽样冒充全量穷尽)
     scope_ok, scope_err = check_honest_scope(last_text, tool_history, user_prompt=user_prompt)
     if not scope_ok:
         resp = {"decision": "block", "reason": scope_err}
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
-    # 3. 桌面视窗真实性门禁 (desktop-window-phantom / 严禁无头假弹窗欺诈)
+    # 4. 桌面视窗真实性门禁 (desktop-window-phantom / 严禁无头假弹窗欺诈)
     desk_ok, desk_err = check_desktop_popup_reality(last_text, tool_history)
     if not desk_ok:
         resp = {"decision": "block", "reason": desk_err}

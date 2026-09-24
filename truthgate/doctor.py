@@ -352,15 +352,25 @@ def check_cross_engine_parity():
                 details.append(f"Antigravity缺失核心治理技能: {sk_rep['core_missing_ag']}")
         if not ev_intact:
             status = "DEGRADED"
-            details.append("自动反思进化闭环 (Dissat->Postmortem->Lessons) 存在短板")
-
-        if not details:
-            details.append(f"四端核心治理技能与自动进化闭环 100% 对齐 (母库 {sk_rep['claude_count']} 个技能，Codex {sk_rep['codex_count']}，AG {sk_rep['ag_count']})")
+        # 深度语义与运行时对账 (端口、AST、幽灵门禁、假阴性自动监控)
+        try:
+            try:
+                from deep_parity_auditor import run_full_deep_parity_audit
+            except ImportError:
+                from truthgate.deep_parity_auditor import run_full_deep_parity_audit
+            deep_res = run_full_deep_parity_audit()
+            if not deep_res.get("all_passed"):
+                status = "DEGRADED"
+                details.append("深度真值审计发现端口/AST/幽灵门禁或假阴性监控未通过")
+            else:
+                details.append("深度端口/AST/幽灵门禁/假阴性监控 100% 满分通过")
+        except Exception:
+            pass
 
         return {
             "name": "四端资产与自动进化闭环 (Parity & Evolution)",
             "status": status,
-            "parity_score": sk_rep.get("parity_score", 100.0),
+            "parity_score": sk_rep.get("parity_score", 100.0) if status == "HEALTHY" else 80.0,
             "detail": "；".join(details),
             "skills_parity": sk_rep,
             "evolution_loop": ev_rep

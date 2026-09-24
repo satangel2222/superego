@@ -1560,6 +1560,24 @@ def evaluate_all_structural_gates(text, tool_calls, blob, user_prompt="", conv_i
     violations = []
     is_globally_off = check_is_off("*", sid=conv_id)
 
+    # 0. Supreme Evolutionary Gate: postmortem-to-guard (Enforce 5-step self-healing when user reprimands)
+    # NEVER bypassed by any toggle, NEVER fused!
+    if user_prompt:
+        try:
+            try:
+                from truthgate.postmortem_guard import detect_reprimand, audit_postmortem_compliance
+            except ImportError:
+                from postmortem_guard import detect_reprimand, audit_postmortem_compliance
+            rep_info = detect_reprimand(user_prompt)
+            if rep_info:
+                compliance = audit_postmortem_compliance(text, rep_info)
+                if compliance.get("fired"):
+                    violations.append(("postmortem-to-guard-gate", compliance.get("reason", "")))
+                    if stop_on_first:
+                        return violations
+        except Exception:
+            pass
+
     # 1. Supreme Red Line #1: honest-scope-assertion-gate (Zero Tolerance for Lying / Bluffing)
     # NEVER bypassed by any toggle, NEVER fused!
     vio = check_honest_scope_violation(text, tool_calls, blob, user_prompt)
@@ -1764,9 +1782,18 @@ def handle_stop(payload):
                 pass
 
     if violation:
+        budget_file = Path.home() / ".claude" / "superego-semantic" / f".turn_blocks_{conv_id[:8]}" if conv_id else None
+        turn_blocks = 0
+        if budget_file and budget_file.exists():
+            try:
+                turn_blocks = int(budget_file.read_text(encoding="utf-8").strip())
+            except Exception:
+                turn_blocks = 0
+
         # Core Red Line Gates: NEVER silently fuse to allow!
         # If it's a lie, fake test, fake model, nagging deferral, or unauthorized card, it MUST block!
         is_hard_redline = any(k in violation for k in (
+            "postmortem-to-guard",
             "honest-scope-assertion-gate",
             "no-nagging-guard",
             "no-nagging-gate",

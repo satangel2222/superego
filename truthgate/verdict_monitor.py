@@ -37,9 +37,16 @@ def _init_db():
                 reasons TEXT,
                 mode TEXT,
                 latency_ms REAL,
-                is_false_positive INTEGER DEFAULT 0
+                is_false_positive INTEGER DEFAULT 0,
+                is_false_negative INTEGER DEFAULT 0
             )
         """)
+        # Backward compatibility: add column if table already existed without it
+        try:
+            conn.execute("ALTER TABLE verdict_records ADD COLUMN is_false_negative INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS false_positives (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +54,18 @@ def _init_db():
                 verdict_id INTEGER,
                 user_refutation TEXT NOT NULL,
                 fired_rules TEXT,
+                status TEXT DEFAULT 'recorded',
+                audit_notes TEXT
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS false_negatives (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                verdict_id INTEGER,
+                user_reprimand TEXT NOT NULL,
+                trigger_pattern TEXT,
+                assistant_text_snippet TEXT,
                 status TEXT DEFAULT 'recorded',
                 audit_notes TEXT
             )
@@ -110,8 +129,13 @@ def record_verdict(
     return record_id
 
 
-_REFUTATION_PATTERN = (
-    r"闸误判|误判了|误伤|误报|判断错了|放行|不是代码轮|没搞懂|瞎拦|乱拦|搞错了|不是这个意思|这不对"
+_REPRIMAND_PATTERN = (
+    r"你又错|又错了|你错了|这不对|不对吧|不对啊|你确定吗|确定吗\?|真的查过|你在骗我|你骗我|骗人"
+    r"|没测吧|又幻觉|幻觉了|没搞懂|还没搞懂|没懂|懂不懂|垃圾|敷衍|糊弄|忽悠|你怎么又|你又来"
+    r"|根本没(?!问题|错|事)|明明|说了多少次|讲了多少次|又没做|还得我自己|我自己动手"
+    r"|居然没|竟然没|到现在还|你是不是又|说过多少次|根本不|你又没|你又忘"
+    r"|搞错了什么|哪个才是最完整正确的|修好了吗|既然我随便都找到有问题|你却看不到有问题|根因是什么"
+    r"|用错方法|gate没开火|有没有审查自动Monitor|为何没拦|为何没拦截|为什么没拦"
 )
 
 
@@ -154,8 +178,53 @@ def check_user_refutation(user_prompt: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def check_user_reprimand_and_record_false_negative(user_prompt: str) -> Optional[Dict[str, Any]]:
+    """检测用户是否在批评/指出上一轮的疏漏/故障(即上一轮门禁本该拦却漏拦放行了，产生 False Negative 假阴性)。
+    若命中，自动对账上一轮 PASS 记录，标记为 is_false_negative = 1，并存入 false_negatives 表。
+    """
+    import re
+    if not user_prompt:
+        return None
+    m = re.search(_REPRIMAND_PATTERN, user_prompt)
+    if not m:
+        return None
+
+    trigger_word = m.group(0)
+    ts = datetime.now().isoformat()
+    try:
+        with sqlite3.connect(MONITOR_DB) as conn:
+            cur = conn.cursor()
+            # 找到最近一次 PASS 记录（说明上轮可能漏判）
+            cur.execute("""
+                SELECT id, timestamp, assistant_text_snippet 
+                FROM verdict_records 
+                WHERE verdict='PASS' 
+                ORDER BY id DESC LIMIT 1
+            """)
+            row = cur.fetchone()
+            vid = row[0] if row else None
+            asst_snip = row[2] if row else ""
+            
+            if vid:
+                cur.execute("UPDATE verdict_records SET is_false_negative = 1 WHERE id = ?", (vid,))
+            
+            cur.execute("""
+                INSERT INTO false_negatives (timestamp, verdict_id, user_reprimand, trigger_pattern, assistant_text_snippet, audit_notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (ts, vid, user_prompt[:400], trigger_word, asst_snip, "用户再次纠错/质疑，系统自动对账捕获上一轮门禁假阴性(漏拦)！"))
+            conn.commit()
+            return {
+                "verdict_id": vid,
+                "trigger_word": trigger_word,
+                "message": f"🚨 捕获人类纠错批评『{trigger_word}』，上一轮 PASS 已自动标记为假阴性(False Negative)并建档审计！"
+            }
+    except Exception:
+        pass
+    return None
+
+
 def get_monitor_stats() -> Dict[str, Any]:
-    """获取过去 24 小时门禁裁决与误判监控统计"""
+    """获取门禁裁决全量指标：查准率(Precision) + 查全率(Recall) + 误判/漏判双向监控"""
     try:
         with sqlite3.connect(MONITOR_DB) as conn:
             cur = conn.cursor()
@@ -167,12 +236,23 @@ def get_monitor_stats() -> Dict[str, Any]:
             passes = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM false_positives")
             fp_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM false_negatives")
+            fn_count = cur.fetchone()[0]
+
+            precision = round((blocks - fp_count) / max(blocks, 1) * 100, 2)
+            recall = round(blocks / max(blocks + fn_count, 1) * 100, 2)
             return {
                 "total_audited": total,
                 "blocks": blocks,
                 "passes": passes,
                 "false_positives": fp_count,
-                "precision_rate": round((blocks - fp_count) / max(blocks, 1) * 100, 2)
+                "false_negatives": fn_count,
+                "precision_rate": precision,
+                "recall_rate": recall
             }
     except Exception:
-        return {"total_audited": 0, "blocks": 0, "passes": 0, "false_positives": 0, "precision_rate": 100.0}
+        return {
+            "total_audited": 0, "blocks": 0, "passes": 0,
+            "false_positives": 0, "false_negatives": 0,
+            "precision_rate": 100.0, "recall_rate": 100.0
+        }
