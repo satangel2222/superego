@@ -108,7 +108,46 @@ truthgate status
 > ```
 > 即可在浏览器中秒开 **四端实时裁决流大盘**（默认访问 `http://127.0.0.1:17911/dashboard`），纯单文件内嵌，零额外依赖！
 
+---
 
+### 🩸 满血版 vs 残血版深度体检与极速升级 (Full-Blood Health Audit & Instant Upgrade)
+
+> **⚠️ 为什么很多用户在不知情的情况下跑在「残血版 (Degraded Mode)」？**  
+> 为了保障零配置开箱即用，TruthGate 设计了自动降级保护：在没有配置 `TYPESAFE_API_KEY`、未安装 CodeGraph 或未启动 17911 审判守护进程时，门禁会静默回退至 Tier 0 本地启发式正则层。但这会导致 349ms 结构化打手心、双向拓扑调用图审判与实时审判大盘处于**休眠/残血状态**！
+
+#### 1. 一秒自检你的「六大器官 (6 Vital Organs)」满血度：
+```bash
+tg blood
+# 或使用快捷别名：
+tg check
+```
+终端将输出确定性健康报告（0~100 分），逐项标明：
+* 🟢 **Jev System-1 毫秒意图快车道** (25分) ── 349ms 结构化秒级打手心
+* 🟢 **外审模型深度裁判 (Agnes / DeepSeek / Gemini)** (20分) ── 终审独立司法官
+* 🟢 **CodeGraph 拓扑图谱引擎** (20分) ── 双向 Callers/Callees 拓扑防盲改
+* 🟢 **17911 司法裁决守护大盘** (15分) ── 实时 Web 看板与进程自愈
+* 🟢 **多端物理门禁与钩子挂载** (10分) ── Claude / Codex / Antigravity 全挂载
+* 🟢 **假阴性漏判元监控数据库** (10分) ── monitor.db 漏判对账审计
+
+#### 2. 从残血版一键秒升 100% 满血版 (One-Command Instant Upgrade & Hot-Reload)：
+```bash
+tg upgrade
+```
+*自动完成：拉取最新主干代码 ➔ 重建四端物理门禁钩子 ➔ 平滑热重载 17911 守护进程 ➔ 运行满血自检 ➔ 自动弹窗开启 Web 大盘！*
+
+#### 3. 交互式满血配置向导 (Setup Wizard)：
+```bash
+tg setup
+# 或一步配置密钥：
+tg setup --typesafe-key <你的TYPESAFE_KEY> --critic-key <你的DEEPSEEK_KEY>
+```
+
+#### 4. 守护进程与 Web 大盘管理 (Daemon & Dashboard):
+```bash
+tg service [status|start|stop|restart]
+tg dashboard
+```
+*可在 Web 大盘 (http://127.0.0.1:17911/dashboard) 设置页直接切换「每次唤醒是否自动弹窗打开大盘」开关！*
 
 ---
 
