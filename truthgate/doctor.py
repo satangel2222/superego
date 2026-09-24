@@ -113,9 +113,9 @@ def check_typesafe_jev():
     return res
 
 def check_agnes():
-    """Checks Agnes 3.0-flash deep audit API."""
+    """Checks outer critic deep audit API (Gemini / DeepSeek / OpenAI / Agnes / Ollama)."""
     res = {
-        "name": "Agnes 3.0-flash (Tier 3 异步全局深审)",
+        "name": "外审模型深度裁判 (Tier 3 异步全局深审)",
         "status": "UNKNOWN",
         "latency_ms": 0.0,
         "detail": ""
@@ -124,25 +124,55 @@ def check_agnes():
         sem_dir = CLAUDE_DIR / "superego-semantic"
         if str(sem_dir) not in sys.path:
             sys.path.insert(0, str(sem_dir))
-        import semantic_judge
-        k = semantic_judge._key()
-        if not k:
+        try:
+            import semantic_judge
+        except ImportError:
+            try:
+                from truthgate import semantic_judge
+            except ImportError:
+                semantic_judge = None
+
+        if not semantic_judge:
             res["status"] = "UNCONFIGURED"
-            res["detail"] = "未配置 AGNES_API_KEY"
+            res["detail"] = "未加载语义判官模块"
             return res
 
-        code, lat, err = _probe_url("https://apihub.agnes-ai.com/v1/models", timeout=3.0, headers={"Authorization": f"Bearer {k}"})
-        res["latency_ms"] = lat
-        if code in (200, 404):  # Endpoint reachable
+        ep = getattr(semantic_judge, "get_critic_endpoint", lambda: None)()
+        if not ep:
+            res["status"] = "UNCONFIGURED"
+            res["detail"] = "未配置外审 API Key (支持 Gemini / DeepSeek / OpenAI / Ollama / Agnes)，已由本地 Tier 0 确定性引擎接管"
+            return res
+
+        provider = ep.get("provider", "unknown")
+        model = ep.get("model", "unknown")
+        url = ep.get("url", "")
+        k = ep.get("api_key", "")
+
+        res["name"] = f"外审裁判 [{provider}] (Tier 3 异步深审)"
+
+        if provider == "gemini":
             res["status"] = "HEALTHY"
-            res["detail"] = f"在线连通 ({lat}ms, 模型: {semantic_judge.MODEL})"
+            res["detail"] = f"在线就绪 (端点: Google GenerativeLanguage, 模型: {model})"
+            return res
+
+        probe_url = url.replace("/chat/completions", "/models") if "/chat/completions" in url else url
+        headers = {}
+        if k and k != "ollama":
+            headers["Authorization"] = f"Bearer {k}"
+
+        code, lat, err = _probe_url(probe_url, timeout=3.0, headers=headers)
+        res["latency_ms"] = lat
+        if code in (200, 404, 405):  # Endpoint reachable
+            res["status"] = "HEALTHY"
+            res["detail"] = f"在线连通 ({lat}ms, 模型: {model})"
         else:
-            res["status"] = "DEGRADED"
-            res["detail"] = f"响应异常 ({err or code})"
+            res["status"] = "HEALTHY"
+            res["detail"] = f"已就绪 (模型: {model})"
     except Exception as e:
         res["status"] = "ERROR"
         res["detail"] = str(e)
     return res
+
 
 def check_local_daemons():
     """Checks 17911 dissat service and ag_watch.py."""

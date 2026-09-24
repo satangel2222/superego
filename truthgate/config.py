@@ -111,10 +111,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "process_leak_guard": True
     },
     "critic": {
-        "provider": "tiered",  # "tiered" | "agnes" | "jev" | "openai_compatible" | "local_heuristic"
-        "base_url": "https://apihub.agnes-ai.com/v1",
-        "model": "agnes-3.0-flash",
-        "api_key": "env:AGNES_API_KEY",
+        "provider": "tiered",  # "tiered" | "gemini" | "deepseek" | "openai" | "agnes" | "ollama" | "openai_compatible" | "jev" | "local_heuristic"
+        "base_url": "auto",
+        "model": "auto",
+        "api_key": "auto",
         "timeout": 4.0
     },
     "engine": {
@@ -380,22 +380,83 @@ def set_critic_config(
     api_key: Optional[str] = None,
     timeout: Optional[float] = None
 ) -> bool:
-    """配置外审模型（类似 CC-Switch，可接入 DeepSeek / Qwen / Claude / 本地 Ollama / Jev）"""
+    """配置外审模型（类似 CC-Switch，可接入 Gemini / DeepSeek / OpenAI / 本地 Ollama / Agnes / Jev）"""
     cfg = load_config()
     critic = cfg.setdefault("critic", dict(DEFAULT_CONFIG["critic"]))
+
+    valid_providers = [
+        "tiered", "gemini", "deepseek", "openai", "agnes", "ollama",
+        "openai_compatible", "jev", "local_heuristic"
+    ]
     if provider is not None:
-        if provider not in ["openai_compatible", "jev", "local_heuristic"]:
-            raise ValueError(f"不支持的 provider: {provider}。支持: openai_compatible, jev, local_heuristic")
-        critic["provider"] = provider
+        p_lower = provider.lower()
+        if p_lower not in valid_providers:
+            raise ValueError(f"不支持的 provider: {provider}。支持: {', '.join(valid_providers)}")
+        critic["provider"] = p_lower
+
+        # 针对常用厂商做零配置智能 defaults
+        if p_lower == "gemini":
+            if not base_url:
+                critic["base_url"] = "https://generativelanguage.googleapis.com/v1beta/openai"
+            if not model:
+                critic["model"] = "gemini-2.5-flash"
+        elif p_lower == "deepseek":
+            if not base_url:
+                critic["base_url"] = "https://api.deepseek.com/v1"
+            if not model:
+                critic["model"] = "deepseek-chat"
+        elif p_lower == "openai":
+            if not base_url:
+                critic["base_url"] = "https://api.openai.com/v1"
+            if not model:
+                critic["model"] = "gpt-4o-mini"
+        elif p_lower == "ollama":
+            if not base_url:
+                critic["base_url"] = "http://localhost:11434/v1"
+            if not model:
+                critic["model"] = "qwen2.5:7b"
+            if not api_key:
+                critic["api_key"] = "ollama"
+        elif p_lower == "agnes":
+            if not base_url:
+                critic["base_url"] = "https://apihub.agnes-ai.com/v1"
+            if not model:
+                critic["model"] = "agnes-3.0-flash"
+
     if base_url is not None:
         critic["base_url"] = base_url
     if model is not None:
         critic["model"] = model
     if api_key is not None:
         critic["api_key"] = api_key
+        # 若是明文 Key，顺带检测其格式并同步写入 ~/.truthgate/.env 与 ~/.superego/.env
+        key_val = api_key.strip()
+        if not key_val.startswith("env:"):
+            target_var = "CRITIC_API_KEY"
+            if key_val.startswith("AIza"):
+                target_var = "GEMINI_API_KEY"
+            elif key_val.startswith("sk-agnes"):
+                target_var = "AGNES_API_KEY"
+            elif critic.get("provider") == "deepseek":
+                target_var = "DEEPSEEK_API_KEY"
+            elif critic.get("provider") == "gemini":
+                target_var = "GEMINI_API_KEY"
+
+            for d in [TRUTHGATE_HOME, SUPEREGO_HOME]:
+                try:
+                    d.mkdir(parents=True, exist_ok=True)
+                    env_file = d / ".env"
+                    lines = []
+                    if env_file.exists():
+                        lines = [ln for ln in env_file.read_text(encoding="utf-8-sig").splitlines() if not ln.startswith(f"{target_var}=")]
+                    lines.append(f"{target_var}={key_val}")
+                    env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                except Exception:
+                    pass
     if timeout is not None:
         critic["timeout"] = float(timeout)
     return save_config(cfg)
+
 
 
 def get_brain_archive_dir() -> Path:

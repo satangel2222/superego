@@ -823,7 +823,7 @@ def handle_critic_cli(args: list):
         print("提示: 可使用 'tg critic set ...' (或 python -m truthgate critic set ...) 接入 DeepSeek, Qwen, Ollama, GPT 或 Jev")
     elif sub == "set":
         set_parser = argparse.ArgumentParser(prog="tg critic set")
-        set_parser.add_argument("--provider", choices=["openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
+        set_parser.add_argument("--provider", choices=["tiered", "gemini", "deepseek", "openai", "agnes", "ollama", "openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
         set_parser.add_argument("--base-url", dest="base_url", help="API Base URL (如 https://api.deepseek.com/v1 或 http://localhost:11434/v1)")
         set_parser.add_argument("--model", help="外审大模型名称 (如 deepseek-chat, qwen-plus, llama3)")
         set_parser.add_argument("--api-key", dest="api_key", help="API Key，支持直接填入或 env:VAR_NAME")
@@ -1076,19 +1076,31 @@ def handle_setup_cli(args: list):
             print(f"\n🔬 [3/4] 外审模型: 已配置 ({curr_c_cfg.get('provider')} / {curr_c_cfg.get('model')})")
         else:
             print("\n🔬 [3/4] 配置外审模型裁判 (Outer Critic Engine):")
-            print("   支持 DeepSeek、Agnes、Qwen、本地 Ollama 等。")
-            c_val = input("   请输入外审 API Key (如 DeepSeek/Agnes API Key) [回车使用已有/跳过]: ").strip()
+            print("   原生支持: Google Gemini、DeepSeek、OpenAI、本地 Ollama (0成本免Key)、Agnes。")
+            c_val = input("   请输入外审 API Key (如 Gemini/DeepSeek/OpenAI API Key，留空回车使用本地引擎): ").strip()
             if c_val:
                 critic_key = c_val
 
     if critic_key:
+        provider = parsed.critic_provider
+        if not provider or provider == "tiered":
+            if critic_key.startswith("AIza"):
+                provider = "gemini"
+            elif critic_key.startswith("sk-agnes"):
+                provider = "agnes"
+            elif critic_key.startswith("sk-"):
+                provider = "deepseek"
+            else:
+                provider = "gemini"
+
         set_critic_config(
-            provider=parsed.critic_provider,
+            provider=provider,
             base_url=parsed.critic_url,
             model=parsed.critic_model,
             api_key=critic_key
         )
-        print(f"   [✓] 外审模型已配置: {parsed.critic_provider} ({parsed.critic_model})")
+        print(f"   [✓] 外审模型已配置: {provider}")
+
 
     # 4. 自动弹出浏览器设置
     auto_open = None

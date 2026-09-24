@@ -193,10 +193,10 @@ def check_organ_jev() -> Dict[str, Any]:
 
 
 def check_organ_critic() -> Dict[str, Any]:
-    """【器官 2】外审模型深度裁判 (Agnes / DeepSeek / Gemini) (20分)"""
+    """【器官 2】外审模型深度裁判 (Gemini / DeepSeek / OpenAI / Ollama / Agnes) (20分)"""
     res = {
         "id": "critic",
-        "name": "外审模型深度裁判 (Agnes / DeepSeek / Gemini)",
+        "name": "外审模型深度裁判 (Gemini / DeepSeek / OpenAI / Ollama / Agnes)",
         "weight": 20,
         "score": 0,
         "healthy": False,
@@ -204,26 +204,45 @@ def check_organ_critic() -> Dict[str, Any]:
         "provider": "unknown",
         "model": "unknown",
         "detail": "",
-        "fix_cmd": "tg critic set --provider openai_compatible --api-key <KEY> --model deepseek-chat"
+        "fix_cmd": "tg critic set --provider gemini --api-key <KEY> (或 export GEMINI_API_KEY=... / DEEPSEEK_API_KEY=...)"
     }
 
+    try:
+        from semantic_judge import get_critic_endpoint
+    except ImportError:
+        try:
+            from truthgate.semantic_judge import get_critic_endpoint
+        except ImportError:
+            get_critic_endpoint = None
+
+    ep = get_critic_endpoint() if get_critic_endpoint else None
+    if ep:
+        res["provider"] = ep.get("provider", "unknown")
+        res["model"] = ep.get("model", "unknown")
+        res["healthy"] = True
+        res["status"] = "HEALTHY"
+        res["score"] = 20
+        res["detail"] = f"外审就绪 [{ep.get('provider')}] 模型: {ep.get('model')}"
+        return res
+
     critic_cfg = get_critic_config()
-    provider = critic_cfg.get("provider", "openai_compatible")
+    provider = critic_cfg.get("provider", "tiered")
     model = critic_cfg.get("model", "")
     res["provider"] = provider
     res["model"] = model
 
-    # 检查 Key
     try:
         from critic_engine import _resolve_api_key
     except ImportError:
-        from truthgate.critic_engine import _resolve_api_key
+        try:
+            from truthgate.critic_engine import _resolve_api_key
+        except ImportError:
+            _resolve_api_key = lambda s: ""
 
-    key_str = critic_cfg.get("api_key", "env:AGNES_API_KEY")
-    key_val = _resolve_api_key(key_str)
-
+    key_str = critic_cfg.get("api_key", "")
+    key_val = _resolve_api_key(key_str) if key_str else ""
     if not key_val:
-        for k in ["DEEPSEEK_API_KEY", "AGNES_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "CRITIC_API_KEY"]:
+        for k in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "DEEPSEEK_API_KEY", "OPENAI_API_KEY", "AGNES_API_KEY", "CRITIC_API_KEY"]:
             val = _resolve_api_key(f"env:{k}")
             if val:
                 key_val = val
@@ -233,7 +252,7 @@ def check_organ_critic() -> Dict[str, Any]:
     is_local = "localhost" in base_url or "127.0.0.1" in base_url
 
     if not key_val and not is_local:
-        res["detail"] = "未配置外审 API Key (缺少 DeepSeek/Agnes/Gemini)，深度行为审判跳过"
+        res["detail"] = "未配置外审 API Key (支持 Gemini / DeepSeek / OpenAI / Ollama / Agnes)，深度行为审判由 Tier 0 本地引擎接管"
         return res
 
     res["healthy"] = True

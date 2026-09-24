@@ -728,8 +728,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <input type="password" id="jev-key" class="form-input" placeholder="输入 sk-jev-... (留空则走 Tier 0 纯离线白嫖保底)">
         </div>
         <div class="form-group">
-          <label class="form-label">Agnes / Claude DeepJudge API (慢车道长尾深审)</label>
-          <input type="password" id="agnes-key" class="form-input" placeholder="输入 sk-agnes-... (可选)">
+          <label class="form-label">外审模型 API Key (Gemini / DeepSeek / OpenAI / Agnes)</label>
+          <input type="password" id="agnes-key" class="form-input" placeholder="输入 Gemini / DeepSeek / OpenAI / Agnes API Key (可选)">
         </div>
         <div class="switch-row">
           <div>
@@ -1100,6 +1100,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif url.path == "/api/config":
             try:
                 new_cfg = json.loads(post_data.decode("utf-8"))
+                c_key = (new_cfg.get("critic_api_key") or new_cfg.get("agnes_api_key") or "").strip()
+                if c_key:
+                    try:
+                        from config import set_critic_config
+                    except ImportError:
+                        try:
+                            from truthgate.config import set_critic_config
+                        except ImportError:
+                            set_critic_config = None
+                    if set_critic_config:
+                        set_critic_config(api_key=c_key)
                 cfg = load_config()
                 cfg.update(new_cfg)
                 save_config(cfg)
@@ -1107,6 +1118,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": True}).encode("utf-8"))
+
             except Exception as e:
                 self.send_response(500)
                 self.end_headers()

@@ -19,11 +19,9 @@ except ImportError:
     import requests as R
     def _sess(): return R.Session()
 
-BASE = "https://apihub.agnes-ai.com/v1/chat/completions"
-# 2026-09-18 换 3.0-flash:金标准 25 题 A/B,3.0 6/6 遍全对、中位 ~8s、0 超时;
-# 2026-09-18 换 3.0-flash:金标准 25 题 A/B,3.0 6/6 遍全对、中位 ~8s、0 超时;
-#   2.5 5 遍里 1 遍超时(25s×2 重试都没回)、中位 ~15s。判得一样准,3.0 快一倍且更稳。
-MODEL = os.environ.get("SEMANTIC_JUDGE_MODEL", "agnes-3.0-flash")
+# 外部裁判端点与模型动态解析（支持 Gemini, DeepSeek, OpenAI, Agnes, 本地 Ollama）
+# 详见下方 get_critic_endpoint()
+
 
 try:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -89,35 +87,219 @@ PASS_NOTE = ("放行(判 PASS/none)的情形:助手在【复盘认错/复述过�
              "⛔ 注意:纯技术描述里【甩了 Frank 没学过的词又没解释】仍算 R9,不因『是技术叙述』就放行。")
 
 
-def _key():
-    for ln in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), encoding="utf-8-sig") \
-            if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")) else []:
-        if ln.startswith("AGNES_API_KEY="):
-            return ln.split("=", 1)[1].strip()
-    for p in [os.path.expanduser("~/.truthgate/.env"), os.path.expanduser("~/.claude/.env"), os.path.expanduser("~/.superego/.env"), os.path.join(os.getcwd(), ".env")]:
+def _find_env_key(key_names):
+    """从进程环境变量或各级 .env 文件中查找 API Key"""
+    if isinstance(key_names, str):
+        key_names = [key_names]
+    for k in key_names:
+        v = os.environ.get(k)
+        if v and v.strip():
+            return k, v.strip()
+
+    candidate_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.expanduser("~/.truthgate/.env"),
+        os.path.expanduser("~/.claude/.env"),
+        os.path.expanduser("~/.superego/.env"),
+        os.path.join(os.getcwd(), ".env")
+    ]
+    for p in candidate_paths:
         if os.path.exists(p):
-            for ln in open(p, encoding="utf-8-sig"):  # ~/.claude/.env 首行带 BOM
-                if ln.startswith("AGNES_API_KEY="):
-                    return ln.split("=", 1)[1].strip()
-    raise RuntimeError("AGNES_API_KEY 找不到")
+            try:
+                for ln in open(p, encoding="utf-8-sig"):
+                    ln = ln.strip()
+                    if not ln or ln.startswith("#") or "=" not in ln:
+                        continue
+                    parts = ln.split("=", 1)
+                    k = parts[0].strip().lstrip("\ufeff")
+                    val = parts[1].strip()
+                    if k in key_names and val:
+                        return k, val
+            except Exception:
+                pass
+    return None, None
+
+
+def get_critic_endpoint():
+    """动态解析外审模型端点，终结单一私有服务绑定。
+    支持：Gemini (官方 GenerativeLanguage OpenAI 端点)、DeepSeek、OpenAI、Agnes、本地 Ollama。
+    无 Key 时平滑返回 None，绝不抛出异常。
+    """
+    # 0. 优先从 config.json 读取自定义配置
+    cfg = {}
+    try:
+        from config import load_config
+        cfg = load_config().get("critic", {})
+    except Exception:
+        try:
+            from truthgate.config import load_config
+            cfg = load_config().get("critic", {})
+        except Exception:
+            cfg = {}
+
+    cfg_provider = cfg.get("provider", "tiered")
+    cfg_base = cfg.get("base_url")
+    cfg_model = cfg.get("model")
+    cfg_key_spec = cfg.get("api_key", "")
+
+    cfg_key = None
+    if cfg_key_spec and cfg_key_spec.startswith("env:"):
+        _, cfg_key = _find_env_key(cfg_key_spec[4:])
+    elif cfg_key_spec and cfg_key_spec != "auto":
+        cfg_key = cfg_key_spec
+
+    # 若用户在 config 中显式配置了第三方 endpoint
+    if cfg_base and cfg_base != "auto" and "apihub.agnes-ai.com" not in cfg_base:
+        url = cfg_base.rstrip("/") + "/chat/completions" if not cfg_base.endswith("/chat/completions") else cfg_base
+        return {
+            "provider": cfg_provider if cfg_provider != "tiered" else "openai_compatible",
+            "url": url,
+            "model": cfg_model or "deepseek-chat",
+            "api_key": cfg_key or "",
+            "timeout": float(cfg.get("timeout", 25.0))
+        }
+
+    # 1. 显式环境变量 CRITIC_API_KEY
+    _, c_val = _find_env_key("CRITIC_API_KEY")
+    if c_val:
+        base = os.environ.get("CRITIC_BASE_URL", "https://api.deepseek.com/v1").rstrip("/")
+        url = f"{base}/chat/completions"
+        model = os.environ.get("CRITIC_MODEL", "deepseek-chat")
+        return {"provider": "custom", "url": url, "model": model, "api_key": c_val, "timeout": 25.0}
+
+    # 2. Google Gemini (GEMINI_API_KEY) —— Antigravity 及 Web3 参赛者最原生首选
+    # Google 官方已全量提供兼容 OpenAI 协议的端点: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+    _, g_val = _find_env_key(["GEMINI_API_KEY", "GOOGLE_API_KEY"])
+    if g_val:
+        model = os.environ.get("GEMINI_MODEL", os.environ.get("SEMANTIC_JUDGE_MODEL", "gemini-2.5-flash"))
+        if "agnes" in model.lower():
+            model = "gemini-2.5-flash"
+        return {
+            "provider": "gemini",
+            "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            "model": model,
+            "api_key": g_val,
+            "timeout": 25.0
+        }
+
+    # 3. DeepSeek (DEEPSEEK_API_KEY) —— 极高性价比通用模型
+    _, d_val = _find_env_key("DEEPSEEK_API_KEY")
+    if d_val:
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        return {
+            "provider": "deepseek",
+            "url": "https://api.deepseek.com/v1/chat/completions",
+            "model": model,
+            "api_key": d_val,
+            "timeout": 25.0
+        }
+
+    # 4. OpenAI (OPENAI_API_KEY)
+    _, o_val = _find_env_key("OPENAI_API_KEY")
+    if o_val:
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        return {
+            "provider": "openai",
+            "url": "https://api.openai.com/v1/chat/completions",
+            "model": model,
+            "api_key": o_val,
+            "timeout": 25.0
+        }
+
+    # 5. Agnes AI (AGNES_API_KEY) —— Frank 私有代理通道
+    _, a_val = _find_env_key("AGNES_API_KEY")
+    if a_val:
+        model = os.environ.get("SEMANTIC_JUDGE_MODEL", "agnes-3.0-flash")
+        return {
+            "provider": "agnes",
+            "url": "https://apihub.agnes-ai.com/v1/chat/completions",
+            "model": model,
+            "api_key": a_val,
+            "timeout": 25.0
+        }
+
+    # 6. 本地 Ollama (http://localhost:11434) —— 0 成本无 Key
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.2)
+        res = sock.connect_ex(("127.0.0.1", 11434))
+        sock.close()
+        if res == 0:
+            model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+            return {
+                "provider": "ollama",
+                "url": "http://127.0.0.1:11434/v1/chat/completions",
+                "model": model,
+                "api_key": "ollama",
+                "timeout": 25.0
+            }
+    except Exception:
+        pass
+
+    # 7. 均未配置，平滑返回 None，绝不抛出 RuntimeError
+    return None
+
+
+def _key():
+    """兼容旧接口调用：返回当前活跃外审 Key，若无则返回空字符串，绝不抛出 RuntimeError 崩溃"""
+    ep = get_critic_endpoint()
+    return ep["api_key"] if ep else ""
 
 
 def _ask(prompt, max_tokens=6000):
     import time
+    ep = get_critic_endpoint()
+    if not ep:
+        # 无外部大模型 Key 时，平滑返回空字符串，由本地 Tier 0 确定性引擎接管
+        return ""
+
+    url = ep["url"]
+    model = ep["model"]
+    key = ep["api_key"]
+    timeout = ep.get("timeout", 25.0)
+
+    headers = {"Content-Type": "application/json"}
+    if key and key != "ollama":
+        headers["Authorization"] = f"Bearer {key}"
+
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": 0
+    }
+
     last_err = None
     for attempt in range(2):
         try:
-            r = _sess().post(BASE, headers={"Authorization": "Bearer " + _key(), "Content-Type": "application/json"},
-                             json={"model": MODEL, "messages": [{"role": "user", "content": prompt}],
-                                   "max_tokens": max_tokens, "temperature": 0}, timeout=25)
-            m = r.json()["choices"][0]["message"]
-            return m.get("content") or m.get("reasoning_content") or ""
+            r = _sess().post(url, headers=headers, json=payload, timeout=timeout)
+            if r.status_code == 200:
+                data = r.json()
+                choices = data.get("choices", [])
+                if choices:
+                    m = choices[0].get("message", {})
+                    return m.get("content") or m.get("reasoning_content") or ""
+            else:
+                last_err = RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")
         except Exception as e:
             last_err = e
-            if attempt == 0:
-                time.sleep(1)
-                continue
-    raise last_err or RuntimeError("Agnes API request failed")
+        if attempt == 0:
+            time.sleep(1)
+            continue
+
+    sys.stderr.write(f"[truthgate:semantic_judge] 外部裁判请求异常 ({ep.get('provider')}): {last_err}\\n")
+    return ""
+
+
+# 动态导出兼容属性
+def _get_active_model():
+    ep = get_critic_endpoint()
+    return ep["model"] if ep else "local_tier0"
+
+MODEL = _get_active_model()
+BASE = "https://apihub.agnes-ai.com/v1/chat/completions"
+
 
 
 # 母形状组(据 gate_graph 聚类 + 40 条 R 归组,2026-09-09):组名·时机·组内互补规则。
@@ -197,6 +379,12 @@ def judge(texts):
     single = isinstance(texts, str)
     if single:
         texts = [texts]
+
+    ep = get_critic_endpoint()
+    if not ep:
+        res = [{"text": t, "fired": [], "verdict": "PASS", "mode": "tier0_local_passthrough"} for t in texts]
+        return res[0] if single else res
+
     prompt = ("你是 superego 的语义判官。下面每条是助手对用户说的一句话。"
               "对每条判有没有违规:命中【任意一条】下面的规则=FIRE,一条都不中=PASS。\n\n"
               "违规规则:\n" + _rule_block() + "\n\n" + PASS_NOTE +
@@ -204,13 +392,18 @@ def judge(texts):
     for i, t in enumerate(texts, 1):
         prompt += f"{i}. {t}\n"
     out = _ask(prompt)
+    if not out:
+        res = [{"text": t, "fired": [], "verdict": "PASS", "mode": "network_fallback_passthrough"} for t in texts]
+        return res[0] if single else res
+
     res = []
     for i, t in enumerate(texts, 1):
         m = re.search(rf"(?m)^\s*{i}\s*[:：.、）)]\s*(FIRE|PASS)([^\n]*)", out, re.I)
         verdict = (m.group(1).upper() if m else "PASS")
         fired = re.findall(r"R\d+", m.group(2)) if (m and verdict == "FIRE") else []
-        res.append({"text": t, "fired": fired, "verdict": verdict})
+        res.append({"text": t, "fired": fired, "verdict": verdict, "mode": f"critic:{ep.get('provider')}:{ep.get('model')}"})
     return res[0] if single else res
+
 
 
 # 16 条金标准(10 真违规换说法 + 6 该放行);--selfcheck 必须全对

@@ -2134,14 +2134,20 @@ def handle_status():
     h = is_service_healthy(port)
     print(f"2. 本地兜底服务 : 端口 {port} -> {'✅ 正常在线 (bge-small / Qwen recall)' if h else '❌ 未响应 (待自愈)'}")
     
-    # 3. Agnes External Audit Model
+    # 3. Universal External Audit Model (Gemini / DeepSeek / OpenAI / Agnes / Ollama)
     print("3. 外审模型连接 : ", end="", flush=True)
     try:
         if str(CLAUDE_DIR / "superego-semantic") not in sys.path:
             sys.path.insert(0, str(CLAUDE_DIR / "superego-semantic"))
-        import semantic_judge
-        k = semantic_judge._key()
-        print(f"✅ 密钥有效 (AGNES_API_KEY 存在) | 目标模型: {semantic_judge.MODEL}")
+        try:
+            import semantic_judge
+        except ImportError:
+            from truthgate import semantic_judge
+        ep = getattr(semantic_judge, "get_critic_endpoint", lambda: None)()
+        if ep:
+            print(f"✅ 外审就绪 [{ep.get('provider')}] | 目标模型: {ep.get('model')}")
+        else:
+            print("ℹ️ 未配置外审 Key (已由本地 Tier 0 确定性引擎接管，支持 Gemini/DeepSeek/Ollama)")
     except Exception as e:
         print(f"❌ 异常: {e}")
 

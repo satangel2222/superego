@@ -225,8 +225,8 @@ def _resolve_api_key(key_str: str) -> str:
     return key_str if not key_str.startswith("env:") else ""
 
 
-def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """向 Agnes 3.0-flash 外部独立大模型发起深度外审裁决 (Tier 3)"""
+def _call_universal_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """向通用外部大模型（Gemini / DeepSeek / OpenAI / Agnes / Ollama）发起深度外审裁决 (Tier 3)"""
     semantic_judge = None
     try:
         import semantic_judge as sj
@@ -267,6 +267,10 @@ def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_
         res = semantic_judge.judge(audit_text)
         dt = (time.perf_counter() - t0) * 1000
 
+        # 若处于离线或网络穿透降级，返回 None 让下层 Tier 0 本地启发式接管
+        if res.get("mode") in ("tier0_local_passthrough", "network_fallback_passthrough"):
+            return None
+
         fired = list(res.get("fired") or [])
         fired = _apply_exemptions(fired, target_raw, audit_text)
 
@@ -283,10 +287,14 @@ def _call_agnes_critic(text: str, context: Optional[Dict[str, Any]] = None, raw_
             "fired": fired,
             "reasons": reasons,
             "latency_ms": dt,
-            "mode": f"agnes_external:{semantic_judge.MODEL}"
+            "mode": res.get("mode", f"universal_external:{getattr(semantic_judge, 'MODEL', 'unknown')}")
         }
     except Exception:
         return None
+
+# 兼容性别名
+_call_agnes_critic = _call_universal_critic
+
 
 
 def _call_openai_compatible_critic(
@@ -646,16 +654,16 @@ def audit_assistant_turn(text: str, context: Optional[Dict[str, Any]] = None) ->
             _record_audit_telemetry(jev_res, clean_tail, context)
             return jev_res
 
-    # Tier 3: Agnes 3.0-flash 外部独立大模型深度慢车道 (42 条母形状规则语义裁决)
-    if provider in ("agnes", "tiered", "semantic_judge"):
-        agnes_res = _call_agnes_critic(clean_tail, context=context, raw_text=text)
-        if agnes_res and agnes_res.get("verdict"):
-            agnes_res["profile"] = profile.get("id")
-            _record_audit_telemetry(agnes_res, clean_tail, context)
-            return agnes_res
+    # Tier 3: 通用外部大模型深度慢车道 (Gemini / DeepSeek / OpenAI / Agnes / Ollama，42 条母形状规则语义裁决)
+    if provider in ("tiered", "gemini", "deepseek", "openai", "agnes", "semantic_judge", "ollama"):
+        crit_res = _call_universal_critic(clean_tail, context=context, raw_text=text)
+        if crit_res and crit_res.get("verdict"):
+            crit_res["profile"] = profile.get("id")
+            _record_audit_telemetry(crit_res, clean_tail, context)
+            return crit_res
 
-    # Option A: OpenAI-Compatible 通用模型外审 (DeepSeek, Qwen, Ollama, GPT 等)
-    if provider == "openai_compatible":
+    # Option A: OpenAI-Compatible 通用模型外审 (显式配置或备用路由)
+    if provider in ("openai_compatible", "tiered"):
         res = _call_openai_compatible_critic(clean_tail, active_rules, critic_cfg, profile.get("name", "custom"), context=context, raw_text=text)
         if res and res.get("verdict"):
             res["profile"] = profile.get("id")
