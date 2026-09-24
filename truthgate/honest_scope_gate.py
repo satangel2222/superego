@@ -131,10 +131,11 @@ def check_project_grounding(text: str) -> Tuple[bool, Optional[str]]:
                 '排查', '凭据', '证据', '质检', '闭环', '自愈', '方案', '步骤', '状态', 
                 '阶段', '目标', '交付', '定性', '定量', '修复', '调阅', '核验', '自查', 
                 '副作用', '变更', '回滚', '复现', '定位', '根因', '架构', '实施', '问题', 
-                '答复', '清单', '流水', '指令', '规则', '策略', '拦截', '放行', '打回'
+                '答复', '清单', '流水', '指令', '规则', '策略', '拦截', '放行', '打回',
+                '模型', '裁判', '端点', '算法', '插件', '钩子'
             )):
                 continue
-            if re.match(r'^(?:gate|case|step|shape|rule|phase|item|task|round|第[一二三四五六七八九十0-9]+[步项条阶段轮])', clean_name):
+            if re.match(r'^(?:gate|case|step|shape|rule|phase|item|task|round|gpt|claude|gemini|glm|deepseek|agnes|qwen|llama|第[一二三四五六七八九十0-9]+[步项条阶段轮])', clean_name):
                 continue
 
             # 物理验证：1. 是否在已知项目库中；2. 是否在磁盘对应目录真实存在
