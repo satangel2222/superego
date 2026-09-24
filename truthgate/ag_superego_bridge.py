@@ -1344,7 +1344,7 @@ def check_gui_process_restart_violation(text, tool_calls, blob):
         return None
     
     # Check if assistant acknowledged background/tray limitations or provided manual/explorer foreground guidance
-    safe_ack = re.search(r"(?:后台子进程|托盘|前台|双击|快捷方式|WinSta0|桌面图标|无法直接弹到前台|请在前台打开|防抢焦点|右下角)", text)
+    safe_ack = re.search(r"(?:后台子进程|托盘|双击|快捷方式|WinSta0|桌面图标|无法直接弹到前台|请在前台打开|防抢焦点|右下角)", text)
     if not safe_ack:
         return (
             "[TruthGate 拦截 - gui-process-restart-gate] 检测到在后台命令行执行了桌面 GUI 应用（如 DSH Desktop）的杀死与重启，"
