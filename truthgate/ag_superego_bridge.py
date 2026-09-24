@@ -793,7 +793,20 @@ def check_model_authenticity_violation(text, assistant_tool_calls, assistant_blo
     cliche_match = CLICHE_FAKE_MODELS.search(combined_output)
     if cliche_match:
         bad_model = cliche_match.group(1)
-        if not QUOTING_HISTORIC_OR_REFUTING.search(text):
+        # Check if model was explicitly configured by the user via dashboard in ~/.truthgate/config.json
+        is_user_configured = False
+        try:
+            for cfg_cand in [Path.home() / ".truthgate" / "config.json", Path.home() / ".superego" / "config.json"]:
+                if cfg_cand.exists():
+                    cfg_d = json.loads(cfg_cand.read_text(encoding="utf-8"))
+                    c_m = str(cfg_d.get("critic", {}).get("model", "")).lower()
+                    if c_m and bad_model.lower() in c_m:
+                        is_user_configured = True
+                        break
+        except Exception:
+            pass
+
+        if not is_user_configured and not QUOTING_HISTORIC_OR_REFUTING.search(text):
             return (
                 f"[TruthGate 拦截 - model-authenticity-gate] 检测到在回复或生成资产中出现了公版刻板印象模型名【{bad_model}】！\n"
                 f"本机运行着 CC Switch 代理并存储有真实账本（C:\\Users\\Casp\\.cc-switch\\cc-switch.db）。\n"
