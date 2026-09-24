@@ -1855,7 +1855,7 @@ def trigger_active_alert(conv_id, all_fired, text):
             [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
             $x = New-Object Windows.Data.Xml.Dom.XmlDocument
             $tpl = @"
-<toast launch="http://127.0.0.1:17925/dashboard" activationType="protocol">
+<toast launch="http://127.0.0.1:17911/dashboard" activationType="protocol">
     <visual>
         <binding template="ToastGeneric">
             <text>🛡️ TruthGate 1.0 拦截警报 [{sid_short}]</text>
@@ -1864,7 +1864,7 @@ def trigger_active_alert(conv_id, all_fired, text):
         </binding>
     </visual>
     <actions>
-        <action content="打开审判大盘" arguments="http://127.0.0.1:17925/dashboard" activationType="protocol"/>
+        <action content="打开审判大盘" arguments="http://127.0.0.1:17911/dashboard" activationType="protocol"/>
     </actions>
     <audio src="ms-winsoundevent:Notification.Default"/>
 </toast>
@@ -2078,7 +2078,7 @@ def run_worker(transcript_path, conv_id=""):
 - **命中规则**: `{rules_str}`
 - **外审耗时**: `{latency_ms} ms`
 - **核验时间**: `{ts_str}`
-- **审判中枢**: [打开本地审判大盘 (http://127.0.0.1:17925/dashboard)](http://127.0.0.1:17925/dashboard)
+- **审判中枢**: [打开本地审判大盘 (http://127.0.0.1:17911/dashboard)](http://127.0.0.1:17911/dashboard)
 
 > 💡 **TruthGate 物理质检原则**：
 > 凡宣称“已修复”、“服务正常”、“UI就绪”，必须出示真实测试通过输出、HTTP 响应体或截图。未经验证严禁空口宣称完成。

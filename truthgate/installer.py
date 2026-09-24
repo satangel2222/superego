@@ -864,7 +864,7 @@ def main():
     parser.add_argument("action", choices=["install", "detect", "status", "rollback", "replay", "sessions", "dashboard", "doctor"], default="install", nargs="?")
     parser.add_argument("target", nargs="?", default=None, help="Target session ID or path for replay")
     parser.add_argument("--profile", default="vibe-boss", help="Profile mask to apply")
-    parser.add_argument("--port", type=int, default=17925, help="Port to bind dashboard server (default: 17925)")
+    parser.add_argument("--port", type=int, default=17911, help="Port to bind dashboard server (default: 17911)")
     parser.add_argument("--heal", action="store_true", help="Auto-heal offline daemons in doctor mode")
     parser.add_argument("--json", action="store_true", help="Output doctor diagnostics as raw JSON")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing files")
@@ -903,6 +903,17 @@ def main():
         else:
             print_cli_report()
     elif args.action == "dashboard":
+        import urllib.request
+        try:
+            req = urllib.request.Request("http://127.0.0.1:17911/dashboard")
+            with urllib.request.urlopen(req, timeout=0.8) as resp:
+                if resp.status == 200:
+                    print("🖥️ 审判大盘已在 17911 端口常驻运行中，正在为您打开浏览器...")
+                    import webbrowser
+                    webbrowser.open("http://127.0.0.1:17911/dashboard")
+                    return
+        except Exception:
+            pass
         try:
             from dashboard import run_dashboard
         except ImportError:
