@@ -15,16 +15,32 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+PARENT = HERE.parent
+if str(PARENT) not in sys.path:
+    sys.path.insert(0, str(PARENT))
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
 
 try:
-    from truthgate.config import CONFIG_FILE, PROFILES, load_config, save_config
+    from truthgate.config import CONFIG_FILE, load_config, save_config
+    try:
+        from truthgate.config import BUILTIN_PROFILES as PROFILES
+    except ImportError:
+        from truthgate.config import PROFILES
 except ImportError:
     try:
-        from config import CONFIG_FILE, PROFILES, load_config, save_config
+        from config import CONFIG_FILE, load_config, save_config
+        try:
+            from config import BUILTIN_PROFILES as PROFILES
+        except ImportError:
+            from config import PROFILES
     except ImportError:
         try:
-            from superego.config import CONFIG_FILE, PROFILES, load_config, save_config
+            from superego.config import CONFIG_FILE, load_config, save_config
+            try:
+                from superego.config import BUILTIN_PROFILES as PROFILES
+            except ImportError:
+                from superego.config import PROFILES
         except ImportError:
             PROFILES = {}
             CONFIG_FILE = Path.home() / ".truthgate" / "config.json"
@@ -722,14 +738,43 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       <!-- 引擎配置卡片 -->
       <div class="card">
-        <div class="card-title">⚡ 判官引擎配置 (Engine Tier)</div>
+        <div class="card-title">⚡ 外审裁判与多模型路由 (Outer Critic Engine)</div>
         <div class="form-group">
-          <label class="form-label">TypeSafe Jev API Key (快车道 349ms 必需)</label>
-          <input type="password" id="jev-key" class="form-input" placeholder="输入 sk-jev-... (留空则走 Tier 0 纯离线白嫖保底)">
+          <label class="form-label">外审模型提供商 (Provider)</label>
+          <select id="critic-provider" class="form-input" onchange="onCriticProviderChange()">
+            <option value="gemini">🌟 Google Gemini (官方推荐 · 免费高速)</option>
+            <option value="glm">🇨🇳 智谱 GLM (官方开放平台 / 个人月卡中转)</option>
+            <option value="deepseek">🚀 DeepSeek (性价比之王 · deepseek-chat)</option>
+            <option value="openai">🤖 OpenAI (官方 gpt-4o-mini)</option>
+            <option value="openai_compatible">🌐 自定义 OpenAI 兼容中转 (包月卡 / OneAPI)</option>
+            <option value="ollama">💻 本地 Ollama (http://localhost:11434 · 0成本免Key)</option>
+            <option value="local_heuristic">🛡️ Tier 0 本地确定性引擎 (免Key · 纯离线保底)</option>
+          </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">外审模型 API Key (Gemini / DeepSeek / OpenAI / Agnes)</label>
-          <input type="password" id="agnes-key" class="form-input" placeholder="输入 Gemini / DeepSeek / OpenAI / Agnes API Key (可选)">
+        <div class="form-group" id="group-base-url">
+          <label class="form-label">服务 Base URL</label>
+          <input type="text" id="critic-base-url" class="form-input" placeholder="https://...">
+        </div>
+        <div class="form-group" id="group-model">
+          <label class="form-label">审判模型名称 (Model)</label>
+          <input type="text" id="critic-model" class="form-input" placeholder="如 gemini-2.5-flash / glm-5.3-flash">
+        </div>
+        <div class="form-group" id="group-api-key">
+          <label class="form-label">外审 API Key (支持直接填入或 env:VAR_NAME)</label>
+          <div style="display:flex; gap:10px;">
+            <input type="password" id="critic-api-key" class="form-input" placeholder="输入 API Key...">
+            <button class="btn btn-secondary" type="button" onclick="toggleKeyVisibility('critic-api-key')" style="padding:0 12px; white-space:nowrap;">👁️</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <button class="btn btn-secondary" type="button" onclick="testCriticConnection()" id="btn-test-critic" style="width:100%; font-size:13px; font-weight:700;">
+            ⚡ 立即测试外审连通性 (Test Connection)
+          </button>
+          <div id="test-critic-result" style="display:none; margin-top:8px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
+        </div>
+        <div class="form-group" style="margin-top:16px; border-top:1px solid var(--border-color); padding-top:14px;">
+          <label class="form-label">TypeSafe Jev API Key (快车道 349ms 原语 - 可选)</label>
+          <input type="password" id="jev-key" class="form-input" placeholder="输入 sk-jev-... (留空则走 Tier 0 本地确定性引擎)">
         </div>
         <div class="switch-row">
           <div>
@@ -814,14 +859,115 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script>
     let currentConfig = {};
 
+    function onCriticProviderChange() {
+      const p = document.getElementById('critic-provider').value;
+      const bEl = document.getElementById('critic-base-url');
+      const mEl = document.getElementById('critic-model');
+      const kEl = document.getElementById('critic-api-key');
+
+      if (p === 'gemini') {
+        bEl.placeholder = 'https://generativelanguage.googleapis.com/v1beta/openai';
+        if (!bEl.value || bEl.value.includes('bigmodel') || bEl.value.includes('deepseek') || bEl.value.includes('openai.com')) {
+          bEl.value = 'https://generativelanguage.googleapis.com/v1beta/openai';
+        }
+        mEl.value = 'gemini-2.5-flash';
+        kEl.placeholder = 'AIzaSy... (Gemini API Key)';
+      } else if (p === 'glm') {
+        bEl.placeholder = 'https://open.bigmodel.cn/api/paas/v4 或月卡中转 https://1.19848845.xyz';
+        if (!bEl.value || bEl.value.includes('generativelanguage') || bEl.value.includes('deepseek')) {
+          bEl.value = 'https://open.bigmodel.cn/api/paas/v4';
+        }
+        mEl.value = 'glm-5.3-flash';
+        kEl.placeholder = '智谱/月卡 API Key (sk-...)';
+      } else if (p === 'deepseek') {
+        bEl.placeholder = 'https://api.deepseek.com/v1';
+        if (!bEl.value || bEl.value.includes('generativelanguage') || bEl.value.includes('bigmodel')) {
+          bEl.value = 'https://api.deepseek.com/v1';
+        }
+        mEl.value = 'deepseek-chat';
+        kEl.placeholder = 'sk-... (DeepSeek API Key)';
+      } else if (p === 'openai') {
+        bEl.placeholder = 'https://api.openai.com/v1';
+        bEl.value = 'https://api.openai.com/v1';
+        mEl.value = 'gpt-4o-mini';
+        kEl.placeholder = 'sk-... (OpenAI API Key)';
+      } else if (p === 'ollama') {
+        bEl.value = 'http://localhost:11434/v1';
+        mEl.value = 'qwen2.5:7b';
+        kEl.placeholder = '无需填入 (本地免Key)';
+      } else if (p === 'local_heuristic') {
+        bEl.value = 'local';
+        mEl.value = 'tier0_rules';
+        kEl.placeholder = '纯离线本地正则与AST硬拦截 (免Key)';
+      }
+    }
+
+    function toggleKeyVisibility(id) {
+      const el = document.getElementById(id);
+      if (el) el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    async function testCriticConnection() {
+      const btn = document.getElementById('btn-test-critic');
+      const resEl = document.getElementById('test-critic-result');
+      const provider = document.getElementById('critic-provider').value;
+      const base_url = document.getElementById('critic-base-url').value.trim();
+      const model = document.getElementById('critic-model').value.trim();
+      const api_key = document.getElementById('critic-api-key').value.trim();
+
+      btn.disabled = true;
+      btn.innerText = '⏳ 正在测试网络连通性...';
+      resEl.style.display = 'block';
+      resEl.style.background = 'rgba(59, 130, 246, 0.15)';
+      resEl.style.color = '#93c5fd';
+      resEl.style.border = '1px solid #3b82f6';
+      resEl.innerText = '正在向外审端点发送握手探测请求...';
+
+      try {
+        const resp = await fetch('/api/critic/test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ provider, base_url, model, api_key })
+        });
+        const result = await resp.json();
+        if (result.ok) {
+          resEl.style.background = 'rgba(16, 185, 129, 0.15)';
+          resEl.style.color = '#34d399';
+          resEl.style.border = '1px solid #10b981';
+          resEl.innerHTML = `✅ <b>${result.message}</b><br><small style="color:#cbd5e1">模型: ${result.model || model} · 延迟: ${result.latency_ms}ms</small>`;
+        } else {
+          resEl.style.background = 'rgba(239, 68, 68, 0.15)';
+          resEl.style.color = '#fca5a5';
+          resEl.style.border = '1px solid #ef4444';
+          resEl.innerHTML = `❌ <b>${result.message || '连接失败'}</b>`;
+        }
+      } catch (err) {
+        resEl.style.background = 'rgba(239, 68, 68, 0.15)';
+        resEl.style.color = '#fca5a5';
+        resEl.style.border = '1px solid #ef4444';
+        resEl.innerHTML = `❌ 请求异常: ${err}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '⚡ 立即测试外审连通性 (Test Connection)';
+      }
+    }
+
     async function loadData() {
       try {
         const res = await fetch('/api/config');
         currentConfig = await res.json();
-        
+
         selectProfile(currentConfig.active_profile || 'vibe-boss');
         document.getElementById('jev-key').value = currentConfig.jev_api_key || '';
-        document.getElementById('agnes-key').value = currentConfig.agnes_api_key || '';
+
+        const critic = currentConfig.critic || {};
+        if (critic.provider) {
+          document.getElementById('critic-provider').value = critic.provider;
+        }
+        document.getElementById('critic-base-url').value = critic.base_url && critic.base_url !== 'auto' ? critic.base_url : '';
+        document.getElementById('critic-model').value = critic.model && critic.model !== 'auto' ? critic.model : '';
+        document.getElementById('critic-api-key').value = critic.api_key && critic.api_key !== 'auto' ? critic.api_key : '';
+
         document.getElementById('fast-jev').checked = currentConfig.engine?.fast_path_jev !== false;
         document.getElementById('offline-fallback').checked = currentConfig.engine?.offline_fallback !== false;
 
@@ -844,7 +990,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function saveSettings() {
       currentConfig.jev_api_key = document.getElementById('jev-key').value.trim();
-      currentConfig.agnes_api_key = document.getElementById('agnes-key').value.trim();
+
+      const criticProvider = document.getElementById('critic-provider').value;
+      const criticBaseUrl = document.getElementById('critic-base-url').value.trim();
+      const criticModel = document.getElementById('critic-model').value.trim();
+      const criticApiKey = document.getElementById('critic-api-key').value.trim();
+
+      currentConfig.critic = {
+        provider: criticProvider,
+        base_url: criticBaseUrl || 'auto',
+        model: criticModel || 'auto',
+        api_key: criticApiKey || 'auto',
+        timeout: 25.0
+      };
+
       currentConfig.engine = {
         fast_path_jev: document.getElementById('fast-jev').checked,
         offline_fallback: document.getElementById('offline-fallback').checked
@@ -863,7 +1022,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           body: JSON.stringify(currentConfig)
         });
         if (res.ok) {
-          showToast("🎉 配置已成功保存并立即生效！");
+          showToast("🎉 配置已成功保存并立即物理生效！");
         }
       } catch (e) {
         showToast("❌ 保存失败: " + e);
@@ -1027,6 +1186,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "status": "healthy",
                 "engines": {"claude": "active", "antigravity": "active", "codex": "active", "dsh": "active"}
             }, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/config":
+            try:
+                cfg = load_config()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps(cfg, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
@@ -1097,11 +1267,108 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+        elif url.path == "/api/critic/test":
+            try:
+                data = json.loads(post_data.decode("utf-8"))
+                provider = data.get("provider", "tiered")
+                base_url = (data.get("base_url") or "").strip()
+                model = (data.get("model") or "").strip()
+                api_key = (data.get("api_key") or "").strip()
+
+                if api_key.startswith("env:"):
+                    api_key = os.environ.get(api_key[4:], "")
+
+                if provider in ("local_heuristic", "tiered") and not api_key:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "ok": True,
+                        "latency_ms": 0,
+                        "model": "local_ast_tier0",
+                        "message": "Tier 0 离线硬防线状态正常 (0ms 延迟 · 100% 离线保底)"
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
+
+                if not base_url:
+                    if provider == "gemini":
+                        base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+                        model = model or "gemini-2.5-flash"
+                    elif provider in ("glm", "zhipu"):
+                        base_url = "https://open.bigmodel.cn/api/paas/v4"
+                        model = model or "glm-4-flash"
+                    elif provider == "deepseek":
+                        base_url = "https://api.deepseek.com/v1"
+                        model = model or "deepseek-chat"
+                    elif provider == "openai":
+                        base_url = "https://api.openai.com/v1"
+                        model = model or "gpt-4o-mini"
+                    elif provider == "ollama":
+                        base_url = "http://localhost:11434/v1"
+                        model = model or "qwen2.5:7b"
+                    elif provider == "agnes":
+                        base_url = "https://apihub.agnes-ai.com/v1"
+                        model = model or "agnes-3.0-flash"
+
+                import time, urllib.request
+                t0 = time.time()
+                req_url = base_url.rstrip("/")
+                is_anthropic_relay = "1.19848845.xyz" in req_url or req_url.endswith("/messages")
+
+                if is_anthropic_relay:
+                    endpoint = f"{req_url}/v1/messages" if not req_url.endswith("/v1/messages") else req_url
+                    headers = {
+                        "Content-Type": "application/json",
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01"
+                    }
+                    payload = {
+                        "model": model or "glm-5.3-flash",
+                        "max_tokens": 15,
+                        "messages": [{"role": "user", "content": "ping"}]
+                    }
+                else:
+                    endpoint = f"{req_url}/chat/completions" if not req_url.endswith("/chat/completions") else req_url
+                    headers = {"Content-Type": "application/json"}
+                    if api_key and api_key != "ollama":
+                        headers["Authorization"] = f"Bearer {api_key}"
+                    payload = {
+                        "model": model or "gemini-2.5-flash",
+                        "max_tokens": 15,
+                        "messages": [{"role": "user", "content": "ping"}]
+                    }
+
+                req = urllib.request.Request(endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers)
+                with urllib.request.urlopen(req, timeout=12.0) as resp:
+                    latency = round((time.time() - t0) * 1000, 1)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "ok": True,
+                        "latency_ms": latency,
+                        "model": model,
+                        "message": f"连通成功！真实延迟: {latency}ms (状态: HTTP 200 OK)"
+                    }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "ok": False,
+                    "error": str(e),
+                    "message": f"连接失败: {e}"
+                }, ensure_ascii=False).encode("utf-8"))
         elif url.path == "/api/config":
             try:
                 new_cfg = json.loads(post_data.decode("utf-8"))
-                c_key = (new_cfg.get("critic_api_key") or new_cfg.get("agnes_api_key") or "").strip()
-                if c_key:
+                critic_data = new_cfg.get("critic", {})
+                c_provider = critic_data.get("provider") or new_cfg.get("critic_provider")
+                c_base = critic_data.get("base_url") or new_cfg.get("critic_base_url")
+                c_model = critic_data.get("model") or new_cfg.get("critic_model")
+                c_key = (critic_data.get("api_key") or new_cfg.get("critic_api_key") or new_cfg.get("agnes_api_key") or "").strip()
+
+                if c_provider or c_key or c_base or c_model:
                     try:
                         from config import set_critic_config
                     except ImportError:
@@ -1110,7 +1377,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         except ImportError:
                             set_critic_config = None
                     if set_critic_config:
-                        set_critic_config(api_key=c_key)
+                        set_critic_config(
+                            provider=c_provider,
+                            base_url=c_base,
+                            model=c_model,
+                            api_key=c_key if c_key else None
+                        )
                 cfg = load_config()
                 cfg.update(new_cfg)
                 save_config(cfg)

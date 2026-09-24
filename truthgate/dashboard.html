@@ -1069,6 +1069,7 @@
           <span id="live-text">实时连接就绪</span>
         </div>
         <button class="pill-btn" onclick="openDoctorModal()" title="查看全景健康诊断" style="background:rgba(16, 185, 129, 0.2); color:#6ee7b7; border-color:#10b981;">🩺 体检中心</button>
+        <button class="pill-btn" onclick="switchMainTab('settings')" title="配置外审大模型与 API Key" style="background:rgba(59, 130, 246, 0.2); color:#93c5fd; border-color:#3b82f6;">⚙️ 外审配置</button>
         <button class="pill-btn" onclick="fetchRecentData()" title="刷新最新流水">🔄 刷新</button>
       </div>
     </header>
@@ -1566,19 +1567,48 @@
             </div>
           </div>
 
-          <!-- 引擎与 API 档位 -->
+          <!-- 外审裁判与多模型路由 -->
           <div class="settings-card">
-            <div class="settings-card-title">⚡ 引擎档位与算力配置</div>
+            <div class="settings-card-title">⚡ 外审裁判多模型路由与 API Key (Outer Critic Engine)</div>
             <div class="form-group">
-              <label class="form-label">TypeSafe API Key (Jev 350ms 极速档):</label>
-              <input type="password" id="typesafe-key" class="form-input" placeholder="ts-live-...">
+              <label class="form-label">外审模型提供商 (Provider):</label>
+              <select id="critic-provider" class="form-input" onchange="onCriticProviderChange()">
+                <option value="gemini">🌟 Google Gemini (官方推荐 · 免费高速)</option>
+                <option value="glm">🇨🇳 智谱 GLM (官方开放平台 / 个人月卡中转)</option>
+                <option value="deepseek">🚀 DeepSeek (性价比之王 · deepseek-chat)</option>
+                <option value="openai">🤖 OpenAI (官方 gpt-4o-mini)</option>
+                <option value="openai_compatible">🌐 自定义 OpenAI 兼容中转 (包月卡 / OneAPI)</option>
+                <option value="ollama">💻 本地 Ollama (http://localhost:11434 · 0成本免Key)</option>
+                <option value="local_heuristic">🛡️ Tier 0 本地确定性引擎 (免Key · 纯离线保底)</option>
+              </select>
             </div>
             <div class="form-group">
-              <label class="form-label">通用语义模型服务 API (Agnes / DeepSeek 档):</label>
-              <input type="text" id="agnes-url" class="form-input" value="https://apihub.agnes-ai.com/v1/chat/completions">
+              <label class="form-label">服务 Base URL:</label>
+              <input type="text" id="critic-base-url" class="form-input" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">审判模型名称 (Model):</label>
+              <input type="text" id="critic-model" class="form-input" placeholder="如 gemini-2.5-flash / glm-5.3-flash">
+            </div>
+            <div class="form-group">
+              <label class="form-label">外审 API Key (支持直接填入或 env:VAR_NAME):</label>
+              <div style="display:flex; gap:8px;">
+                <input type="password" id="critic-api-key" class="form-input" placeholder="输入 API Key...">
+                <button class="pill-btn" type="button" onclick="toggleKeyVisibility('critic-api-key')" style="padding:0 12px; white-space:nowrap;">👁️</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+              <button class="pill-btn" type="button" onclick="testCriticConnection()" id="btn-test-critic" style="width:100%; font-size:13px; font-weight:700; background:rgba(59, 130, 246, 0.2); border-color:#3b82f6; color:#93c5fd; padding:8px 16px;">
+                ⚡ 立即测试外审连通性 (Test Connection)
+              </button>
+              <div id="test-critic-result" style="display:none; margin-top:8px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
+            </div>
+            <div class="form-group" style="margin-top:14px; border-top:1px solid var(--border-color); padding-top:10px;">
+              <label class="form-label">TypeSafe API Key (Jev 350ms 极速快车道 - 可选):</label>
+              <input type="password" id="typesafe-key" class="form-input" placeholder="ts-live-... (留空走通用模型或 Tier 0)">
             </div>
             <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; background: rgba(59, 130, 246, 0.08); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--brand);">
-              💡 <b>三重自适应降级</b>: 填了 Jev 享受 350ms 极速；没填 Jev 走通用大模型；完全零 Key 则由本地原生纯代码硬拦截兜底。
+              💡 <b>零门槛多级容灾</b>: 配了月卡/Gemini/DeepSeek 享受云端深度研判；完全零 Key 则自动由本地 Python 原生 AST / 正则状态机 100% 离线保底。
             </p>
           </div>
         <!-- 实时大盘与自动化偏好 -->
@@ -2801,6 +2831,30 @@
       if (document.getElementById('sec-overwrite')) document.getElementById('sec-overwrite').checked = sec.data_overwrite_guard !== false;
       if (document.getElementById('sec-ast')) document.getElementById('sec-ast').checked = sec.supply_chain_ast_scan !== false;
       if (document.getElementById('sec-leak')) document.getElementById('sec-leak').checked = sec.process_leak_guard !== false;
+
+      // Populate Critic Config
+      const critic = currentSettingsConfig.critic || {};
+      const providerSel = document.getElementById('critic-provider');
+      if (providerSel) {
+        if (critic.provider) {
+          providerSel.value = critic.provider;
+        } else {
+          providerSel.value = "gemini";
+        }
+      }
+      const baseUrlInput = document.getElementById('critic-base-url');
+      if (baseUrlInput) baseUrlInput.value = (critic.base_url && critic.base_url !== 'auto') ? critic.base_url : '';
+
+      const modelInput = document.getElementById('critic-model');
+      if (modelInput) modelInput.value = (critic.model && critic.model !== 'auto') ? critic.model : '';
+
+      const apiKeyInput = document.getElementById('critic-api-key');
+      if (apiKeyInput) apiKeyInput.value = (critic.api_key && critic.api_key !== 'auto') ? critic.api_key : '';
+
+      const typesafeInput = document.getElementById('typesafe-key');
+      if (typesafeInput) typesafeInput.value = currentSettingsConfig.typesafe_api_key || '';
+
+      onCriticProviderChange(false);
     }
 
     function updateProfileBadge(profile) {
@@ -2869,6 +2923,141 @@
       }
     }
 
+    function toggleKeyVisibility(inputId) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function onCriticProviderChange(resetDefaults = true) {
+      const p = document.getElementById('critic-provider')?.value || 'gemini';
+      const baseEl = document.getElementById('critic-base-url');
+      const modelEl = document.getElementById('critic-model');
+      const keyEl = document.getElementById('critic-api-key');
+
+      const defaults = {
+        gemini: {
+          base: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          model: 'gemini-2.5-flash',
+          keyPlaceholder: 'AIzaSy... (Google AI Studio Key)'
+        },
+        glm: {
+          base: 'https://open.bigmodel.cn/api/paas/v4',
+          model: 'glm-4-flash',
+          keyPlaceholder: '智谱开放平台 Key 或 月卡中转 Key'
+        },
+        deepseek: {
+          base: 'https://api.deepseek.com/v1',
+          model: 'deepseek-chat',
+          keyPlaceholder: 'sk-...'
+        },
+        openai: {
+          base: 'https://api.openai.com/v1',
+          model: 'gpt-4o-mini',
+          keyPlaceholder: 'sk-...'
+        },
+        openai_compatible: {
+          base: 'https://your-relay.com/v1',
+          model: 'gpt-4o-mini',
+          keyPlaceholder: 'sk-...'
+        },
+        ollama: {
+          base: 'http://localhost:11434/v1',
+          model: 'qwen2.5:7b',
+          keyPlaceholder: 'ollama (免 Key)'
+        },
+        local_heuristic: {
+          base: 'local',
+          model: 'local_ast_tier0',
+          keyPlaceholder: '纯离线确定性引擎 (免 Key · 0ms 延迟)'
+        }
+      };
+
+      const cfg = defaults[p] || defaults['gemini'];
+      if (baseEl) {
+        baseEl.placeholder = cfg.base;
+        if (resetDefaults && (!baseEl.value || baseEl.value.includes('googleapis') || baseEl.value.includes('bigmodel') || baseEl.value.includes('deepseek') || baseEl.value.includes('openai.com') || baseEl.value.includes('localhost:11434') || baseEl.value === 'local')) {
+          baseEl.value = cfg.base;
+        }
+      }
+      if (modelEl) {
+        modelEl.placeholder = cfg.model;
+        if (resetDefaults && (!modelEl.value || modelEl.value.includes('gemini') || modelEl.value.includes('glm') || modelEl.value.includes('deepseek') || modelEl.value.includes('gpt-4o') || modelEl.value.includes('qwen') || modelEl.value === 'local_ast_tier0')) {
+          modelEl.value = cfg.model;
+        }
+      }
+      if (keyEl) {
+        keyEl.placeholder = cfg.keyPlaceholder;
+        if (p === 'ollama' && (!keyEl.value || keyEl.value === '')) keyEl.value = 'ollama';
+        if (p === 'local_heuristic') keyEl.value = '';
+      }
+    }
+
+    async function testCriticConnection() {
+      const btn = document.getElementById('btn-test-critic');
+      const resDiv = document.getElementById('test-critic-result');
+      const provider = document.getElementById('critic-provider')?.value || 'gemini';
+      const baseUrl = document.getElementById('critic-base-url')?.value.trim() || '';
+      const model = document.getElementById('critic-model')?.value.trim() || '';
+      const apiKey = document.getElementById('critic-api-key')?.value.trim() || '';
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = '⚡ 正在探测模型响应与延迟...';
+      }
+      if (resDiv) {
+        resDiv.style.display = 'block';
+        resDiv.style.background = 'rgba(59, 130, 246, 0.15)';
+        resDiv.style.border = '1px solid #3b82f6';
+        resDiv.style.color = '#93c5fd';
+        resDiv.innerHTML = '⏳ 正在向外审端点发起实时 Ping 探针，请稍候...';
+      }
+
+      try {
+        const res = await fetch('/api/critic/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: provider,
+            base_url: baseUrl,
+            model: model,
+            api_key: apiKey
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          if (resDiv) {
+            resDiv.style.background = 'rgba(16, 185, 129, 0.15)';
+            resDiv.style.border = '1px solid #10b981';
+            resDiv.style.color = '#6ee7b7';
+            resDiv.innerHTML = `<b>✅ 连通验证成功！</b><br><span style="font-size:12px;">模型: <code>${data.model || model}</code> · 延迟: <b>${data.latency_ms}ms</b> · 状态: <b>物理可用</b><br>${data.message || ''}</span>`;
+          }
+          showSettingsToast(`✅ 连通测试通过！延迟: ${data.latency_ms}ms`);
+        } else {
+          if (resDiv) {
+            resDiv.style.background = 'rgba(239, 68, 68, 0.15)';
+            resDiv.style.border = '1px solid #ef4444';
+            resDiv.style.color = '#fca5a5';
+            resDiv.innerHTML = `<b>❌ 连通失败</b><br><span style="font-size:12px;">${data.message || data.error || '无法连接到外审服务，请检查 Base URL 和 API Key'}</span>`;
+          }
+          showSettingsToast("❌ 外审连通测试失败，请查看错误详情");
+        }
+      } catch (err) {
+        if (resDiv) {
+          resDiv.style.background = 'rgba(239, 68, 68, 0.15)';
+          resDiv.style.border = '1px solid #ef4444';
+          resDiv.style.color = '#fca5a5';
+          resDiv.innerHTML = `<b>❌ 网络异常</b><br><span style="font-size:12px;">${err.message || err}</span>`;
+        }
+        showSettingsToast("❌ 请求发送失败: " + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = '⚡ 立即测试外审连通性 (Test Connection)';
+        }
+      }
+    }
+
     async function saveSettings() {
       currentSettingsConfig.security = {
         anti_prompt_injection: document.getElementById('sec-anti-inject') ? document.getElementById('sec-anti-inject').checked : true,
@@ -2877,6 +3066,23 @@
         process_leak_guard: document.getElementById('sec-leak') ? document.getElementById('sec-leak').checked : true
       };
 
+      const criticProvider = document.getElementById('critic-provider') ? document.getElementById('critic-provider').value : 'gemini';
+      const criticBaseUrl = document.getElementById('critic-base-url') ? document.getElementById('critic-base-url').value.trim() : '';
+      const criticModel = document.getElementById('critic-model') ? document.getElementById('critic-model').value.trim() : '';
+      const criticApiKey = document.getElementById('critic-api-key') ? document.getElementById('critic-api-key').value.trim() : '';
+      const typesafeKey = document.getElementById('typesafe-key') ? document.getElementById('typesafe-key').value.trim() : '';
+
+      currentSettingsConfig.critic = {
+        provider: criticProvider,
+        base_url: criticBaseUrl || 'auto',
+        model: criticModel || 'auto',
+        api_key: criticApiKey || 'auto',
+        timeout: 25.0
+      };
+      if (typesafeKey) {
+        currentSettingsConfig.typesafe_api_key = typesafeKey;
+      }
+
       try {
         await fetch('/api/config', {
           method: 'POST',
@@ -2884,7 +3090,7 @@
           body: JSON.stringify(currentSettingsConfig)
         });
       } catch(e) {}
-      showSettingsToast("✅ 配置已成功保存并实时生效！");
+      showSettingsToast("✅ 配置已成功保存并实时物理生效！");
     }
 
     async function syncFourEnds() {

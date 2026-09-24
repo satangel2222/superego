@@ -417,6 +417,7 @@ def install_superego(profile: str = "vibe-boss", dry_run: bool = False) -> bool:
         "verdict_monitor.py",
         "postmortem_guard.py",
         "dashboard.py",
+        "dashboard.html",
         "config.py",
         "replay.py",
         "hook_entry.py",
@@ -823,9 +824,9 @@ def handle_critic_cli(args: list):
         print("提示: 可使用 'tg critic set ...' (或 python -m truthgate critic set ...) 接入 DeepSeek, Qwen, Ollama, GPT 或 Jev")
     elif sub == "set":
         set_parser = argparse.ArgumentParser(prog="tg critic set")
-        set_parser.add_argument("--provider", choices=["tiered", "gemini", "deepseek", "openai", "agnes", "ollama", "openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
-        set_parser.add_argument("--base-url", dest="base_url", help="API Base URL (如 https://api.deepseek.com/v1 或 http://localhost:11434/v1)")
-        set_parser.add_argument("--model", help="外审大模型名称 (如 deepseek-chat, qwen-plus, llama3)")
+        set_parser.add_argument("--provider", choices=["tiered", "gemini", "glm", "zhipu", "deepseek", "openai", "agnes", "ollama", "openai_compatible", "jev", "local_heuristic"], help="外审服务类型")
+        set_parser.add_argument("--base-url", dest="base_url", help="API Base URL (如 https://open.bigmodel.cn/api/paas/v4 或 https://api.deepseek.com/v1)")
+        set_parser.add_argument("--model", help="外审大模型名称 (如 glm-5.3-flash, deepseek-chat, qwen-plus)")
         set_parser.add_argument("--api-key", dest="api_key", help="API Key，支持直接填入或 env:VAR_NAME")
         set_parser.add_argument("--timeout", type=float, help="审判超时秒数 (默认 3.5)")
         parsed = set_parser.parse_args(args[1:])
@@ -1076,8 +1077,8 @@ def handle_setup_cli(args: list):
             print(f"\n🔬 [3/4] 外审模型: 已配置 ({curr_c_cfg.get('provider')} / {curr_c_cfg.get('model')})")
         else:
             print("\n🔬 [3/4] 配置外审模型裁判 (Outer Critic Engine):")
-            print("   原生支持: Google Gemini、DeepSeek、OpenAI、本地 Ollama (0成本免Key)、Agnes。")
-            c_val = input("   请输入外审 API Key (如 Gemini/DeepSeek/OpenAI API Key，留空回车使用本地引擎): ").strip()
+            print("   原生支持: Google Gemini、智谱 GLM (官方开放平台/个人月卡)、DeepSeek、OpenAI、本地 Ollama (0成本免Key)、Agnes。")
+            c_val = input("   请输入外审 API Key (如 Gemini/GLM/DeepSeek/OpenAI Key，留空回车使用本地引擎): ").strip()
             if c_val:
                 critic_key = c_val
 
@@ -1088,6 +1089,8 @@ def handle_setup_cli(args: list):
                 provider = "gemini"
             elif critic_key.startswith("sk-agnes"):
                 provider = "agnes"
+            elif "glm" in critic_key.lower():
+                provider = "glm"
             elif critic_key.startswith("sk-"):
                 provider = "deepseek"
             else:

@@ -99,6 +99,7 @@ BUILTIN_PROFILES: Dict[str, Dict[str, Any]] = {
         }
     }
 }
+PROFILES: Dict[str, Dict[str, Any]] = BUILTIN_PROFILES
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "version": "3.0.0",
@@ -385,7 +386,7 @@ def set_critic_config(
     critic = cfg.setdefault("critic", dict(DEFAULT_CONFIG["critic"]))
 
     valid_providers = [
-        "tiered", "gemini", "deepseek", "openai", "agnes", "ollama",
+        "tiered", "gemini", "glm", "zhipu", "deepseek", "openai", "agnes", "ollama",
         "openai_compatible", "jev", "local_heuristic"
     ]
     if provider is not None:
@@ -417,6 +418,11 @@ def set_critic_config(
                 critic["model"] = "qwen2.5:7b"
             if not api_key:
                 critic["api_key"] = "ollama"
+        elif p_lower in ("glm", "zhipu"):
+            if not base_url:
+                critic["base_url"] = "https://open.bigmodel.cn/api/paas/v4"
+            if not model:
+                critic["model"] = "glm-4-flash"
         elif p_lower == "agnes":
             if not base_url:
                 critic["base_url"] = "https://apihub.agnes-ai.com/v1"
@@ -437,10 +443,14 @@ def set_critic_config(
                 target_var = "GEMINI_API_KEY"
             elif key_val.startswith("sk-agnes"):
                 target_var = "AGNES_API_KEY"
+            elif critic.get("provider") in ("glm", "zhipu"):
+                target_var = "GLM_API_KEY"
             elif critic.get("provider") == "deepseek":
                 target_var = "DEEPSEEK_API_KEY"
             elif critic.get("provider") == "gemini":
                 target_var = "GEMINI_API_KEY"
+            elif critic.get("provider") == "openai":
+                target_var = "OPENAI_API_KEY"
 
             for d in [TRUTHGATE_HOME, SUPEREGO_HOME]:
                 try:
