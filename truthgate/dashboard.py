@@ -7,8 +7,10 @@ import re
 import socket
 import subprocess
 import webbrowser
-from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
+try:
+    from http.server import ThreadingHTTPServer as HTTPServer, BaseHTTPRequestHandler
+except ImportError:
+    from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -882,6 +884,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 class DashboardHandler(BaseHTTPRequestHandler):
+    def handle(self):
+        try:
+            super().handle()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            pass
+
     def do_GET(self):
         url = urlparse(self.path)
         path = url.path.rstrip("/")
@@ -1087,12 +1095,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         pass
 
 
+class DashboardServer(HTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
 def run_dashboard(port: int = 17925, open_browser: bool = True):
     """启动本地 Web 仪表盘"""
     server_address = ("127.0.0.1", port)
     for _ in range(5):
         try:
-            httpd = HTTPServer(server_address, DashboardHandler)
+            httpd = DashboardServer(server_address, DashboardHandler)
             break
         except OSError:
             port += 1
