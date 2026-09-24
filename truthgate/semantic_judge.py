@@ -154,7 +154,7 @@ def get_critic_endpoint():
         url = cfg_base.rstrip("/") + "/chat/completions" if not cfg_base.endswith("/chat/completions") else cfg_base
         if not cfg_model or cfg_model == "auto":
             if cfg_provider == "gemini":
-                cfg_model = "gemini-2.5-flash"
+                cfg_model = "gemini-3.8-flash"
             elif cfg_provider in ("glm", "zhipu"):
                 cfg_model = "glm-4-flash"
             elif cfg_provider == "openai":
@@ -200,9 +200,9 @@ def get_critic_endpoint():
     # Google 官方已全量提供兼容 OpenAI 协议的端点: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
     _, g_val = _find_env_key(["GEMINI_API_KEY", "GOOGLE_API_KEY"])
     if g_val:
-        model = os.environ.get("GEMINI_MODEL", os.environ.get("SEMANTIC_JUDGE_MODEL", "gemini-2.5-flash"))
+        model = os.environ.get("GEMINI_MODEL", os.environ.get("SEMANTIC_JUDGE_MODEL", "gemini-3.8-flash"))
         if "agnes" in model.lower():
-            model = "gemini-2.5-flash"
+            model = "gemini-3.8-flash"
         return {
             "provider": "gemini",
             "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",

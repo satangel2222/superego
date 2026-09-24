@@ -105,7 +105,7 @@ def test_api_config_save_flow():
         print(f"    • 读取保存后的配置: provider={critic_cfg.get('provider')}, base_url={critic_cfg.get('base_url')}, model={critic_cfg.get('model')}")
         assert critic_cfg.get("provider") == "gemini", "provider 保存异常"
         assert critic_cfg.get("base_url") == "https://generativelanguage.googleapis.com/v1beta/openai", f"base_url 智能默认值被 auto 污染: {critic_cfg.get('base_url')}"
-        assert critic_cfg.get("model") == "gemini-2.5-flash", f"model 智能默认值被 auto 污染: {critic_cfg.get('model')}"
+        assert critic_cfg.get("model") == "gemini-3.8-flash", f"model 智能默认值被 auto 污染: {critic_cfg.get('model')}"
         assert critic_cfg.get("api_key") == "AIzaSyTestUserKeyFromPanel", "api_key 未正确保存"
         print("    ✅ 智能默认值归一化验证通过！未被 'auto' 字符串污染")
 

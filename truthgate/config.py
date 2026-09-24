@@ -408,7 +408,7 @@ def set_critic_config(
             if not base_url:
                 critic["base_url"] = "https://generativelanguage.googleapis.com/v1beta/openai"
             if not model:
-                critic["model"] = "gemini-2.5-flash"
+                critic["model"] = "gemini-3.8-flash"
         elif p_lower == "deepseek":
             if not base_url:
                 critic["base_url"] = "https://api.deepseek.com/v1"

@@ -752,7 +752,7 @@ def check_visual_proof_violation(text, assistant_tool_calls, assistant_blob):
 CC_SWITCH_DB = Path.home() / ".cc-switch" / "cc-switch.db"
 
 CLICHE_FAKE_MODELS = re.compile(
-    r"\b(gpt-4o|gpt-4-turbo|gemini-2\.5-pro|gemini-1\.5-pro|claude-3-5-sonnet|claude-3-opus|claude-2)\b",
+    r"\b(gpt-4o|gpt-4-turbo|gemini-2\.5-pro|gemini-2\.5-flash|gemini-2\.0-flash|gemini-1\.5-pro|gemini-1\.5-flash|claude-3-5-sonnet|claude-3-opus|claude-2)\b",
     re.I
 )
 
@@ -832,6 +832,58 @@ def check_model_authenticity_violation(text, assistant_tool_calls, assistant_blo
                 "但本轮交互中未曾查验 CC Switch 真实调用数据库（C:\\Users\\Casp\\.cc-switch\\cc-switch.db）。\n"
                 "铁律规定：涉及本机模型与路由，必须先查询真实数据库，严禁凭印象脑补！"
             )
+    return None
+
+# ── External Model Freshness & Live Search Gate (Gate 18) ────────────────────
+# Shape 2026-09-24-MF: Enforces zero unverified model claims.
+# When asserting, recommending, or configuring external LLM versions (Gemini/Claude/OpenAI/DeepSeek),
+# assistant MUST have performed live search (search_web / read_url_content / official docs MCP) in this turn.
+EXTERNAL_MODEL_ASSERTION_RE = re.compile(
+    r"(?:推荐|默认|采用|选用|主力|当前|最新|公版|SOTA|版本).*?(?:gemini-[1-9]|gpt-[345]|claude-[234]|deepseek-[a-z0-9]|glm-[0-9])|"
+    r"(?:gemini-[1-9]|gpt-[345]|claude-[234]|deepseek-[a-z0-9]|glm-[0-9])[-\w.]*.*?(?:推荐|默认|最新|主力|首选|发布)|"
+    r"\b(gemini-[12]\.[0-9]|gemini-2\.5|gpt-4o|claude-3-5|glm-4(?!\.5))\b",
+    re.I
+)
+
+def check_external_model_freshness_violation(text, assistant_tool_calls, assistant_blob, user_prompt=""):
+    """Enforces external-model-freshness-gate:
+    Blocks turns that assert or recommend external AI model versions without live search verification."""
+    if not text:
+        return None
+
+    # Exclude historical refutations or postmortems
+    if QUOTING_HISTORIC_OR_REFUTING.search(text) or re.search(r"(?:复盘|教训|案卷|形状 ?20\d\d|错误归纳|历史)", text):
+        return None
+
+    m = EXTERNAL_MODEL_ASSERTION_RE.search(text)
+    if not m:
+        return None
+
+    # Check if this turn executed live search tools
+    has_live_search = False
+    for tc in (assistant_tool_calls or []):
+        fn = tc.get("function", {}) if "function" in tc else tc
+        name = fn.get("name", "")
+        if name in ("search_web", "read_url_content"):
+            has_live_search = True
+            break
+        if "gemini_search_docs" in name or "gemini_get_doc" in name:
+            has_live_search = True
+            break
+
+    blob_lower = (assistant_blob or "").lower()
+    if any(k in blob_lower for k in ("search_web", "read_url_content", "duckduckgo", "google", "bing")):
+        has_live_search = True
+
+    if not has_live_search:
+        matched = m.group(0)[:35]
+        return (
+            f"[TruthGate 拦截 - external-model-freshness-gate] 🚨 触发外部模型时效与真实性铁律（拿过时旧知当最新 / 零搜索凭印象脑补）：\n"
+            f"检测到回复中对外部大模型版本做出了推荐或断言（命中: 「{matched}」），\n"
+            f"但当前回合工具执行流水显示：【零次执行 search_web 或官方最新文档检索】！\n"
+            f"铁律规定：外部 AI 模型迭代极快（当前为 2026 年），严禁凭借大模型预训练静态权重记忆向用户提供过时/虚假版本信息！\n"
+            f"涉及外部大模型推荐与版本判定，必须在当前轮次先执行 search_web 查清最新真实 Roster 取得客观凭据后方可放行！"
+        )
     return None
 
 # ── Honest Scope & Execution Telemetry Gate (Supreme Directive #1) ───────────
@@ -1625,6 +1677,14 @@ def evaluate_all_structural_gates(text, tool_calls, blob, user_prompt="", conv_i
         vio = check_model_authenticity_violation(text, tool_calls, blob, user_prompt)
         if vio:
             violations.append(("model-authenticity-gate", vio))
+            if stop_on_first:
+                return violations
+
+    # 6B. external-model-freshness-gate (Supreme Red Line: No Unverified External Model Claims)
+    if not check_is_off("external-model-freshness-gate", sid=conv_id):
+        vio = check_external_model_freshness_violation(text, tool_calls, blob, user_prompt)
+        if vio:
+            violations.append(("external-model-freshness-gate", vio))
             if stop_on_first:
                 return violations
 

@@ -1300,7 +1300,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 if not base_url:
                     if provider == "gemini":
                         base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
-                        model = model or "gemini-2.5-flash"
+                        model = model or "gemini-3.8-flash"
                     elif provider in ("glm", "zhipu"):
                         base_url = "https://open.bigmodel.cn/api/paas/v4"
                         model = model or "glm-4-flash"
@@ -1342,7 +1342,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     if provider == "gemini" and api_key and api_key != "ollama":
                         headers["x-goog-api-key"] = api_key
                     payload = {
-                        "model": model or "gemini-2.5-flash",
+                        "model": model or "gemini-3.8-flash",
                         "max_tokens": 15,
                         "messages": [{"role": "user", "content": "ping"}]
                     }
