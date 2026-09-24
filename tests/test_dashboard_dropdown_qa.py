@@ -35,6 +35,8 @@ def test_dropdown_dynamic_mapping():
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(f'http://127.0.0.1:{port}/dashboard')
+            page.wait_for_selector('#tab-btn-settings')
+            page.click('#tab-btn-settings')
             page.wait_for_selector('#critic-provider')
 
             for provider, (exp_base, exp_model) in EXPECTED_MAP.items():
