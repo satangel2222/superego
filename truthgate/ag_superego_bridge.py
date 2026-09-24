@@ -1838,7 +1838,7 @@ def handle_stop(payload):
     print(json.dumps({}))
 
 def trigger_active_alert(conv_id, all_fired, text):
-    """Fires sound and desktop notification in real time (<1s) so violations are instantly visible."""
+    """Fires sound and interactive modern Windows toast notification in real time (<1s)."""
     sid_short = conv_id[:8] if conv_id else "ag"
     try:
         import winsound
@@ -1848,15 +1848,39 @@ def trigger_active_alert(conv_id, all_fired, text):
 
     try:
         fired_names = ", ".join(all_fired)
-        clean_excerpt = re.sub(r'[\r\n\t"\']+', ' ', text[-120:]).strip()
+        clean_excerpt = re.sub(r'[\r\n\t"\']+', ' ', text[-120:]).strip().replace("'", "").replace('"', '')
         ps_code = f"""
-        Add-Type -AssemblyName System.Windows.Forms
-        $notify = New-Object System.Windows.Forms.NotifyIcon
-        $notify.Icon = [System.Drawing.SystemIcons]::Warning
-        $notify.Visible = $true
-        $notify.ShowBalloonTip(6000, '🛡️ Superego 拦截警报 [{sid_short}]', '违规门禁: {fired_names}`n交付片段: {clean_excerpt}', [System.Windows.Forms.ToolTipIcon]::Warning)
-        Start-Sleep -Seconds 7
-        $notify.Dispose()
+        try {{
+            [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+            [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+            $x = New-Object Windows.Data.Xml.Dom.XmlDocument
+            $tpl = @"
+<toast launch="http://127.0.0.1:17925/dashboard" activationType="protocol">
+    <visual>
+        <binding template="ToastGeneric">
+            <text>🛡️ TruthGate 1.0 拦截警报 [{sid_short}]</text>
+            <text>命中门禁: {fired_names}</text>
+            <text>{clean_excerpt}</text>
+        </binding>
+    </visual>
+    <actions>
+        <action content="打开审判大盘" arguments="http://127.0.0.1:17925/dashboard" activationType="protocol"/>
+    </actions>
+    <audio src="ms-winsoundevent:Notification.Default"/>
+</toast>
+"@
+            $x.LoadXml($tpl)
+            $t = [Windows.UI.Notifications.ToastNotification]::new($x)
+            [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}}\\WindowsPowerShell\\v1.0\\powershell.exe').Show($t)
+        }} catch {{
+            Add-Type -AssemblyName System.Windows.Forms
+            $notify = New-Object System.Windows.Forms.NotifyIcon
+            $notify.Icon = [System.Drawing.SystemIcons]::Warning
+            $notify.Visible = $true
+            $notify.ShowBalloonTip(6000, '🛡️ TruthGate 拦截警报 [{sid_short}]', '违规门禁: {fired_names}`n交付片段: {clean_excerpt}', [System.Windows.Forms.ToolTipIcon]::Warning)
+            Start-Sleep -Seconds 6
+            $notify.Dispose()
+        }}
         """
         subprocess.Popen(
             ["powershell.exe", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps_code],
@@ -2014,6 +2038,59 @@ def run_worker(transcript_path, conv_id=""):
             mf.write(json.dumps(metric_entry, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+    # 3. 持久化至 TruthGate 统一审判大账 (monitor.db)
+    try:
+        from truthgate.verdict_monitor import record_verdict
+    except ImportError:
+        try:
+            from verdict_monitor import record_verdict
+        except ImportError:
+            record_verdict = None
+    if record_verdict:
+        try:
+            reasons_list = [w.get("rule", "") for w in rec.get("why", []) if isinstance(w, dict)] if "why" in rec else []
+            record_verdict(
+                turn_type="antigravity",
+                verdict=verdict,
+                fired_rules=all_fired,
+                reasons=reasons_list,
+                mode="ag_watch_outer_judge",
+                latency_ms=float(latency_ms),
+                user_prompt=user_prompt[:300] if user_prompt else "",
+                assistant_text=text[-500:]
+            )
+        except Exception:
+            pass
+
+    # 4. 生成/刷新 Antigravity 会话实时质检白皮书 (truthgate_live_audit.md)
+    if conv_id:
+        try:
+            ag_conv_dir = Path.home() / ".gemini" / "antigravity" / "brain" / conv_id
+            if ag_conv_dir.exists():
+                art_file = ag_conv_dir / "truthgate_live_audit.md"
+                status_icon = "🔴 发现违规打回 (BLOCK)" if all_fired else "🟢 审查通过 (PASS)"
+                rules_str = ", ".join(all_fired) if all_fired else "15 道物理门禁核验放行 (Zero Violation)"
+                md_content = f"""# 🛡️ TruthGate 1.0 实时门禁质检看板 (Live Session Audit)
+
+- **当前会话**: `{conv_id}`
+- **质检结果**: **{status_icon}**
+- **命中规则**: `{rules_str}`
+- **外审耗时**: `{latency_ms} ms`
+- **核验时间**: `{ts_str}`
+- **审判中枢**: [打开本地审判大盘 (http://127.0.0.1:17925/dashboard)](http://127.0.0.1:17925/dashboard)
+
+> 💡 **TruthGate 物理质检原则**：
+> 凡宣称“已修复”、“服务正常”、“UI就绪”，必须出示真实测试通过输出、HTTP 响应体或截图。未经验证严禁空口宣称完成。
+
+## 最近一轮回合审查明细
+```text
+{text[-300:]}
+```
+"""
+                art_file.write_text(md_content, encoding="utf-8")
+        except Exception:
+            pass
 
 def handle_status():
     """Diagnostic CLI to verify Superego integration health across both brains."""
