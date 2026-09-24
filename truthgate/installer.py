@@ -935,7 +935,15 @@ def service_start(port: int = 17911, open_browser: Optional[bool] = None) -> boo
     print(f"🚀 正在拉起 17911 常驻司法守护进程...")
     dissat_svc = HOME / ".claude" / "dissat-classifier" / "service.py"
     if dissat_svc.exists():
-        cmd = [sys.executable, str(dissat_svc)]
+        py_exe = sys.executable
+        for candidate in [
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Python" / "Python312" / "python.exe",
+            HOME / "AppData" / "Local" / "Programs" / "Python" / "Python312" / "python.exe"
+        ]:
+            if candidate.exists():
+                py_exe = str(candidate)
+                break
+        cmd = [py_exe, str(dissat_svc)]
     else:
         cmd = [sys.executable, "-m", "truthgate", "dashboard", "--port", str(port)]
 
@@ -954,8 +962,8 @@ def service_start(port: int = 17911, open_browser: Optional[bool] = None) -> boo
             close_fds=True
         )
 
-    for _ in range(15):
-        time.sleep(0.2)
+    for _ in range(35):
+        time.sleep(0.5)
         st = service_status(port)
         if st["http_code"] == 200:
             print(f"✅ 17911 司法守护进程拉起成功 (PID: {st['pid']})！")
