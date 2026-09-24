@@ -546,7 +546,7 @@ def _local_heuristic_critic(
                 pass
 
     # 9. 检查人类纠错自愈合规规则 (R12 / POSTMORTEM)
-    user_prompt = context.get("user_prompt") or ""
+    user_prompt = (context or {}).get("user_prompt") or ""
     if user_prompt:
         try:
             from postmortem_guard import detect_reprimand, audit_postmortem_compliance

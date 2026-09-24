@@ -667,7 +667,7 @@ TruthGate 原生内置了 **Tier 0 纯本地确定性启发式与工具流水对
 
 如果你在日常使用 AI 的过程中，发现了 AI 欺骗你的新花招，欢迎为开源社区贡献规则包：
 
-1. 参照 [`rulepack_spec.md`](file:///c:/Users/Casp/Documents/antigravity/fearless-hertz/rulepack_spec.md) 编写一条规则描述 + 5 条犯规例句 (`FIRE`) + 5 条豁免例句 (`PASS`)；
+1. 参照 [`rulepack_spec.md`](docs/CUSTOM_RULEPACK_GUIDE.md) 编写一条规则描述 + 5 条犯规例句 (`FIRE`) + 5 条豁免例句 (`PASS`)；
 2. 提交 Pull Request 至本仓库；
 3. GitHub CI 自动化流水线会自动调用 `rulepack_runner.py` 跑分：**误伤率低于 0.5% 的优质规则包将被全网合并收录！**
 

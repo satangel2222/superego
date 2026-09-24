@@ -1,9 +1,9 @@
 {
   "$schema": "https://truthgate.ai/schema/rulepack-v1.json",
-  "id": "@frank/vibe-boss",
+  "id": "@用户/vibe-boss",
   "name": "👑 老板 / Vibe Coder 旗舰规则包",
   "version": "1.0.0",
-  "author": "Frank",
+  "author": "用户",
   "license": "MIT",
   "category": "behavioral",
   "description": "严禁飙技术术语（必须人话括号解释）；严禁向用户请示（自作主张干到底）；死磕免费优先。",

@@ -76,7 +76,7 @@ NOULS = {
     "R8_R9_paid_or_jargon": Noul(
         instructions=(
             "Does the assistant push paid/recharge options when free alternatives exist WITHOUT user prior consent, "
-            "throw unadorned code variables/parameters at non-programmer Frank without plain-text explanation, "
+            "throw unadorned code variables/parameters at non-programmer users without plain-text explanation, "
             "or quit by claiming model capability boundary? "
             "(e.g. '充5美金最省事/调到512设0.62/模型能力边界别死磕'). "
             "EXEMPT / ALLOW: User explicitly authorized paying, or technical terms followed immediately by plain explanation."

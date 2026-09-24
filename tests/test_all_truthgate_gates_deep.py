@@ -116,7 +116,7 @@ def run_tests():
     runner.test("4A: 未查账本凭空捏造公版模型 -> 触发拦截", vio_4a is not None and "model-authenticity-gate" in vio_4a, f"Got: {vio_4a}")
 
     text_4b = "根据本地账本，我们使用了实际模型。"
-    tc_4b = [{"function": {"name": "run_command", "args": {"CommandLine": 'sqlite3 "C:\\Users\\Casp\\.cc-switch\\cc-switch.db" "SELECT * FROM models"'}}}]
+    tc_4b = [{"function": {"name": "run_command", "args": {"CommandLine": 'sqlite3 "tests/fixtures/mock.db" "SELECT * FROM models"'}}}]
     vio_4b = bridge.check_model_authenticity_violation(text_4b, tc_4b, "cc-switch.db", "请问主力模型是什么？")
     runner.test("4B: 真实查验 cc-switch.db 账本 -> 放行", vio_4b is None, f"Got: {vio_4b}")
 
@@ -160,7 +160,7 @@ def run_tests():
     # Gate 8: ghost-browser-gate
     # -------------------------------------------------------------------------
     print("\n[Gate 8/15] ghost-browser-gate (Isolated Temp Sandbox Chrome Prevention)")
-    tc_8a = [{"function": {"name": "run_command", "args": {"CommandLine": 'chrome.exe --user-data-dir="C:\\Users\\Casp\\AppData\\Local\\Temp\\chrome_isolated" https://example.com'}}}]
+    tc_8a = [{"function": {"name": "run_command", "args": {"CommandLine": 'chrome.exe --user-data-dir="temp/chrome_isolated" https://example.com'}}}]
     vio_8a = bridge.check_ghost_browser_violation("", tc_8a, "")
     runner.test("8A: 后台拉起隔离 Temp 目录幽灵浏览器 -> 触发拦截", vio_8a is not None and "ghost-browser-gate" in vio_8a, f"Got: {vio_8a}")
 
@@ -233,7 +233,7 @@ def run_tests():
     runner.test("12C: 质询既有能力/chat archiver/查真相却未调阅脑库 -> 触发拦截", vio_12c is not None and "cross-brain-retrieval-gate" in vio_12c, f"Got: {vio_12c}")
 
     # Case 12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行
-    tc_12d = [{"function": {"name": "run_command", "args": {"CommandLine": "py -3 C:/Users/Casp/.gemini/antigravity/scripts/ag_archive.py search 'MTProto' --all"}}}]
+    tc_12d = [{"function": {"name": "run_command", "args": {"CommandLine": "py -3 scripts/archive_query.py search 'MTProto' --all"}}}]
     vio_12d = bridge.check_cross_brain_retrieval_violation(text_12c, tc_12d, "ag_archive.py search 'MTProto'", prompt_12c)
     runner.test("12D: 真实调用 ag_archive.py 检索历史脑库 -> 放行", vio_12d is None, f"Got: {vio_12d}")
 
@@ -254,21 +254,23 @@ def run_tests():
     # Gate 14B: codegraph-topology-gate (Bidirectional CodeGraph Verification)
     # -------------------------------------------------------------------------
     print("\n[Gate 14B] codegraph-topology-gate (Bidirectional CodeGraph Verification)")
-    prompt_14b_1 = "为什么现在放视频会报错了？"
-    text_14b_1 = "经排查发现根因是 sidecar 挂了，已经修复完毕。"
-    vio_14b_1 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd="e:/social_media_to_tg")
-    runner.test("14B-1: 排查报错宣称定位根因但未调用 CodeGraph -> 触发拦截", vio_14b_1 is not None and "codegraph-topology-gate" in vio_14b_1, f"Got: {vio_14b_1}")
-
-    tc_14b_2 = [{"function": {"name": "codegraph_explore", "args": {"query": "sidecar processVideoForward"}}}]
-    vio_14b_2 = bridge.check_codegraph_topology_violation(text_14b_1, tc_14b_2, "codegraph_explore", prompt_14b_1, cwd="e:/social_media_to_tg")
-    runner.test("14B-2: 执行了 codegraph_explore 双向拓扑分析 -> 放行", vio_14b_2 is None, f"Got: {vio_14b_2}")
-
-    prompt_14b_3 = "请帮我格式化这个 JSON 字符串"
-    text_14b_3 = "格式化完成。"
-    vio_14b_3 = bridge.check_codegraph_topology_violation(text_14b_3, [], "", prompt_14b_3, cwd="e:/social_media_to_tg")
-    runner.test("14B-3: 非排查故障/非定位根因请求 -> 放行 (防误杀)", vio_14b_3 is None, f"Got: {vio_14b_3}")
-
     import tempfile
+    with tempfile.TemporaryDirectory() as td_cg:
+        (Path(td_cg) / ".codegraph").mkdir()
+        prompt_14b_1 = "为什么现在放视频会报错了？"
+        text_14b_1 = "经排查发现根因是 sidecar 挂了，已经修复完毕。"
+        vio_14b_1 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd=td_cg)
+        runner.test("14B-1: 排查报错宣称定位根因但未调用 CodeGraph -> 触发拦截", vio_14b_1 is not None and "codegraph-topology-gate" in vio_14b_1, f"Got: {vio_14b_1}")
+
+        tc_14b_2 = [{"function": {"name": "codegraph_explore", "args": {"query": "sidecar processVideoForward"}}}]
+        vio_14b_2 = bridge.check_codegraph_topology_violation(text_14b_1, tc_14b_2, "codegraph_explore", prompt_14b_1, cwd=td_cg)
+        runner.test("14B-2: 执行了 codegraph_explore 双向拓扑分析 -> 放行", vio_14b_2 is None, f"Got: {vio_14b_2}")
+
+        prompt_14b_3 = "请帮我格式化这个 JSON 字符串"
+        text_14b_3 = "格式化完成。"
+        vio_14b_3 = bridge.check_codegraph_topology_violation(text_14b_3, [], "", prompt_14b_3, cwd=td_cg)
+        runner.test("14B-3: 非排查故障/非定位根因请求 -> 放行 (防误杀)", vio_14b_3 is None, f"Got: {vio_14b_3}")
+
     with tempfile.TemporaryDirectory() as td_non_cg:
         vio_14b_4 = bridge.check_codegraph_topology_violation(text_14b_1, [], "", prompt_14b_1, cwd=td_non_cg)
         runner.test("14B-4: 无 .codegraph 索引的工程 -> 放行 (防误杀)", vio_14b_4 is None, f"Got: {vio_14b_4}")

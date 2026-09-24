@@ -188,7 +188,7 @@
      "score": 0.625
     },
     {
-     "title": "形状 2026-08-20-E(airbnb·改完没推送)：【我修好了错的结论，却没",
+     "title": "形状 2026-08-20-E：【我修好了错的结论，却没",
      "source": "lessons",
      "date": "2026-08-20",
      "score": 0.598
@@ -482,7 +482,7 @@
      "score": 0.545
     },
     {
-     "title": "形状 2026-08-20-C(backup-guard·把做完的事当待办)：【我把",
+     "title": "形状 2026-08-20-C(backup-service·把做完的事当待办)：【我把",
      "source": "lessons",
      "date": "2026-08-20",
      "score": 0.572
@@ -578,7 +578,7 @@
   "R9": {
    "id": "R9",
    "kind": "rule",
-   "text": "飙术语:对零编程的 Frank,句子里出现代码变量名/参数名/英文缩写/技术标识符(如 max_seq_length、fraction、CDP、recall)或自造比喻,却没紧跟一句大白话解释 —— 哪怕整句都是技术叙述也算。",
+   "text": "飙术语:对零编程的 用户,句子里出现代码变量名/参数名/英文缩写/技术标识符(如 max_seq_length、fraction、CDP、recall)或自造比喻,却没紧跟一句大白话解释 —— 哪怕整句都是技术叙述也算。",
    "group": "输出质",
    "timing": "收尾",
    "active": true,
@@ -609,7 +609,7 @@
      "score": 0.646
     },
     {
-     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 Frank 让他选,却",
+     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 用户 让他选,却",
      "source": "lessons",
      "date": "2026-09-09",
      "score": 0.61
@@ -660,7 +660,7 @@
      "score": 0.46
     },
     {
-     "title": "⛔ 「结果不符 ≠ 能力边界」+ 网站自动化铁律（2026-07-30 Frank ",
+     "title": "⛔ 「结果不符 ≠ 能力边界」+ 网站自动化铁律（2026-07-30 用户 ",
      "source": "CLAUDE铁律",
      "date": "2026-07-30",
      "score": 0.547
@@ -712,7 +712,7 @@
      "score": 0.617
     },
     {
-     "title": "2026-07-28 纸老虎全表(回答 Frank「整套系统还有什么是纸老虎、导致你",
+     "title": "2026-07-28 纸老虎全表(回答 用户「整套系统还有什么是纸老虎、导致你",
      "source": "lessons",
      "date": "2026-07-28",
      "score": 0.446
@@ -837,7 +837,7 @@
   "R13": {
    "id": "R13",
    "kind": "rule",
-   "text": "答非所问:没有直接回答 Frank 问的那一句,或把他的问题原样反弹回去(『你觉得呢』)。",
+   "text": "答非所问:没有直接回答 用户 问的那一句,或把他的问题原样反弹回去(『你觉得呢』)。",
    "group": "输出质",
    "timing": "收尾",
    "active": true,
@@ -1126,7 +1126,7 @@
      "score": 0.543
     },
     {
-     "title": "⛔ 工具去重铁律（2026-09-09 Frank 亲口定，紧接「先查现成」之后执行",
+     "title": "⛔ 工具去重铁律（2026-09-09 用户 亲口定，紧接「先查现成」之后执行",
      "source": "CLAUDE铁律",
      "date": "2026-09-09",
      "score": 0.529
@@ -1144,7 +1144,7 @@
      "score": 0.639
     },
     {
-     "title": "2026-07-23 不满检测从关键字升级成语义分类器(Frank「我要几乎98%召",
+     "title": "2026-07-23 不满检测从关键字升级成语义分类器(用户「我要几乎98%召",
      "source": "lessons",
      "date": "2026-07-23",
      "score": 0.553
@@ -1230,7 +1230,7 @@
    "origin": "gate注释归纳",
    "provenance": [
     {
-     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 Frank 让他选,却",
+     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 用户 让他选,却",
      "source": "lessons",
      "date": "2026-09-09",
      "score": 0.481
@@ -1610,7 +1610,7 @@
      "score": 0.62
     },
     {
-     "title": "2026-07-24 形状:把 Frank 8G机器搞到几小时不可用 + 元形状:固",
+     "title": "2026-07-24 形状:把 用户 8G机器搞到几小时不可用 + 元形状:固",
      "source": "lessons",
      "date": "2026-07-24",
      "score": 0.552
@@ -2434,7 +2434,7 @@
    "origin": "lessons 979 形状归纳",
    "provenance": [
     {
-     "title": "2026-07-28 纸老虎全表(回答 Frank「整套系统还有什么是纸老虎、导致你",
+     "title": "2026-07-28 纸老虎全表(回答 用户「整套系统还有什么是纸老虎、导致你",
      "source": "lessons",
      "date": "2026-07-28",
      "score": 0.659
@@ -2446,7 +2446,7 @@
      "score": 0.536
     },
     {
-     "title": "2026-07-29 纸老虎穷尽普查(Frank goal:「不能遗漏一个纸老虎,必",
+     "title": "2026-07-29 纸老虎穷尽普查(用户 goal:「不能遗漏一个纸老虎,必",
      "source": "lessons",
      "date": "2026-07-29",
      "score": 0.609
@@ -2514,7 +2514,7 @@
      "score": 0.505
     },
     {
-     "title": "⛔ 资源边界铁律（2026-07-24 钉死：我把 Frank 的 8G 机器搞到几",
+     "title": "⛔ 资源边界铁律（2026-07-24 钉死：我把 用户 的 8G 机器搞到几",
      "source": "CLAUDE铁律",
      "date": "2026-07-24",
      "score": 0.471
@@ -2600,7 +2600,7 @@
      "score": 0.532
     },
     {
-     "title": "2026-07-24 形状:把 Frank 8G机器搞到几小时不可用 + 元形状:固",
+     "title": "2026-07-24 形状:把 用户 8G机器搞到几小时不可用 + 元形状:固",
      "source": "lessons",
      "date": "2026-07-24",
      "score": 0.558
@@ -2651,7 +2651,7 @@
      "score": 0.575
     },
     {
-     "title": "形状 2026-08-20-E(airbnb·改完没推送)：【我修好了错的结论，却没",
+     "title": "形状 2026-08-20-E：【我修好了错的结论，却没",
      "source": "lessons",
      "date": "2026-08-20",
      "score": 0.543
@@ -2824,7 +2824,7 @@
      "score": 0.537
     },
     {
-     "title": "⛔ Frank 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
+     "title": "⛔ 用户 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
      "source": "CLAUDE铁律",
      "date": "2026-07-17",
      "score": 0.476
@@ -2885,7 +2885,7 @@
      "score": 0.601
     },
     {
-     "title": "⛔ Frank 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
+     "title": "⛔ 用户 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
      "source": "CLAUDE铁律",
      "date": "2026-07-17",
      "score": 0.566
@@ -2922,7 +2922,7 @@
    "origin": "CLAUDE.md 铁律提炼(2026-09-10)",
    "provenance": [
     {
-     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 Frank 让他选,却",
+     "title": "形状 2026-09-09-D：【把一个技术决策抛给零编程的 用户 让他选,却",
      "source": "lessons",
      "date": "2026-09-09",
      "score": 0.697
@@ -2965,7 +2965,7 @@
     }
    ],
    "enforced_by": [],
-   "law_hint": "Frank是零编程基础的vibe coder"
+   "law_hint": "用户是零编程基础的vibe coder"
   },
   "R46": {
    "id": "R46",
@@ -3032,7 +3032,7 @@
    "origin": "CLAUDE.md 铁律提炼(2026-09-10)",
    "provenance": [
     {
-     "title": "⛔ Frank 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
+     "title": "⛔ 用户 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
      "source": "CLAUDE铁律",
      "date": "2026-07-17",
      "score": 0.542
@@ -3148,7 +3148,7 @@
      "score": 0.557
     },
     {
-     "title": "⛔ Frank 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
+     "title": "⛔ 用户 质量·体验·成本铁律（跨所有项目，无例外｜2026-07-17 从项",
      "source": "CLAUDE铁律",
      "date": "2026-07-17",
      "score": 0.523
@@ -3301,7 +3301,7 @@
    "origin": "CLAUDE.md 铁律提炼(2026-09-10)",
    "provenance": [
     {
-     "title": "⛔ 交付形态铁律（2026-07-21 Frank「我让你做成 api/cli 注册",
+     "title": "⛔ 交付形态铁律（2026-07-21 用户「我让你做成 api/cli 注册",
      "source": "CLAUDE铁律",
      "date": "2026-07-21",
      "score": 0.648
@@ -3344,16 +3344,16 @@
     }
    ],
    "enforced_by": [],
-   "law_hint": "交付形态铁律（2026-07-21 Frank「我让你做成 api/cli 注册成 skill 给你自己随意 inv"
+   "law_hint": "交付形态铁律（2026-07-21 用户「我让你做成 api/cli 注册成 skill 给你自己随意 inv"
   },
   "R60": {
    "id": "R60",
    "kind": "rule",
-   "text": "成本只算账单:一次给出两个以上方案/选项/推荐时,成本里只出现了账单上的钱(月费/价格/硬件/订阅/免费/白嫖),却没有任何一句说明【做这件事要几天或烧多少 token/额度、Frank 要花多少时间动手或陪跑、切换期间会错什么、之后多了几处会坏】—— 对靠 AI 干活的零编程用户,这四样才是主成本;没写 = 把最重的一项默认成零。",
+   "text": "成本只算账单:一次给出两个以上方案/选项/推荐时,成本里只出现了账单上的钱(月费/价格/硬件/订阅/免费/白嫖),却没有任何一句说明【做这件事要几天或烧多少 token/额度、用户 要花多少时间动手或陪跑、切换期间会错什么、之后多了几处会坏】—— 对靠 AI 干活的零编程用户,这四样才是主成本;没写 = 把最重的一项默认成零。",
    "group": "成本账",
    "timing": "收尾",
    "active": true,
-   "origin": "2026-09-16 Frank「最重要的成本你没说，重来」",
+   "origin": "2026-09-16 用户「最重要的成本你没说，重来」",
    "provenance": [
     {
      "title": "2026-08-13 开源节流细节方案:给了诊断没给他要的那件事(每笔能省多少)",
@@ -3387,7 +3387,7 @@
   "antiscrape-invoke-gate": {
    "id": "antiscrape-invoke-gate",
    "kind": "gate",
-   "judges": "antiscrape-invoke-gate — 拦【被反爬挡住就宣布\"边界\"，而本机反爬工具一个没用】。 ⛔ 来历（2026-09-06，Frank：「为何你遇到反爬网站，不会自动用反爬 skill? 我有那么 skill 里自带那么多本地工具都遗失了吗?」）： 我抓 Redd",
+   "judges": "antiscrape-invoke-gate — 拦【被反爬挡住就宣布\"边界\"，而本机反爬工具一个没用】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3044,
@@ -3409,7 +3409,7 @@
   "ask-coverage-gate": {
    "id": "ask-coverage-gate",
    "kind": "gate",
-   "judges": "Stop 闸:用户一条消息里问了很多件事 → 收尾前把【他问的每一条】列回我面前,逼我自查漏没漏。 ⛔ 2026-08-14 起因(Frank 第 N 次抓到): 他一条消息里连问了十几件事(完整列系统 / 拆工作流 / 每个功能干什么 / 帮到还是帮倒忙 / 准确度 / 用什么",
+   "judges": "Stop 闸:用户一条消息里问了很多件事 → 收尾前把【他问的每一条】列回我面前,逼我自查漏没漏。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3037,
@@ -3431,7 +3431,7 @@
   "backslash-eater-gate": {
    "id": "backslash-eater-gate",
    "kind": "gate",
-   "judges": "backslash-eater-gate — Bash 工具会吃掉一层反斜杠，用它写代码/写文件必崩时拦下。 来历（2026-08-20，Frank：「heredoc 完整深入审查彻底修复，找出根因不是头痛医头」） 【根因 · 已实测 + 上游已确认，不是我写错也不是 git b",
+   "judges": "backslash-eater-gate — Bash 工具会吃掉一层反斜杠，用它写代码/写文件必崩时拦下。 来历（2026-08-20，用户：「heredoc 完整深入审查彻底修复，找出根因不是头痛医头」） 【根因 · 已实测 + 上游已确认，不是我写错也不是 git b",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1011,
@@ -3443,7 +3443,7 @@
   "bg-running-claim-gate": {
    "id": "bg-running-claim-gate",
    "kind": "gate",
-   "judges": "后台任务「还在跑」闸 —— 我说后台任务/子代理还在跑,但本会话没有任何一个真的在动 ⇒ 拦。 ⛔ 起因(2026-09-11,airbnb ai manager,Frank 原话):「外审是坏了还是你欺骗我说他在跑?跑了那么久没反应」。 实录:我派了一个后台外审子代理,之后**",
+   "judges": "后台任务「还在跑」闸 —— 我说后台任务/子代理还在跑,但本会话没有任何一个真的在动 ⇒ 拦。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3062,
@@ -3455,7 +3455,7 @@
   "browser-routing-gate": {
    "id": "browser-routing-gate",
    "kind": "gate",
-   "judges": "PreToolUse gate: 浏览器自动化前必须读 browser-routing.md。 违反: deny + 打印路由表摘要。不需要 Frank 授权的纯诊断读取不触发。",
+   "judges": "PreToolUse gate: 浏览器自动化前必须读 browser-routing.md。 违反: deny + 打印路由表摘要。不需要 用户 授权的纯诊断读取不触发。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1002,
@@ -3468,7 +3468,7 @@
   "capability-boundary-gate": {
    "id": "capability-boundary-gate",
    "kind": "gate",
-   "judges": "Stop 闸:【我说\"只有你能做\" / \"我够不到\" —— 但我根本没试过】。 ⛔ 起因(2026-09-06,Frank 原话): 「**为何你还是不懂你的能力边界?加一个能力边界 gate**,你明明可以自己控制浏览器, 至少有几个本地 skill 和本地工具可以用来自己浏览",
+   "judges": "Stop 闸:【我说\"只有你能做\" / \"我够不到\" —— 但我根本没试过】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3047,
@@ -3481,7 +3481,7 @@
   "checklist-completion-gate": {
    "id": "checklist-completion-gate",
    "kind": "gate",
-   "judges": "Checklist 完成度闸 —— 拦【清单上还挂着没做的,我的收尾却没逐条交代】。 ⛔ 起因(2026-09-11,Frank 原话): 「这里每一道问题你都要做个 todo checklist plan,做完要 mark 全部做了没有, 这个要 superego 加多一个新 ",
+   "judges": "Checklist 完成度闸 —— 拦【清单上还挂着没做的,我的收尾却没逐条交代】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3061,
@@ -3495,7 +3495,7 @@
   "collect-list-evidence-gate": {
    "id": "collect-list-evidence-gate",
    "kind": "gate",
-   "judges": "collect-list-evidence-gate — 拦【给出\"该向谁收多少钱\"的清单,却没碰过第一手凭据】。 ⛔ 来历(2026-09-09,airbnb ai manager,Frank 差点照着我的清单去重复收钱): 我把 `owner-delivery --prepa",
+   "judges": "collect-list-evidence-gate — 拦【给出\"该向谁收多少钱\"的清单,却没碰过第一手凭据】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3055,
@@ -3510,7 +3510,7 @@
   "commitment-execution-gate": {
    "id": "commitment-execution-gate",
    "kind": "gate",
-   "judges": "commitment-execution-gate — 跨 turn 验\"我承诺了 X,之后真做了没\"。 ⛔ 缺口来历(2026-08-30,Frank 截图戳穿:「为何 superego 没拦你说开始跑、但是什么都没做」): promise-gate 只查【本轮内】有没有工具调",
+   "judges": "commitment-execution-gate — 跨 turn 验\"我承诺了 X,之后真做了没\"。 ⛔ 缺口来历(2026-08-30,用户 截图戳穿:「为何 superego 没拦你说开始跑、但是什么都没做」): promise-gate 只查【本轮内】有没有工具调",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3001,
@@ -3525,7 +3525,7 @@
   "concise-answer-gate": {
    "id": "concise-answer-gate",
    "kind": "gate",
-   "judges": "简洁闸 —— 两条【互相独立】的判据。 判据A(2026-08-21 建):工具少却话多 —— tools<=2 AND chars>500 判据B(2026-08-25 补):**他问判断/原因题,我却回长篇** —— 与工具数【无关】 ⛔ 为什么补 B(形状 2026-08-",
+   "judges": "简洁闸 —— 两条【互相独立】的判据。 判据A(2026-08-21 建):工具少却话多 —— tools<=2 AND chars>500 判据B(2026-08-25 补):**他问判断/原因题,我却回长篇** —— 与工具数【无关】 ⛔ 为什么补 B(形状 2026-08",
    "event": "未挂/被别的hook调",
    "stage": "未挂/被别的hook调",
    "seq": 9999,
@@ -3537,7 +3537,7 @@
   "critic-gate": {
    "id": "critic-gate",
    "kind": "gate",
-   "judges": "Stop hook·Superego Phase2 外部 critic 闸(2026-07-24 迁移)——实质代码交付前,逼我先派【独立子实例】 按 Frank 的收敛7步SOP对着真 artifact 挑刺(tool-grounded),而不是我自己拍脑袋说\"做完了\"。 治的",
+   "judges": "Stop hook·Superego Phase2 外部 critic 闸(2026-07-24 迁移)——实质代码交付前,逼我先派【独立子实例】 按 用户 的收敛7步SOP对着真 artifact 挑刺(tool-grounded),而不是我自己拍脑袋说\"做完了\"。 治的",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3014,
@@ -3550,7 +3550,7 @@
   "deploy-dirty-tree-gate": {
    "id": "deploy-dirty-tree-gate",
    "kind": "gate",
-   "judges": "deploy-dirty-tree-gate —— PreToolUse 闸:拦【从有未提交改动的目录直接部署上线】。 ⛔ 为什么要它(2026-09-18 airbnb ai manager,真实事故): 修客人入住页时,我 7 次 `npx vercel deploy --p",
+   "judges": "deploy-dirty-tree-gate —— PreToolUse 闸:拦【从有未提交改动的目录直接部署上线】。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1016,
@@ -3583,7 +3583,7 @@
   "evidence-gate": {
    "id": "evidence-gate",
    "kind": "gate",
-   "judges": "证据闸 —— 我说「生成了/写了/保存到 某个文件」,就去查那个文件【真的在不在】。 ⛔ 为什么要它(2026-07-29,Frank「复盘别人是怎么设计怎么做的才对」→ 深搜行业做法后落地): 实测数据(tau2-bench,arXiv 2606.09863):**「假成功」占",
+   "judges": "证据闸 —— 我说「生成了/写了/保存到 某个文件」,就去查那个文件【真的在不在】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3021,
@@ -3593,7 +3593,7 @@
   "evidence-in-log-gate": {
    "id": "evidence-in-log-gate",
    "kind": "gate",
-   "judges": "PostToolUse 闸:【新写/改的闸,开火时必须留触发词】。 ⛔ 起因(2026-09-07,记分板自己指认出来的): 我今天新建的 `capability-boundary-gate` —— 记分板报它 「同一指纹 180/180 次(复发率 100%)、**无证据率 1",
+   "judges": "PostToolUse 闸:【新写/改的闸,开火时必须留触发词】。",
    "event": "PostToolUse",
    "stage": "动手后",
    "seq": 2006,
@@ -3619,7 +3619,7 @@
   "false-done-gate": {
    "id": "false-done-gate",
    "kind": "gate",
-   "judges": "Stop hook: 拦截「虚报生效/装好/跑通」—— 声称交付物工作,但本轮没跑任何核实工具。 2026-07-19 humanizerai 教训固化:手写完 vibe-spec v1(从脑袋编、没测)就喊「已焊好、已生效」, Frank「白干了吗」。CLAUDE.md 已 4",
+   "judges": "Stop hook: 拦截「虚报生效/装好/跑通」—— 声称交付物工作,但本轮没跑任何核实工具。 2026-07-19 humanizerai 教训固化:手写完 vibe-spec v1(从脑袋编、没测)就喊「已焊好、已生效」, 用户「白干了吗」。CLAUDE.md 已 4",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3015,
@@ -3631,7 +3631,7 @@
   "fault-injection-gate": {
    "id": "fault-injection-gate",
    "kind": "gate",
-   "judges": "故障注入闸 —— 我这轮【写/改了测试】,就必须证明那把尺子【真的会红】,否则它可能是摆设。 ⛔ 为什么要它(2026-08-07,Frank 一句话问出来的): 他问「尺子坏了是指 superego 的尺子吗？不用修正吗？」——他其实在问: **既然你两天坏了 10 把尺子,为",
+   "judges": "故障注入闸 —— 我这轮【写/改了测试】,就必须证明那把尺子【真的会红】,否则它可能是摆设。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3030,
@@ -3643,7 +3643,7 @@
   "flat-table-gate": {
    "id": "flat-table-gate",
    "kind": "gate",
-   "judges": "Stop 闸:【对比表里某一数值列所有行都一样 ⇒ 那把尺子多半没在测量】。 ⛔ 起因(2026-09-06,Frank 原话): 「你凭什么说要用 128 是不降级的方案?**如果 128 能用不可能还会有 1024 的存在**」 「**尺子坏了不修?那么白痴的逻辑,三岁小孩都",
+   "judges": "Stop 闸:【对比表里某一数值列所有行都一样 ⇒ 那把尺子多半没在测量】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3046,
@@ -3653,7 +3653,7 @@
   "free-first-gate": {
    "id": "free-first-gate",
    "kind": "gate",
-   "judges": "free-first-gate — 拦【推荐/采用/搭建一个【付费】方案，而本轮从没搜过免费替代】。 ⛔ 来历（2026-09-08，Frank：「为何superego没拦你没开火，修到开火为止，不能有遗漏」）： 诊断\"抓不到\"，我一头扎进【付费】的 TikHub（还是个余额=0",
+   "judges": "free-first-gate — 拦【推荐/采用/搭建一个【付费】方案，而本轮从没搜过免费替代】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3058,
@@ -3663,7 +3663,7 @@
   "gate-generality-gate": {
    "id": "gate-generality-gate",
    "kind": "gate",
-   "judges": "PostToolUse(Write|Edit) 元闸:gate-generality-gate 监督【我建的闸是不是全局通用规则,而不是头疼医头针对单一事件】。 Frank 2026-09-09 钉死:「你建立的是专属针对这个事件的 gate 你就错了,我要建立的是全局通用规则…",
+   "judges": "PostToolUse(Write|Edit) 元闸:gate-generality-gate 监督【我建的闸是不是全局通用规则,而不是头疼医头针对单一事件】。 用户 2026-09-09 钉死:「你建立的是专属针对这个事件的 gate 你就错了,我要建立的是全局通用规则…",
    "event": "PostToolUse",
    "stage": "动手后",
    "seq": 2009,
@@ -3677,7 +3677,7 @@
   "hook-noise-not-authorization-gate": {
    "id": "hook-noise-not-authorization-gate",
    "kind": "gate",
-   "judges": "hook-noise-not-authorization-gate —— Stop hook 的重复提醒不是 Frank 的授权。 治的病(2026-09-06 d--airbnb-ai-manager 项目原样复发,原始形状 2026-08-07 已记进 memory inje",
+   "judges": "hook-noise-not-authorization-gate —— Stop hook 的重复提醒不是 用户 的授权。 治的病(2026-09-06 booking-system 项目原样复发,原始形状 2026-08-07 已记进 memory inje",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1015,
@@ -3692,7 +3692,7 @@
   "idle-ask-gate": {
    "id": "idle-ask-gate",
    "kind": "gate",
-   "judges": "空转请示闸 —— 我列出【我自己能做的活】然后问「要不要做」,而这一轮我【一个工具都没调】。 ⛔ 病(Frank 2026-07-29 截图当场抓到,跨项目复发): 另一个 chat 里我写:「剩下4个(日历/财务/快照/写回)**要不要现在接**?…你说够了我就停在订单这儿。」",
+   "judges": "空转请示闸 —— 我列出【我自己能做的活】然后问「要不要做」,而这一轮我【一个工具都没调】。 ⛔ 病(用户 2026-07-29 截图当场抓到,跨项目复发): 另一个 chat 里我写:「剩下4个(日历/财务/快照/写回)**要不要现在接**?…你说够了我就停在订单这儿。」",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3022,
@@ -3705,7 +3705,7 @@
   "idle-confess-gate": {
    "id": "idle-confess-gate",
    "kind": "gate",
-   "judges": "空转承认闸 —— 我承认「我知道该做但没做」,而这一轮我【一个工具都没调】。 ⛔ 病(Frank 2026-08-30 当场抓到,跨项目必然复发): 我问完他 superego 是否没拦,他追问「为何你说你收到,继续干活,却没做任何事」 → 我**没在干活**,只是回了一句\"收到",
+   "judges": "空转承认闸 —— 我承认「我知道该做但没做」,而这一轮我【一个工具都没调】。 ⛔ 病(用户 2026-08-30 当场抓到,跨项目必然复发): 我问完他 superego 是否没拦,他追问「为何你说你收到,继续干活,却没做任何事」 → 我**没在干活**,只是回了一句\"收到",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3053,
@@ -3717,7 +3717,7 @@
   "jargon-gate": {
    "id": "jargon-gate",
    "kind": "gate",
-   "judges": "交付时用了【只有我懂的词】却没当场翻译 → 拦。 ⛔ 为什么必须是机器闸(2026-08-19 Frank 亲口问出来的): 他问「挂牌价口径是什么意思?我不是有去 AI 味的 skill,为何没有自动 Invoke?」 —— skill **在**(`renhua`),它的 d",
+   "judges": "交付时用了【只有我懂的词】却没当场翻译 → 拦。 ⛔ 为什么必须是机器闸(2026-08-19 用户 亲口问出来的): 他问「挂牌价口径是什么意思?我不是有去 AI 味的 skill,为何没有自动 Invoke?」 —— skill **在**(`renhua`),它的 d",
    "event": "未挂/被别的hook调",
    "stage": "未挂/被别的hook调",
    "seq": 9999,
@@ -3727,7 +3727,7 @@
   "keep-going-gate": {
    "id": "keep-going-gate",
    "kind": "gate",
-   "judges": "keep-going-gate —— 被拦之后只说话不干活就继续拦；真动手了立刻放行。 ⛔ 来历（2026-08-19，Frank：「我说 nagging 不做事，或者最后所有任务还没完整做完 就停下来，**为何不能 hook 继续做？？？？**」）： 取证（实测，不是印象）： ",
+   "judges": "keep-going-gate —— 被拦之后只说话不干活就继续拦；真动手了立刻放行。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3008,
@@ -3740,7 +3740,7 @@
   "lesson-anchor-gate": {
    "id": "lesson-anchor-gate",
    "kind": "gate",
-   "judges": "PostToolUse 闸:【写了新教训 → 立刻提醒补锚点】。 ⛔ 起因(2026-09-06,同一天犯两次): 往 `lessons.md` 写新形状 → 规则索引自动重建 → **但锚点不会跟着建** ⇒ 那条新教训【召不回来】,而且 `test_recall.py` 当场",
+   "judges": "PostToolUse 闸:【写了新教训 → 立刻提醒补锚点】。",
    "event": "PostToolUse",
    "stage": "动手后",
    "seq": 2008,
@@ -3754,7 +3754,7 @@
   "lessons-write-gate": {
    "id": "lessons-write-gate",
    "kind": "gate",
-   "judges": "lessons-write-gate —— PreToolUse 闸:拦【绕过 lessons_add.py 去整份覆写 lessons.md】。 ⛔ 为什么要它(2026-09-09 实测): 本机常有 3~5 个 session 同开,每个记教训都用「读全文 -> 拼接 ->",
+   "judges": "lessons-write-gate —— PreToolUse 闸:拦【绕过 lessons_add.py 去整份覆写 lessons.md】。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1020,
@@ -3764,7 +3764,7 @@
   "local-first-gate": {
    "id": "local-first-gate",
    "kind": "gate",
-   "judges": "Stop hook: 【推荐在本机装/部署模型,本轮却没查过云端】= 违规。 形状 2026-08-18-B 第 3 次发作(2026-09-17,social_media_to_tg): 本地看图模型在重装后丢了,我给 Frank 出 A/B/C 三选一,推荐「A 装回 oll",
+   "judges": "Stop hook: 【推荐在本机装/部署模型,本轮却没查过云端】= 违规。 形状 2026-08-18-B 第 3 次发作(2026-09-17,social-gateway): 本地看图模型在重装后丢了,我给 用户 出 A/B/C 三选一,推荐「A 装回 oll",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3063,
@@ -3777,7 +3777,7 @@
   "media-regression-gate": {
    "id": "media-regression-gate",
    "kind": "gate",
-   "judges": "媒体降级闸 —— 新出的片子比【已验收的上一条】变差了,就不许收尾。 ⛔ 为什么建它(2026-08-12 真实翻车): 我拿首帧驱动法重做第二镜的反打,交付时只验了「楚天啸正脸拿到没」——拿到了,于是我说\"成功\"。 Frank 一眼看出三处我没验的:①画风从真人写实变成动漫脸 ",
+   "judges": "媒体降级闸 —— 新出的片子比【已验收的上一条】变差了,就不许收尾。 ⛔ 为什么建它(2026-08-12 真实翻车): 我拿首帧驱动法重做第二镜的反打,交付时只验了「楚天啸正脸拿到没」——拿到了,于是我说\"成功\"。 用户 一眼看出三处我没验的:①画风从真人写实变成动漫脸",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3034,
@@ -3789,7 +3789,7 @@
   "model-authenticity-gate": {
    "id": "model-authenticity-gate",
    "kind": "gate",
-   "judges": "model-authenticity-gate — 严禁凭空捏造公版模型，必须以 CC Switch 本地 5 万条记录为唯一基准。 Frank 2026-09-14 痛斥（2026-09-14-C / 2026-09-14-D）： 「凭空捏造是大罪，为何superego没有拦你",
+   "judges": "model-authenticity-gate — 严禁凭空捏造公版模型，必须以 CC Switch 本地 5 万条记录为唯一基准。 用户 2026-09-14 痛斥（2026-09-14-C / 2026-09-14-D）： 「凭空捏造是大罪，为何superego没有拦你",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3003,
@@ -3799,7 +3799,7 @@
   "money-verdict-gate": {
    "id": "money-verdict-gate",
    "kind": "gate",
-   "judges": "money-verdict-gate — 拦【用单一数据源，就对\"做什么能赚钱\"下判决】。 ⛔ 来历(2026-08-22, Frank:「凡是变现优先…所有宇宙加我雷达交叉,凡是涉及这个最重要的 事情需要交叉验证那个才是真相答案,因为前面一但错了,一步错步步错,后面做得再好也 ",
+   "judges": "money-verdict-gate — 拦【用单一数据源，就对\"做什么能赚钱\"下判决】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3054,
@@ -3825,7 +3825,7 @@
   "no-search-no-claim-gate": {
    "id": "no-search-no-claim-gate",
    "kind": "gate",
-   "judges": "Stop hook: 我说【某个东西不存在 / 项目里没有 / 只有你能给我】,但这一轮【一次都没搜过】→ 拦。 ⛔ 起因(2026-09-06,Frank 甩截图纠正): 他要 Atria SOFO 的停车自动化,我连说两轮「SOFO 是另一个系统」「那个网址项目里从来没有过记",
+   "judges": "Stop hook: 我说【某个东西不存在 / 项目里没有 / 只有你能给我】,但这一轮【一次都没搜过】→ 拦。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3029,
@@ -3843,7 +3843,7 @@
   "no-user-data-gate": {
    "id": "no-user-data-gate",
    "kind": "gate",
-   "judges": "no-user-data-gate — 拦【断言\"我没有/找不到<用户的数据/链接/例子>\",而本轮没去翻他的档案/日志/库】。 ⛔ 来历（2026-09-09，Frank：「我之前不是自己有很多手动粘贴的旧链接，没被系统记录吗？不会用？ 穷尽gate是废了吗？修到能开火为止」）",
+   "judges": "no-user-data-gate — 拦【断言\"我没有/找不到<用户的数据/链接/例子>\",而本轮没去翻他的档案/日志/库】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3059,
@@ -3870,7 +3870,7 @@
   "nudge-escalation-gate": {
    "id": "nudge-escalation-gate",
    "kind": "gate",
-   "judges": "Stop 闸:【软提醒重复太多次还没解决 → 升级成硬拦】。 ⛔ 起因(2026-08-26,Frank 原话): 「是不是应该有个机制,**提醒了一定数量后没做就得 hook**?而不是纸老虎的机制? 还有我的所有记录有没有记录日期,时间,发生了多少次?**今天里记录了多少个提",
+   "judges": "Stop 闸:【软提醒重复太多次还没解决 → 升级成硬拦】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3045,
@@ -3888,7 +3888,7 @@
   "orphan-asset-gate": {
    "id": "orphan-asset-gate",
    "kind": "gate",
-   "judges": "orphan-asset-gate — 拦【生成了资产，却没有任何代码在消费它】。 ⛔ 来历（2026-08-18，Frank：「为何 shot3, shot4 人脸变了，你方向到底对不对」）： 他早就明确要求「要能参考 9 张 maximum 图片」。我据此做了 **5 个人物",
+   "judges": "orphan-asset-gate — 拦【生成了资产，却没有任何代码在消费它】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3049,
@@ -3898,7 +3898,7 @@
   "pipeline-ends-gate": {
    "id": "pipeline-ends-gate",
    "kind": "gate",
-   "judges": "pipeline-ends-gate —— 我自称画了「端到端/全流程」，但两头没接上业务时拦下。 ⛔ 来历（2026-08-19，manju）： Frank 让我梳理**端到端流水线**。我扫了 `novel/*.py` 抓出 11 个脚本， 排成一张表交上去 —— 从「拆章」",
+   "judges": "pipeline-ends-gate —— 我自称画了「端到端/全流程」，但两头没接上业务时拦下。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3005,
@@ -3912,7 +3912,7 @@
   "pipeline-first-gate": {
    "id": "pipeline-first-gate",
    "kind": "gate",
-   "judges": "pipeline-first-gate —— 还没画出全链路，就先去启动【长跑/花钱的生产动作】时拦下。 ⛔ 来历（2026-08-20，manju）： 我刚查完赛道数据、定了题材，下一秒就 `nohup ainovel-cli --headless --prompt \"...\"",
+   "judges": "pipeline-first-gate —— 还没画出全链路，就先去启动【长跑/花钱的生产动作】时拦下。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1010,
@@ -3927,7 +3927,7 @@
   "plan-before-act-gate": {
    "id": "plan-before-act-gate",
    "kind": "gate",
-   "judges": "计划优先闸 —— 要花钱 / 要长跑的动作，本轮没有 plan ⇒ 拦。 ⛔ 它补的是 SOP 第 ⑤ 步（才动手）。Frank 2026-08-20 原话： 「**你凭什么就开始动**？…**你做任何东西前有没用 plan？铁规则！！！！！**」 ⛔ 为什么单独做一道： `pi",
+   "judges": "计划优先闸 —— 要花钱 / 要长跑的动作，本轮没有 plan ⇒ 拦。 ⛔ 它补的是 SOP 第 ⑤ 步（才动手）。用户 2026-08-20 原话： 「**你凭什么就开始动**？…**你做任何东西前有没用 plan？铁规则！！！！！**」 ⛔ 为什么单独做一道： `pi",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1013,
@@ -3962,7 +3962,7 @@
   "process-alias-attribution-gate": {
    "id": "process-alias-attribution-gate",
    "kind": "gate",
-   "judges": "process-alias-attribution-gate — 拦【未查清应用真实生命周期与安装指纹，胡乱拿相似进程当替身/张冠李戴】。 ⛔ 起因 (2026-09-14, fearless-hertz, Frank 原话「干你妈的，谁和你说workbuddy 是 dsh,明明",
+   "judges": "process-alias-attribution-gate — 拦【未查清应用真实生命周期与安装指纹，胡乱拿相似进程当替身/张冠李戴】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3042,
@@ -3972,7 +3972,7 @@
   "progress-gate": {
    "id": "progress-gate",
    "kind": "gate",
-   "judges": "Stop hook: 进度记录闸 —— 本轮做了实质改动，却没往 PROGRESS.md 记一行就想收尾。 ⛔ 为什么需要它（2026-08-12 实录）： 那天在 bananaflow 修了标签泄漏、装了取证探头、修了两个静默吞错、迁移 pagefile/TEMP、 抢救凭证、",
+   "judges": "Stop hook: 进度记录闸 —— 本轮做了实质改动，却没往 PROGRESS.md 记一行就想收尾。 ⛔ 为什么需要它（2026-08-12",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3028,
@@ -3985,7 +3985,7 @@
   "promise-carryover-gate": {
    "id": "promise-carryover-gate",
    "kind": "gate",
-   "judges": "promise-carryover-gate —— 跨轮承诺对账：我上一轮说要做的，这一轮做了吗？ ⛔ 来历（2026-08-19，Frank：「每次给完结论后就停止了，为何 superego 没开火，坏了吗？」）： 查了当天真实计量（60 轮）：Superego **没坏** ",
+   "judges": "promise-carryover-gate —— 跨轮承诺对账：我上一轮说要做的，这一轮做了吗？",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3007,
@@ -3997,7 +3997,7 @@
   "promise-gate": {
    "id": "promise-gate",
    "kind": "gate",
-   "judges": "promise-gate — 拦【承诺了却没启动任何东西】的收尾。 ⛔ 缺口来历(2026-07-28,Frank:「不用我回话接着做?但是停手了?为何 superego 没逼你做完?」): `no-nagging-guard` 只抓【疑问/请示句】——「要不要我改?」「需要我继",
+   "judges": "promise-gate — 拦【承诺了却没启动任何东西】的收尾。 ⛔ 缺口来历(2026-07-28,用户:「不用我回话接着做?但是停手了?为何 superego 没逼你做完?」): `no-nagging-guard` 只抓【疑问/请示句】——「要不要我改?」「需要我继",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3018,
@@ -4013,7 +4013,7 @@
   "question-boomerang-gate": {
    "id": "question-boomerang-gate",
    "kind": "gate",
-   "judges": "question-boomerang-gate —— 他直接问我判断，我把问题原样退回给他时拦下。 ⛔ 来历（2026-08-19，manju）： Frank：「你觉得怎么样做才是我要的？**先告诉我你的想法**」 我列了三条主张，然后收尾写： 「方向（拍哪个题材、要不要切 Fa",
+   "judges": "question-boomerang-gate —— 他直接问我判断，我把问题原样退回给他时拦下。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3006,
@@ -4026,7 +4026,7 @@
   "recursive-scan-gate": {
    "id": "recursive-scan-gate",
    "kind": "gate",
-   "judges": "递归扫描闸 —— 拦【对已知超大目录跑递归统计】。 ⛔ 治的是 lessons 形状 2026-08-20-R【观察者效应：用消耗 X 的动作去测量 X】的窄子集。 实录（2026-08-20 19:2x）：Frank 报\"很卡\"，我实测出 C 盘读延迟 182ms（正常 0.3",
+   "judges": "递归扫描闸 —— 拦【对已知超大目录跑递归统计】。 ⛔ 治的是 lessons 形状 2026-08-20-R【观察者效应：用消耗 X 的动作去测量 X】的窄子集。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1012,
@@ -4040,7 +4040,7 @@
   "residue-gate": {
    "id": "residue-gate",
    "kind": "gate",
-   "judges": "Stop hook·残余闸(2026-07-25 建)——治「把『诚实登记残余』当成『处理了』」。 【实录】我交付了一份体检报告,列了 20+ 条「已确诊但没动」,然后收工。Frank: 「哪些解决了哪些还没解决?还没解决为何不去解决?你以为没方法彻底解决??」 —— 绝大多数那",
+   "judges": "Stop hook·残余闸(2026-07-25 建)——治「把『诚实登记残余』当成『处理了』」。 【",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3025,
@@ -4050,7 +4050,7 @@
   "resource-echo-gate": {
    "id": "resource-echo-gate",
    "kind": "gate",
-   "judges": "Stop 闸:每轮收尾【回头看】—— 我这一轮让机器多烧了多少?烧得凶就拦一次,逼我处理。 ⛔ 2026-08-14 起因(Frank 亲口点名这个洞): 「每次凡是你动用了本地资源后,你没有回头看有没有导致卡顿,有没有回头看? 还没做之前,凡是有用到本地所有资源跑的任务,前面要",
+   "judges": "Stop 闸:每轮收尾【回头看】—— 我这一轮让机器多烧了多少?烧得凶就拦一次,逼我处理。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3035,
@@ -4062,7 +4062,7 @@
   "rootcause-gate": {
    "id": "rootcause-gate",
    "kind": "gate",
-   "judges": "Stop 闸:【说\"修好了\"但没交代根因】→ 拦。治「头疼医头」。 ⛔ 起因(2026-08-26 Frank 原话): 「**防止头疼医头,彻底根治这个是我最在乎的铁律之一**,这个方法论尤其重要通用性最好的。 我还怀疑你每次帮我找的工具**是不是只是给头疼药,而不是完整彻底方",
+   "judges": "Stop 闸:【说\"修好了\"但没交代根因】→ 拦。治「头疼医头」。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3050,
@@ -4074,7 +4074,7 @@
   "scenario-fit-gate": {
    "id": "scenario-fit-gate",
    "kind": "gate",
-   "judges": "场景匹配闸 —— 拿一个具体 workflow/模型去跑生产前，本轮没比过同类 ⇒ 拦。 ⛔ 治的是 SOP 横切自检 C 条。Frank 2026-08-20 两句原话合起来才完整： ①「模型用最强」②「**强的前提是场景要对**」 ⇒ 顺序是 **场景 → 路子 → 档位**",
+   "judges": "场景匹配闸 —— 拿一个具体 workflow/模型去跑生产前，本轮没比过同类 ⇒ 拦。 ⛔ 治的是 SOP 横切自检 C 条。用户 2026-08-20 两句原话合起来才完整： ①「模型用最强」②「**强的前提是场景要对**」 ⇒ 顺序是 **场景 → 路子 → 档位**",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1014,
@@ -4088,7 +4088,7 @@
   "scope-completeness-gate": {
    "id": "scope-completeness-gate",
    "kind": "gate",
-   "judges": "范围完整性闸 —— 拦【他要的是一类，我只做了其中一个】。 ⛔ 起因（2026-08-26，Frank 原话）： 「为何你只是换 twitter，干你妈的，整个项目不换留着最好的工具不替换？」 实录：实测出 opencli 抓 X 账号 5/5 成功、camofox 0/5，我就",
+   "judges": "范围完整性闸 —— 拦【他要的是一类，我只做了其中一个】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3056,
@@ -4101,7 +4101,7 @@
   "search-breadth-gate": {
    "id": "search-breadth-gate",
    "kind": "gate",
-   "judges": "search-breadth-gate — 拦【只用一种检索通道,就下领域级断言】。 ⛔ 来历(2026-08-14,Frank:「上次让你找工具,你就只找到 30%,还漏了那么多」): 我只跑了 `gh search` 一族关键词、每组只取前 20 条、从不翻页,就出具了《全链",
+   "judges": "search-breadth-gate — 拦【只用一种检索通道,就下领域级断言】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3036,
@@ -4115,7 +4115,7 @@
   "search-layer-gate": {
    "id": "search-layer-gate",
    "kind": "gate",
-   "judges": "search-layer-gate — PreToolUse:在我【搜索发出之前】拦,不是犯完错才提醒。 ⛔ 来历(2026-08-14,Frank:「所以这个教训没让你免疫和进化做事吗?」): lessons.md 第 40 行两周前就钉死了铁律 —— 「搜『有没有现成的』时,",
+   "judges": "search-layer-gate — PreToolUse:在我【搜索发出之前】拦,不是犯完错才提醒。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1024,
@@ -4125,7 +4125,7 @@
   "self-loop-gate": {
    "id": "self-loop-gate",
    "kind": "gate",
-   "judges": "⛔ 自循环闸 —— Superego 里【唯一一道会说「够了，停下」的闸】。 ⛔ 为什么必须有它（2026-08-25 Frank 亲口爆发）： 「你他妈的没完没了，是不是superego的问题，一直让你无限loop做，完全浪费我token， 我都不知道你做什么鬼」 实录：他 1",
+   "judges": "⛔ 自循环闸 —— Superego 里【唯一一道会说「够了，停下」的闸】。 ⛔ 为什么必须有它（2026-08-25 用户 亲口爆发）： 「你他妈的没完没了，是不是superego的问题，一直让你无限loop做，完全浪费我token， 我都不知道你做什么鬼」",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3051,
@@ -4137,7 +4137,7 @@
   "semantic-superego-gate": {
    "id": "semantic-superego-gate",
    "kind": "gate",
-   "judges": "semantic-superego-gate — 【总判官】第一版(Frank 2026-09-09 拍板方向)。 把几十道\"死认关键词\"的软闸,换成一个【读懂意思】的判官:本轮我对 Frank 说的最后一段话, 喂给免费 LLM(agnes),按一整套【通用规则】判它违规了哪条",
+   "judges": "semantic-superego-gate — 【总判官】第一版(用户 2026-09-09 拍板方向)。 把几十道\"死认关键词\"的软闸,换成一个【读懂意思】的判官:本轮我对 用户 说的最后一段话, 喂给免费 LLM(agnes),按一整套【通用规则】判它违规了哪条",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3004,
@@ -4152,7 +4152,7 @@
   "shell-writes-code-gate": {
    "id": "shell-writes-code-gate",
    "kind": "gate",
-   "judges": "shell-writes-code-gate —— 拦「用 shell 的 heredoc / sed -i 去写或改【代码文件】」。 ⛔ 来历（2026-08-19，同一个坑一天之内发作 3 次，Frank： 「转义层今天已经暴露了坏了那么多次，模拟不去找根因修复固化，没必要吗",
+   "judges": "shell-writes-code-gate —— 拦「用 shell 的 heredoc / sed -i 去写或改【代码文件】」。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1009,
@@ -4178,7 +4178,7 @@
   "spec-first-gate": {
    "id": "spec-first-gate",
    "kind": "gate",
-   "judges": "规格优先闸 —— 本机有对口指南，本轮却没打开就动手 ⇒ 拦。 ⛔ 它治的是 Frank 2026-08-20 亲口点破的病： 「那是你没用用对方法，**你真的懂怎么写 minimax h3 规格的提示词来控制画面和字幕吗？ 本地和多宇宙没用指南，你自己全部做的事是不是猜测的？*",
+   "judges": "规格优先闸 —— 本机有对口指南，本轮却没打开就动手 ⇒ 拦。 ⛔ 它治的是 用户 2026-08-20 亲口点破的病： 「那是你没用用对方法，**你真的懂怎么写 minimax h3 规格的提示词来控制画面和字幕吗？ 本地和多宇宙没用指南，你自己全部做的事是不是猜测的？*",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1019,
@@ -4191,7 +4191,7 @@
   "stagnation-gate": {
    "id": "stagnation-gate",
    "kind": "gate",
-   "judges": "Stop 闸:【语义停滞】—— 我连着几轮换着说法说同一件事,实质没有推进。 ⛔ 起因(2026-09-07,Frank 一整晚在看的就是这个): 「已经迭代了3个月没有一点进步…很多时候变成了累赘的工具」 而他自己知识库里那篇(`agent-self-correction-lo",
+   "judges": "Stop 闸:【语义停滞】—— 我连着几轮换着说法说同一件事,实质没有推进。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3057,
@@ -4203,7 +4203,7 @@
   "strawman-verdict-gate": {
    "id": "strawman-verdict-gate",
    "kind": "gate",
-   "judges": "strawman-verdict-gate — 拦【拿我自己造的替身，去否定他提的方案】。 ⛔ 起因(2026-09-05,Frank 一句「你连 obsidian 都没装,你测试什么鬼?」): 他问「能不能利用 obsidian 当记忆库自动联动」。我做了个\"对照实验\",表格里",
+   "judges": "strawman-verdict-gate — 拦【拿我自己造的替身，去否定他提的方案】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3041,
@@ -4215,7 +4215,7 @@
   "tool-dedup-gate": {
    "id": "tool-dedup-gate",
    "kind": "gate",
-   "judges": "Stop gate·工具去重闸(2026-09-09 Frank 亲口要的) ⛔⛔ 与同目录 `tool-roster-gate.py` 的区别(功能回退闸问过两次,写清别再混): | | tool-roster-gate | 本闸 | |---|---|---| | 治什么 |",
+   "judges": "Stop gate·工具去重闸(2026-09-09 用户 亲口要的) ⛔⛔ 与同目录 `tool-roster-gate.py` 的区别(功能回退闸问过两次,写清别再混): | | tool-roster-gate | 本闸 | |---|---|---| | 治什么 |",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3060,
@@ -4228,7 +4228,7 @@
   "tool-roster-gate": {
    "id": "tool-roster-gate",
    "kind": "gate",
-   "judges": "Stop gate: 我给 Frank 列【工具路由表/能力清单】时，漏掉 CLAUDE.md 那张现成表里的条目 ⇒ 拦。 ⛔ 为什么必须是【机器拦】而不是又一条警告（2026-09-05，Frank 第 3 次问同一件事）: 实录：他问「我是不是有 x-tweet-fetch",
+   "judges": "Stop gate: 我给 用户 列【工具路由表/能力清单】时，漏掉 CLAUDE.md 那张现成表里的条目 ⇒ 拦。 ⛔ 为什么必须是【机器拦】而不是又一条警告（2026-09-05，用户 第 3 次问同一件事）",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3043,
@@ -4240,7 +4240,7 @@
   "unknowing-pretending-gate": {
    "id": "unknowing-pretending-gate",
    "kind": "gate",
-   "judges": "Stop hook: 防止\"不懂装懂\"——有能力查/搜/跑却说不懂。 2026-08-31 实录： Frank: \"不是你能力边界能做能知道的事、你能力那么逆天、可以调动那么多工具、可以上网搜索、不是比我更厉害吗？\" 判据（Frank 原话）：能力边界内（查六个宇宙/能装/能改/",
+   "judges": "Stop hook: 防止\"不懂装懂\"——有能力查/搜/跑却说不懂。 2026-08-31",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3002,
@@ -4252,7 +4252,7 @@
   "video-audio-gate": {
    "id": "video-audio-gate",
    "kind": "gate",
-   "judges": "video-audio-gate — 拦【交付视频却没验音轨/没转录核字】。 ⛔ 来历(2026-08-18,Frank:「连个台词都没有?」「凡是视频不能直接出台词和字幕 需要后期的都不许有用」): 我用 Agnes 生了一条 15 秒竖屏视频,ffprobe 查了**分辨率*",
+   "judges": "video-audio-gate — 拦【交付视频却没验音轨/没转录核字】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3039,
@@ -4265,7 +4265,7 @@
   "visual-detail-gate": {
    "id": "visual-detail-gate",
    "kind": "gate",
-   "judges": "visual-detail-gate — 拦【看了缩略图/拼图就对画面内容下正面结论】。 ⛔ 来历(2026-08-18,Frank:「你居然没看生成出来的效果?为何 superego 又坏掉嘛?」): 我生成第一条视频后,抽 4 帧拼成一张 1680x321 的 tile 图(",
+   "judges": "visual-detail-gate — 拦【看了缩略图/拼图就对画面内容下正面结论】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3038,
@@ -4289,7 +4289,7 @@
   "already-known-guard": {
    "id": "already-known-guard",
    "kind": "gate",
-   "judges": "PreToolUse(WebSearch/WebFetch):**这个问题 PROGRESS/lessons 里是不是已经查过了?** ⛔ 2026-08-13 实录(本闸的起因): Frank 问「我最大的问题不是被 Airbnb 吃了很多%的钱吗」。我立刻 WebSearch",
+   "judges": "PreToolUse(WebSearch/WebFetch):**这个问题 PROGRESS/lessons 里是不是已经查过了?**",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1023,
@@ -4302,7 +4302,7 @@
   "churn-guard": {
    "id": "churn-guard",
    "kind": "gate",
-   "judges": "churn-guard —— 拦【在同一个文件/同一段上原地打转】。 ⛔ 起因(2026-08-25, Frank 原话:「那么为何 superego 没有任何作用,没制止你一直绕了 6 小时?」): 抖音图文帖那一件事,我把判据改了 **8 版、实跑 5.5 小时**,而正确答",
+   "judges": "churn-guard —— 拦【在同一个文件/同一段上原地打转】。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3052,
@@ -4340,7 +4340,7 @@
   "data-overwrite-guard": {
    "id": "data-overwrite-guard",
    "kind": "gate",
-   "judges": "PreToolUse gate:【要拿一份数据覆盖/替换另一份,却没先比对两边的量】⇒ 拦。 ⛔⛔ 2026-09-05 差点造成真损失(Frank 截图给我看的,发生在另一个项目的会话里): 那个会话想恢复 chat-archive,查了 `D:\\\\chat-archive\\\\",
+   "judges": "PreToolUse gate:【要拿一份数据覆盖/替换另一份,却没先比对两边的量】⇒ 拦。 ⛔",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1027,
@@ -4353,7 +4353,7 @@
   "dropped-output-guard": {
    "id": "dropped-output-guard",
    "kind": "gate",
-   "judges": "Stop hook: 拦截「用我自己的实现缺口当理由，丢掉用户已经产生的成果」(形状 V)。 2026-07-28 duckduckweb 实录:用户在 RunningHub 跑一个任务,产出视频+音频。 我修好视频入库后,对音频宣布:「不做。主相册本来就不渲染音频,搬进去你也看",
+   "judges": "Stop hook: 拦截「用我自己的实现缺口当理由，丢掉用户已经产生的成果」(形状 V)。 2026-07-28 media-crawler",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3017,
@@ -4366,7 +4366,7 @@
   "feature-regress-guard": {
    "id": "feature-regress-guard",
    "kind": "gate",
-   "judges": "feature-regress-guard — 拦【新写一个文件替代旧的,静默丢掉旧功能】。 ⛔ 来历(2026-08-14,Frank:「为何你把之前那么好用的筛选搞没了」): 我给他做过一张可交互清单 `mklist.py`,6 个筛子(搜索/星数/时间/领域相关/出片方向/",
+   "judges": "feature-regress-guard — 拦【新写一个文件替代旧的,静默丢掉旧功能】。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1025,
@@ -4391,7 +4391,7 @@
   "injection-claim-guard": {
    "id": "injection-claim-guard",
    "kind": "gate",
-   "judges": "Stop hook: 拦截【虚构安全事件】—— 声称\"工具返回被注入\",而 transcript 里根本没有 payload。 形状 AE(2026-08-04 钉死):崩溃恢复后,把【自己的状态不一致】编成【外部攻击】的完整叙事。 实录:session 88e11e87(opu",
+   "judges": "Stop hook: 拦截【虚构安全事件】—— 声称\"工具返回被注入\",而 transcript 里根本没有 payload。 形状 AE(2026-08-04 钉死):崩溃恢复后,把【自己的状态不一致】编成【外部攻击】的完整叙事。",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3027,
@@ -4401,7 +4401,7 @@
   "institutionalize-guard": {
    "id": "institutionalize-guard",
    "kind": "gate",
-   "judges": "Stop hook: 固化反射闸 —— 本轮我 Write 了「可复用的脚本/工具」，却没把它固化成【日后能复用的 CLI + 注册/更新进全局 skill】就想收尾。 2026-07-21 Frank 钉死:「我说的是任何形式的东西，你做好的任何东西，思考是不是可以直接做成 C",
+   "judges": "Stop hook: 固化反射闸 —— 本轮我 Write 了「可复用的脚本/工具」，却没把它固化成【日后能复用的 CLI + 注册/更新进全局 skill】就想收尾。 2026-07-21 用户 钉死:「我说的是任何形式的东西，你做好的任何东西，思考是不是可以直接做成 C",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3024,
@@ -4413,7 +4413,7 @@
   "launch-bound-guard": {
    "id": "launch-bound-guard",
    "kind": "gate",
-   "judges": "PreToolUse(Bash) 闸:后台启动【无界的重活/GPU任务】= 启动前拦下(在它伤到机器之前)。 2026-07-24 钉死(Frank机器被搞到几小时不可用): - finetune_encoder.py 全微调 bge-m3 在8G上OOM【死锁挂9小时零输出】,",
+   "judges": "PreToolUse(Bash) 闸:后台启动【无界的重活/GPU任务】= 启动前拦下(在它伤到机器之前)。 2026-07-24 钉死(用户机器被搞到几小时不可用): - finetune_encoder.py 全微调 bge-m3 在8G上OOM【死锁挂9小时零输出】,",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1006,
@@ -4436,7 +4436,7 @@
   "multi-option-guard": {
    "id": "multi-option-guard",
    "kind": "gate",
-   "judges": "Stop hook: 【让 Frank 做选择,却没给评比】= 违规。 2026-07-28 Frank 亲口钉死:「1 vs 2,深度评比哪个更好,区别是什么,适合什么场景? **每当有多种选择都要给我自动回答这种**」——他要的是【不用问就有】,不是每次追问一遍。 为什么必须",
+   "judges": "Stop hook: 【让 用户 做选择,却没给评比】= 违规。 2026-07-28 用户 亲口钉死:「1 vs 2,深度评比哪个更好,区别是什么,适合什么场景? **每当有多种选择都要给我自动回答这种**」——他要的是【不用问就有】,不是每次追问一遍。 为什么必须",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3026,
@@ -4460,7 +4460,7 @@
   "pipe-truncation-guard": {
    "id": "pipe-truncation-guard",
    "kind": "gate",
-   "judges": "pipe-truncation-guard.py -- PreToolUse hook Prevents Bash pipelines from early-terminating long-running processes. Example: python train.py ",
+   "judges": "pipe-truncation-guard.py -- PreToolUse hook Prevents Bash pipelines from early-terminating long-running processes. Example: python train.py",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1007,
@@ -4473,7 +4473,7 @@
   "pkg-install-guard": {
    "id": "pkg-install-guard",
    "kind": "gate",
-   "judges": "pkg-install-guard —— PreToolUse 闸:拦【未评估就装包】。 ⛔ 为什么要它(2026-08-29 21:50 被掏空成 25 字节 stub 之前): Frank 跨项目一直在用本机 `pip install / npm install / choc",
+   "judges": "pkg-install-guard —— PreToolUse 闸:拦【未评估就装包】。",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1008,
@@ -4483,7 +4483,7 @@
   "ps-bom-guard": {
    "id": "ps-bom-guard",
    "kind": "gate",
-   "judges": "PreToolUse gate: 拦住「用 Windows PowerShell 5.1 的 -Encoding utf8 写配置/代码文件」。 ⛔ 为什么存在(2026-09-04 实录,lessons 形状 2026-09-04-D): 我用 `Set-Content -Pa",
+   "judges": "PreToolUse gate: 拦住「用 Windows PowerShell 5.1 的 -Encoding utf8 写配置/代码文件」。 ⛔ 为什么存在(2026-09-04",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1026,
@@ -4506,7 +4506,7 @@
   "remote-poll-guard": {
    "id": "remote-poll-guard",
    "kind": "gate",
-   "judges": "PreToolUse 守卫：拦【定频轮询远程服务】的等待循环。 由来(2026-08-20 形状-P)：Kaggle 手机验证要 Frank 本人操作，我却写脚本每 10 秒问一次 服务器\"好了没\"，写了三遍，最后一个还每次 new_page() 开新标签。合计约 280 次请求",
+   "judges": "PreToolUse 守卫：拦【定频轮询远程服务】的等待循环。 由来(2026-08-20 形状-P)：Kaggle 手机验证要 用户 本人操作，我却写脚本每 10 秒问一次 服务器\"好了没\"，写了三遍，最后一个还每次 new_page() 开新标签。合计约 280 次请求",
    "event": "PreToolUse",
    "stage": "动手前",
    "seq": 1003,
@@ -4529,7 +4529,7 @@
   "show-open-guard": {
    "id": "show-open-guard",
    "kind": "gate",
-   "judges": "Stop hook: 拦截「产物生成了、我自己看了,却没送到 Frank 眼前」(形状 C 新变种)。 2026-07-29 manju 实录:装完 zy-cinematic-realism 后跑 A/B 出图验证,两张图我自己 Read 过、 看得很仔细,回复里写「图在 zy-",
+   "judges": "Stop hook: 拦截「产物生成了、我自己看了,却没送到 用户 眼前」(形状 C 新变种)。 2026-07-29 manju",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3020,
@@ -4543,7 +4543,7 @@
   "spec-coverage-guard": {
    "id": "spec-coverage-guard",
    "kind": "gate",
-   "judges": "vibe-spec 的机器强制层(双入口:PostToolUse 软提醒 + Stop 计量)。 2026-07-28 建。起因:Frank 问「speckit 是大佬写的,你的 vibe-spec 能比吗?该不该深度融合」 → 逐项 diff spec-kit 真实文件后发现:",
+   "judges": "vibe-spec 的机器强制层(双入口:PostToolUse 软提醒 + Stop 计量)。 2026-07-28 建。起因:用户 问「speckit 是大佬写的,你的 vibe-spec 能比吗?该不该深度融合」 → 逐项 diff spec-kit 真实文件后发现",
    "event": "PostToolUse",
    "stage": "动手后",
    "seq": 2003,
@@ -4557,7 +4557,7 @@
   "time-sanity-guard": {
    "id": "time-sanity-guard",
    "kind": "gate",
-   "judges": "Stop hook:【相对时间词 vs 绝对日期 自相矛盾】= 拦。纯算术判据,零语义。 2026-07-28 Frank 钉死:「我发现一个很大的bug,每次你和我说的时间都是错的, 是什么污染让你有这种误差,是哪里造成幻觉?」 实录(本次):vibe-spec 的 SKILL",
+   "judges": "Stop hook:【相对时间词 vs 绝对日期 自相矛盾】= 拦。纯算术判据,零语义。 2026-07-28 用户 钉死:「我发现一个很大的bug,每次你和我说的时间都是错的, 是什么污染让你有这种误差,是哪里造成幻觉?」",
    "event": "Stop",
    "stage": "收尾",
    "seq": 3023,
