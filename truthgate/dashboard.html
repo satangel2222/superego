@@ -2982,20 +2982,25 @@
       const cfg = defaults[p] || defaults['gemini'];
       if (baseEl) {
         baseEl.placeholder = cfg.base;
-        if (resetDefaults && (!baseEl.value || baseEl.value.includes('googleapis') || baseEl.value.includes('bigmodel') || baseEl.value.includes('deepseek') || baseEl.value.includes('openai.com') || baseEl.value.includes('localhost:11434') || baseEl.value === 'local')) {
+        if (resetDefaults || !baseEl.value) {
           baseEl.value = cfg.base;
         }
       }
       if (modelEl) {
         modelEl.placeholder = cfg.model;
-        if (resetDefaults && (!modelEl.value || modelEl.value.includes('gemini') || modelEl.value.includes('glm') || modelEl.value.includes('deepseek') || modelEl.value.includes('gpt-5.6') || modelEl.value.includes('qwen') || modelEl.value === 'local_ast_tier0')) {
+        if (resetDefaults || !modelEl.value) {
           modelEl.value = cfg.model;
         }
       }
       if (keyEl) {
         keyEl.placeholder = cfg.keyPlaceholder;
-        if (p === 'ollama' && (!keyEl.value || keyEl.value === '')) keyEl.value = 'ollama';
-        if (p === 'local_heuristic') keyEl.value = '';
+        if (p === 'ollama') {
+          if (!keyEl.value || keyEl.value === '') keyEl.value = 'ollama';
+        } else if (p === 'local_heuristic') {
+          keyEl.value = '';
+        } else if (keyEl.value === 'ollama') {
+          keyEl.value = '';
+        }
       }
     }
 
