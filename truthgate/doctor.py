@@ -192,7 +192,7 @@ def check_agnes():
 
         try:
             req = urllib.request.Request(endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=4.0) as resp:
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
                 lat = round((time.time() - t0) * 1000, 1)
                 res["status"] = "HEALTHY"
                 res["latency_ms"] = lat
