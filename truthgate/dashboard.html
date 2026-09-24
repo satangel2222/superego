@@ -1573,7 +1573,8 @@
             <div class="form-group">
               <label class="form-label">外审模型提供商 (Provider):</label>
               <select id="critic-provider" class="form-input" onchange="onCriticProviderChange()">
-                <option value="gemini">🌟 Google Gemini (官方推荐 · 免费高速)</option>
+                <option value="agnes">🎯 Agnes 3.0 Flash (官方分发网关 · 极速审判)</option>
+                <option value="gemini">🌟 Google Gemini (官方推荐 · gemini-3.8-flash)</option>
                 <option value="glm">🇨🇳 智谱 GLM (官方开放平台 / 个人月卡中转)</option>
                 <option value="deepseek">🚀 DeepSeek (性价比之王 · deepseek-chat)</option>
                 <option value="openai">🤖 OpenAI (官方 gpt-4o-mini)</option>
@@ -2936,6 +2937,11 @@
       const keyEl = document.getElementById('critic-api-key');
 
       const defaults = {
+        agnes: {
+          base: 'https://apihub.agnes-ai.com/v1',
+          model: 'agnes-3.0-flash',
+          keyPlaceholder: 'sk-udGJy... (Agnes AI 官方 Key)'
+        },
         gemini: {
           base: 'https://generativelanguage.googleapis.com/v1beta/openai',
           model: 'gemini-3.8-flash',
