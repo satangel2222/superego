@@ -422,10 +422,10 @@ def load_antigravity_turn(transcript_path):
             except Exception:
                 continue
 
-        # Find the last USER_INPUT index by parsed JSON type
+        # Find the last USER_INPUT or SYSTEM_MESSAGE index by parsed JSON type
         last_user_idx = -1
         for i, obj in enumerate(parsed_objs):
-            if obj.get("type") == "USER_INPUT":
+            if obj.get("type") in ("USER_INPUT", "SYSTEM_MESSAGE"):
                 last_user_idx = i
 
         # CRITICAL: ONLY take lines strictly AFTER the user prompt!
