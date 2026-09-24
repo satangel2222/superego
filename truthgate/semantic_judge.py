@@ -206,7 +206,21 @@ def get_critic_endpoint():
             "timeout": 25.0
         }
 
-    # 5. Agnes AI (AGNES_API_KEY) —— Frank 私有代理通道
+    # 5. 智谱 GLM / 官方开放平台与月卡中转 (GLM_API_KEY / ZHIPU_API_KEY)
+    _, z_val = _find_env_key(["GLM_API_KEY", "ZHIPU_API_KEY"])
+    if z_val:
+        base = os.environ.get("GLM_BASE_URL", os.environ.get("ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")).rstrip("/")
+        model = os.environ.get("GLM_MODEL", "glm-4-flash")
+        url = f"{base}/chat/completions" if not base.endswith("/chat/completions") else base
+        return {
+            "provider": "glm",
+            "url": url,
+            "model": model,
+            "api_key": z_val,
+            "timeout": 25.0
+        }
+
+    # 6. Agnes AI (AGNES_API_KEY) —— 私有代理通道
     _, a_val = _find_env_key("AGNES_API_KEY")
     if a_val:
         model = os.environ.get("SEMANTIC_JUDGE_MODEL", "agnes-3.0-flash")
