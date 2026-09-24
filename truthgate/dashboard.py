@@ -347,7 +347,7 @@ def get_recent_events(limit_per_engine=200, limit=None):
                 cur = conn.cursor()
                 cur.execute("""
                     SELECT id, timestamp, turn_type, user_prompt_snippet, assistant_text_snippet, 
-                           verdict, fired_rules, reasons, mode, latency_ms, is_false_positive 
+                           verdict, fired_rules, reasons, mode, latency_ms, is_false_positive, is_false_negative 
                     FROM verdict_records 
                     ORDER BY id DESC LIMIT ?
                 """, (limit_per_engine,))
@@ -366,7 +366,17 @@ def get_recent_events(limit_per_engine=200, limit=None):
                         fired_list = [f.strip() for f in fired_raw.strip("[]").replace("'", "").replace('"', '').split(",") if f.strip()]
                     
                     status = "BLOCK" if v in ("BLOCK", "FIRE") else "PASS"
-                    if row["is_false_positive"]:
+                    is_fn = False
+                    try:
+                        is_fn = bool(row["is_false_negative"])
+                    except Exception:
+                        pass
+
+                    if is_fn:
+                        status = "FALSE_NEGATIVE"
+                        status_label = "已溯源漏判"
+                        badge_class = "badge-fn"
+                    elif row["is_false_positive"]:
                         status = "FALSE_POSITIVE"
                         status_label = "已核定误伤"
                         badge_class = "badge-fp"
@@ -972,6 +982,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, Exception):
                 pass
             return
+        elif path == "/api/monitor-stats":
+            try:
+                from verdict_monitor import get_monitor_stats
+            except ImportError:
+                try:
+                    from truthgate.verdict_monitor import get_monitor_stats
+                except ImportError:
+                    get_monitor_stats = None
+            data = get_monitor_stats() if get_monitor_stats else {}
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
         elif path == "/api/test-summary":
             data = get_test_summary()
             self.send_response(200)
