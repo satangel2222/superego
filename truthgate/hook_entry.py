@@ -240,6 +240,10 @@ def handle_stop(payload: Dict[str, Any]) -> int:
             for f_id in fired_rules:
                 reasons.append(f"  • 触发规则: {f_id}")
 
+        mode_str = res.get("mode", "")
+        if "offline" in mode_str or "local" in mode_str:
+            reasons.append("  💡 [引擎状态: Tier 0 本地启发式(残血保底) | 配置 GEMINI_API_KEY/DEEPSEEK_API_KEY 或运行 `tg setup` 可升级为满血深审]")
+
         reasons.append(f"  ⇒ 请依照【{profile.get('name')}】准则修正后直接交付！")
 
         resp = {

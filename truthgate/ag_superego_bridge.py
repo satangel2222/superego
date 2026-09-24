@@ -2125,6 +2125,19 @@ def handle_status():
     print("🛡️ 【Superego 跨系统运行状态诊断 (Antigravity ↔ Claude 对齐)】")
     print("═══════════════════════════════════════════════════════════════════════════════")
     
+    try:
+        from blood_doctor import get_blood_status
+    except ImportError:
+        try:
+            from truthgate.blood_doctor import get_blood_status
+        except ImportError:
+            get_blood_status = None
+    if get_blood_status:
+        bs = get_blood_status()
+        print(f"0. 系统满血度   : {bs['blood_score']}/100 [{bs['status_label']}]")
+        if not bs['is_full_blooded']:
+            print("   └─ 升级指南: 运行 'tg setup' 配置 API Key 升级满血 (当前为 Tier 0 本地保底)")
+
     # 1. Toggle switch
     off_state = check_is_off("*")
     print(f"1. 门禁开关状态 : {'❌ 处于关闭状态 (OFF)' if off_state else '✅ 正常全开 (ON)'}")

@@ -1240,6 +1240,18 @@ def main():
         print("=" * 65)
         print(f"🛡️ TruthGate 1.0 运行状态报告 (TruthGate Status):")
         print("=" * 65)
+        try:
+            from blood_doctor import get_blood_status
+        except ImportError:
+            try:
+                from truthgate.blood_doctor import get_blood_status
+            except ImportError:
+                get_blood_status = None
+        if get_blood_status:
+            bs = get_blood_status()
+            print(f"  • 系统满血度:    {bs['blood_score']}/100 [{bs['status_label']}]")
+            if not bs['is_full_blooded']:
+                print(f"  • 升级指南:      运行 'tg setup' 配置 API Key 升级满血 (当前为 Tier 0 本地保底)")
         print(f"  • 当前激活画像:  {prof.get('name')} ({prof.get('id')})")
         print(f"  • 挂载规则包:    {prof.get('rulepacks')}")
         print(f"  • 生效规则总数:  {len(rules)} 条")
